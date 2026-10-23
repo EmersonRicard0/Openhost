@@ -1,0 +1,17 @@
+name: shellvault-test
+
+services:
+  sshd:
+    build: .
+    image: shellvault-test-sshd
+    ports:
+      - '127.0.0.1:2222:22'
+    volumes:
+      - ../keys/generated:/keys:ro
+
+  # Serviço de eco acessível só pela rede interna (destino do port forwarding).
+  echo:
+    image: shellvault-test-sshd
+    entrypoint: ['socat', 'TCP-LISTEN:7000,fork,reuseaddr', 'EXEC:cat']
+    depends_on:
+      - sshd

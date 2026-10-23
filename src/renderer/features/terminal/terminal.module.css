@@ -1,0 +1,167 @@
+.tabBar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 42px;
+  padding: 0 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+/* Abas em pílula; a ativa ganha superfície elevada e borda. */
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 128px;
+  max-width: 220px;
+  height: 30px;
+  padding: 0 6px 0 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.tab:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.tabActive {
+  border-color: var(--border);
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.tabActive:hover {
+  background: var(--surface-raised);
+}
+
+.tabTitle {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tabRename {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+  padding: 0 4px;
+  border: 1px solid var(--focus);
+  border-radius: 4px;
+  background: var(--panel-solid);
+  outline: none;
+}
+
+.dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+}
+
+.dot[data-state='connected'],
+.dot[data-state='running'] {
+  background: var(--success);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
+}
+
+.dot[data-state='connecting'],
+.dot[data-state='authenticating'],
+.dot[data-state='awaitingHostKey'],
+.dot[data-state='awaitingPrompt'] {
+  background: var(--warning);
+}
+
+.dot[data-state='disconnected'] {
+  background: var(--danger);
+}
+
+.tabClose {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  opacity: 0.55;
+}
+
+.tabClose:hover {
+  opacity: 1;
+}
+
+.dropBefore {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+.newTab {
+  align-self: center;
+}
+
+.view {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.hidden {
+  display: none;
+}
+
+.xterm {
+  flex: 1;
+  min-height: 0;
+  padding: 12px 4px 4px 14px;
+}
+
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-raised);
+}
+
+.bannerText {
+  flex: 1;
+}
+
+.fingerprint {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--input-background);
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 12px;
+  user-select: text;
+  word-break: break-all;
+}
+
+.alert {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  color: var(--danger);
+}
+
+.alert p {
+  margin: 0;
+  color: var(--text-primary);
+}
+
+.check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}

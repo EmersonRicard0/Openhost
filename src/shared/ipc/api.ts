@@ -1,0 +1,219 @@
+// Contrato da ponte `window.shellvault` (contracts/ipc-bridge.md).
+import type {
+  ActiveForward,
+  ActiveSummary,
+  Appearance,
+  ConflictChoice,
+  ConflictEvent,
+  CredentialSummary,
+  ForwardRule,
+  ForwardRuleInput,
+  ForwardRuleStatus,
+  Group,
+  HostInput,
+  HostKeyEvent,
+  HostView,
+  LocalShell,
+  PromptEvent,
+  RemoteEntry,
+  SessionDataEvent,
+  SessionStateEvent,
+  Settings,
+  TermSize,
+  Transfer,
+  VaultSettings,
+  VaultStatus,
+} from '../model/types';
+import type { Result } from './result';
+
+type R<T> = Promise<Result<T>>;
+export type Unsubscribe = () => void;
+type On<T> = (handler: (payload: T) => void) => Unsubscribe;
+
+export type KeySource = { filePath: string } | { pem: string };
+/** Atualização parcial; campos ausentes ficam como estão (formato de saída do zod `.partial()`). */
+export type Patch<T> = { [P in keyof T]?: T[P] | undefined };
+
+export interface ShellVaultApi {
+  vault: {
+    getStatus: () => R<VaultStatus>;
+    create: (password: string, confirmation: string) => R<void>;
+    unlock: (password: string) => R<void>;
+    lock: () => R<void>;
+    changePassword: (current: string, next: string, confirmation: string) => R<void>;
+    erase: (confirmPhrase: string) => R<void>;
+    getSettings: () => R<VaultSettings>;
+    updateSettings: (patch: Patch<VaultSettings>) => R<VaultSettings>;
+    reportActivity: () => R<void>;
+    onStateChanged: On<VaultStatus>;
+  };
+  hosts: {
+    list: () => R<HostView[]>;
+    create: (input: HostInput) => R<HostView>;
+    update: (id: string, input: HostInput) => R<HostView>;
+    duplicate: (id: string) => R<HostView>;
+    remove: (id: string) => R<void>;
+    move: (id: string, groupId: string | null) => R<void>;
+  };
+  groups: {
+    list: () => R<Group[]>;
+    create: (name: string, parentId: string | null) => R<Group>;
+    rename: (id: string, name: string) => R<Group>;
+    move: (id: string, parentId: string | null) => R<void>;
+    remove: (id: string) => R<void>;
+  };
+  credentials: {
+    list: () => R<CredentialSummary[]>;
+    createPassword: (name: string, password: string) => R<CredentialSummary>;
+    pickKeyFile: () => R<{ filePath: string } | null>;
+    importKey: (name: string, source: KeySource, passphrase: string | null) => R<CredentialSummary>;
+    generateEd25519(name: string, passphrase: string | null): R<CredentialSummary>;
+    copyPublicKey: (id: string) => R<void>;
+    rename: (id: string, name: string) => R<CredentialSummary>;
+    remove: (id: string) => R<void>;
+  };
+  sessions: {
+    openSsh: (hostId: string, size: TermSize) => R<{ sessionId: string }>;
+    openLocal: (shell: LocalShell, size: TermSize) => R<{ sessionId: string }>;
+    write: (sessionId: string, data: string) => R<void>;
+    resize: (sessionId: string, size: TermSize) => R<void>;
+    reconnect: (sessionId: string) => R<void>;
+    close: (sessionId: string) => R<void>;
+    answerHostKey: (sessionId: string, accept: boolean) => R<void>;
+    answerPrompt: (sessionId: string, answers: string[] | null) => R<void>;
+    activeSummary: () => R<ActiveSummary>;
+    onData: On<SessionDataEvent>;
+    onState: On<SessionStateEvent>;
+    onHostKey: On<HostKeyEvent>;
+    onPrompt: On<PromptEvent>;
+  };
+  sftp: {
+    open: (hostId: string) => R<{ sessionId: string; homePath: string }>;
+    list: (sessionId: string, path: string) => R<RemoteEntry[]>;
+    mkdir: (sessionId: string, path: string) => R<void>;
+    rename: (sessionId: string, from: string, to: string) => R<void>;
+    remove: (sessionId: string, path: string, recursive: boolean) => R<void>;
+    upload: (sessionId: string, remoteDir: string) => R<{ transferIds: string[] }>;
+    download: (sessionId: string, remotePaths: string[]) => R<{ transferIds: string[] }>;
+    resolveConflict: (transferId: string, choice: ConflictChoice) => R<void>;
+    cancel: (transferId: string) => R<void>;
+    onTransfer: On<Transfer>;
+    onConflict: On<ConflictEvent>;
+  };
+  forwards: {
+    list: (hostId: string) => R<(ForwardRule & ForwardRuleStatus)[]>;
+    listActive: () => R<ActiveForward[]>;
+    create: (input: ForwardRuleInput) => R<ForwardRule>;
+    update: (id: string, input: ForwardRuleInput) => R<ForwardRule>;
+    remove: (id: string) => R<void>;
+    activate: (id: string) => R<void>;
+    deactivate: (id: string) => R<void>;
+    onStatus: On<{ ruleId: string } & ForwardRuleStatus>;
+  };
+  app: {
+    getAppearance: () => R<Appearance>;
+    getUiSettings: () => R<Settings>;
+    updateUiSettings: (patch: Patch<Omit<Settings, 'window'>>) => R<Settings>;
+    confirmClose: (confirmed: boolean) => R<void>;
+    onAppearanceChanged: On<Appearance>;
+    onCloseRequested: On<ActiveSummary>;
+  };
+}
+
+export type ApiModule = keyof ShellVaultApi;
+
+type EventKeys<M> = { [K in keyof M]: K extends `on${string}` ? K : never }[keyof M];
+type InvokeKeys<M> = Exclude<keyof M, EventKeys<M>>;
+
+/** Lista de funções e eventos por módulo; o preload gera a API a partir dela. */
+export const API_SHAPE = {
+  vault: {
+    invoke: [
+      'getStatus',
+      'create',
+      'unlock',
+      'lock',
+      'changePassword',
+      'erase',
+      'getSettings',
+      'updateSettings',
+      'reportActivity',
+    ],
+    events: ['onStateChanged'],
+  },
+  hosts: { invoke: ['list', 'create', 'update', 'duplicate', 'remove', 'move'], events: [] },
+  groups: { invoke: ['list', 'create', 'rename', 'move', 'remove'], events: [] },
+  credentials: {
+    invoke: [
+      'list',
+      'createPassword',
+      'pickKeyFile',
+      'importKey',
+      'generateEd25519',
+      'copyPublicKey',
+      'rename',
+      'remove',
+    ],
+    events: [],
+  },
+  sessions: {
+    invoke: [
+      'openSsh',
+      'openLocal',
+      'write',
+      'resize',
+      'reconnect',
+      'close',
+      'answerHostKey',
+      'answerPrompt',
+      'activeSummary',
+    ],
+    events: ['onData', 'onState', 'onHostKey', 'onPrompt'],
+  },
+  sftp: {
+    invoke: [
+      'open',
+      'list',
+      'mkdir',
+      'rename',
+      'remove',
+      'upload',
+      'download',
+      'resolveConflict',
+      'cancel',
+    ],
+    events: ['onTransfer', 'onConflict'],
+  },
+  forwards: {
+    invoke: ['list', 'listActive', 'create', 'update', 'remove', 'activate', 'deactivate'],
+    events: ['onStatus'],
+  },
+  app: {
+    invoke: ['getAppearance', 'getUiSettings', 'updateUiSettings', 'confirmClose'],
+    events: ['onAppearanceChanged', 'onCloseRequested'],
+  },
+} as const satisfies {
+  [M in ApiModule]: {
+    invoke: readonly InvokeKeys<ShellVaultApi[M]>[];
+    events: readonly EventKeys<ShellVaultApi[M]>[];
+  };
+};
+
+/** Nome do canal IPC: `"<módulo>:<função>"`. */
+export function channelOf<M extends ApiModule>(module: M, name: keyof ShellVaultApi[M]): string {
+  return `${module}:${String(name)}`;
+}
+
+/** Argumentos e retorno de uma função de invoke, para tipar os handlers do principal. */
+export type InvokeArgs<
+  M extends ApiModule,
+  K extends keyof ShellVaultApi[M],
+> = ShellVaultApi[M][K] extends (...args: infer A) => unknown ? A : never;
+
+export type InvokeValue<
+  M extends ApiModule,
+  K extends keyof ShellVaultApi[M],
+> = ShellVaultApi[M][K] extends (...args: never[]) => Promise<Result<infer T>> ? T : never;
+
+export type EventPayload<M extends ApiModule, K extends keyof ShellVaultApi[M]> =
+  ShellVaultApi[M][K] extends On<infer P> ? P : never;

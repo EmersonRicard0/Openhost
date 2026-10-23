@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "brand-kit": {
+      "source": "irgiahmadm/brand-kit",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "85f916c6b30c18a17050d81e5bda02938e161c542932a20a2a7255c3308e1889"
+    }
+  }
+}
