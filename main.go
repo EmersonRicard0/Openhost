@@ -44,7 +44,10 @@ func run() error {
 	}
 	appwin.ConfigureWebView(extraWebViewArgs)
 
-	services := bridge.NewServices(dataDir)
+	services, err := bridge.NewServices(dataDir)
+	if err != nil {
+		return err
+	}
 	bind := services.Bound()
 	if extraBindings != nil {
 		bind = append(bind, extraBindings(services)...)

@@ -2,9 +2,7 @@
 import type { LocalShell } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useSessions } from '../../stores/sessions';
-import { useUi } from '../../stores/ui';
 import { toastError } from '../../ui/Toast';
-import { initialSize } from './dataBus';
 
 const TITLES: Record<LocalShell, string> = {
   powershell: t.terminal.powershell,
@@ -12,8 +10,7 @@ const TITLES: Record<LocalShell, string> = {
 };
 
 export async function openLocal(shell: LocalShell): Promise<void> {
-  const size = initialSize(useUi.getState().settings?.terminalFontSize ?? 14);
-  const res = await window.shellvault.sessions.openLocal(shell, size);
+  const res = await window.shellvault.sessions.openLocal(shell);
   if (!res.ok) {
     toastError(res.error);
     return;
@@ -24,6 +21,6 @@ export async function openLocal(shell: LocalShell): Promise<void> {
     title: TITLES[shell],
     hostId: null,
     shell,
-    state: 'running',
+    state: 'connecting',
   });
 }

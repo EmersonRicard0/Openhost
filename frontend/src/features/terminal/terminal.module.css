@@ -68,8 +68,7 @@
   background: var(--text-secondary);
 }
 
-.dot[data-state='connected'],
-.dot[data-state='running'] {
+.dot[data-state='connected'] {
   background: var(--success);
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
 }
@@ -81,7 +80,8 @@
   background: var(--warning);
 }
 
-.dot[data-state='disconnected'] {
+.dot[data-state='disconnected'],
+.dot[data-state='error'] {
   background: var(--danger);
 }
 

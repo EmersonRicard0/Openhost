@@ -100,8 +100,10 @@ type Interactor interface {
 
 // Conn é uma conexão já autenticada (SSH) ou um processo preparado (shell local).
 type Conn interface {
-	// Start pede o PTY com o primeiro tamanho válido e devolve a saída.
-	Start(cols, rows int) (io.Reader, error)
+	// Start pede o PTY com o primeiro tamanho válido; a saída vai para out.
+	Start(cols, rows int, out io.Writer) error
+	// Wait bloqueia até a saída terminar (fim do shell ou queda da conexão).
+	Wait() error
 	Write(p []byte) error
 	Resize(cols, rows int) error
 	// Close é idempotente e destrava a leitura.
@@ -328,6 +330,20 @@ func (m *Manager) Count() int {
 	return len(m.sessions)
 }
 
+// SizeOf devolve o último tamanho enviado a uma sessão que já iniciou o PTY.
+func (m *Manager) SizeOf(id string) (cols, rows int, ok bool) {
+	s, err := m.get(id)
+	if err != nil {
+		return 0, 0, false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.started {
+		return 0, 0, false
+	}
+	return s.size.cols, s.size.rows, true
+}
+
 func (s *Session) State() State {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -450,8 +466,7 @@ func (s *Session) connect(dial Dialer) {
 	s.mu.Lock()
 	first := s.size
 	s.mu.Unlock()
-	out, err := conn.Start(first.cols, first.rows)
-	if err != nil {
+	if err := conn.Start(first.cols, first.rows, s.out); err != nil {
 		if s.ctx.Err() == nil {
 			s.setState(StateError, err, nil)
 		}
@@ -466,7 +481,7 @@ func (s *Session) connect(dial Dialer) {
 	s.mu.Unlock()
 	s.SetState(StateConnected)
 
-	_, err = io.Copy(s.out, out)
+	err = conn.Wait()
 	if s.ctx.Err() != nil {
 		return
 	}

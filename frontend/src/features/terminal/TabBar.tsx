@@ -9,11 +9,10 @@ import s from './terminal.module.css';
 function stateLabel(tab: Tab): string {
   switch (tab.state) {
     case 'connected':
-    case 'running':
       return tab.title;
     case 'disconnected':
       return `${tab.title} — ${t.terminal.disconnected}`;
-    case 'exited':
+    case 'closed':
       return `${tab.title} — ${t.terminal.exited(tab.exitCode)}`;
     default:
       return `${tab.title} — ${t.terminal.connecting}`;

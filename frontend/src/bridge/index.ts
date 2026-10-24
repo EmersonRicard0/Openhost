@@ -151,6 +151,7 @@ function createApi(): ShellVaultApi {
       onState: ev('term:state'),
       onHostKey: ev('term:hostkey'),
       onPrompt: ev('term:prompt'),
+      onClosed: ev('term:closed'),
     },
     sftp: {
       open: (hostId) => call(F, 'Open', hostId),

@@ -17,6 +17,7 @@ import type {
   PromptEvent,
   RemoteEntry,
   SessionDataEvent,
+  SessionClosedEvent,
   SessionStateEvent,
   Settings,
   TermSize,
@@ -73,8 +74,8 @@ export interface ShellVaultApi {
     remove: (id: string) => R<void>;
   };
   sessions: {
-    openSsh: (hostId: string, size: TermSize) => R<{ sessionId: string }>;
-    openLocal: (shell: LocalShell, size: TermSize) => R<{ sessionId: string }>;
+    openSsh: (hostId: string) => R<{ sessionId: string }>;
+    openLocal: (shell: LocalShell) => R<{ sessionId: string }>;
     write: (sessionId: string, data: string) => R<void>;
     resize: (sessionId: string, size: TermSize) => R<void>;
     reconnect: (sessionId: string) => R<void>;
@@ -86,6 +87,7 @@ export interface ShellVaultApi {
     onState: On<SessionStateEvent>;
     onHostKey: On<HostKeyEvent>;
     onPrompt: On<PromptEvent>;
+    onClosed: On<SessionClosedEvent>;
   };
   sftp: {
     open: (hostId: string) => R<{ sessionId: string; homePath: string }>;
@@ -168,7 +170,7 @@ export const API_SHAPE = {
       'answerPrompt',
       'activeSummary',
     ],
-    events: ['onData', 'onState', 'onHostKey', 'onPrompt'],
+    events: ['onData', 'onState', 'onHostKey', 'onPrompt', 'onClosed'],
   },
   sftp: {
     invoke: [

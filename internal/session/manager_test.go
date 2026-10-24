@@ -72,6 +72,7 @@ type fakeConn struct {
 	written  []byte
 	pr       *io.PipeReader
 	pw       *io.PipeWriter
+	out      io.Writer
 	closed   bool
 	exitCode *int
 }
@@ -81,11 +82,20 @@ func newFakeConn() *fakeConn {
 	return &fakeConn{pr: pr, pw: pw}
 }
 
-func (c *fakeConn) Start(cols, rows int) (io.Reader, error) {
+func (c *fakeConn) Start(cols, rows int, out io.Writer) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.starts = append(c.starts, size{cols, rows})
-	return c.pr, nil
+	c.out = out
+	return nil
+}
+
+func (c *fakeConn) Wait() error {
+	c.mu.Lock()
+	out := c.out
+	c.mu.Unlock()
+	_, err := io.Copy(out, c.pr)
+	return err
 }
 
 func (c *fakeConn) Write(p []byte) error {

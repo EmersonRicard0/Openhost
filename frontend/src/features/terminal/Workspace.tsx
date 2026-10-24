@@ -28,7 +28,7 @@ async function reconnect(tab: Tab): Promise<void> {
 }
 
 function Banner({ tab }: { tab: Tab }) {
-  if (tab.state === 'disconnected') {
+  if (tab.state === 'disconnected' || tab.state === 'error') {
     return (
       <div className={s.banner} role="status">
         <span className={s.bannerText}>
@@ -44,7 +44,7 @@ function Banner({ tab }: { tab: Tab }) {
       </div>
     );
   }
-  if (tab.state === 'exited') {
+  if (tab.state === 'closed') {
     return (
       <div className={s.banner} role="status">
         <span className={s.bannerText}>{t.terminal.exited(tab.exitCode)}</span>

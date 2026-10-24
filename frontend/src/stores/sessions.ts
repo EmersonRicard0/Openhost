@@ -85,5 +85,5 @@ export async function closeTab(id: string): Promise<void> {
 }
 
 export function isLive(state: SessionState): boolean {
-  return state !== 'disconnected' && state !== 'exited';
+  return state !== 'disconnected' && state !== 'error' && state !== 'closed';
 }

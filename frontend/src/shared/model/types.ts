@@ -141,8 +141,8 @@ export type SessionState =
   | 'awaitingPrompt'
   | 'connected'
   | 'disconnected'
-  | 'running'
-  | 'exited';
+  | 'error'
+  | 'closed';
 
 export interface TermSize {
   cols: number;
@@ -161,6 +161,10 @@ export interface SessionStateEvent {
 export interface SessionDataEvent {
   sessionId: string;
   data: string;
+}
+
+export interface SessionClosedEvent {
+  sessionId: string;
 }
 
 export interface HostKeyEvent {

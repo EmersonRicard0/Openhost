@@ -7,7 +7,7 @@ import '@xterm/xterm/css/xterm.css';
 import type { Tab } from '../../stores/sessions';
 import { useUi } from '../../stores/ui';
 import { ANSI, type ThemeTokens } from '../../theme/tokens';
-import { attach, rememberSize } from './dataBus';
+import { attach } from './dataBus';
 import { registerProbe } from './testProbe';
 import s from './terminal.module.css';
 
@@ -46,6 +46,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
+  const fitNowRef = useRef<() => void>(() => undefined);
   const activeRef = useRef(active);
   const settings = useUi((u) => u.settings);
   const tokens = useUi((u) => u.tokens);
@@ -78,16 +79,23 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
 
     const sessionId = tab.id;
     const api = window.shellvault.sessions;
+    let lastSize: { cols: number; rows: number } | null = null;
+    const fitAndResize = () => {
+      if (!activeRef.current || container.clientWidth <= 0 || container.clientHeight <= 0) return;
+      fit.fit();
+      const size = { cols: term.cols, rows: term.rows };
+      if (size.cols <= 0 || size.rows <= 0) return;
+      if (lastSize?.cols === size.cols && lastSize.rows === size.rows) return;
+      lastSize = size;
+      void api.resize(sessionId, size);
+    };
+    fitNowRef.current = fitAndResize;
     const unregisterProbe = registerProbe(sessionId, term);
     const detach = attach(sessionId, (data) => {
       term.write(data);
     });
     const onData = term.onData((data) => {
       void api.write(sessionId, data);
-    });
-    const onResize = term.onResize(({ cols, rows }) => {
-      rememberSize({ cols, rows });
-      void api.resize(sessionId, { cols, rows });
     });
 
     term.attachCustomKeyEventHandler((e) => {
@@ -114,7 +122,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => {
         // Aba oculta tem tamanho 0: o fit só roda quando visível.
-        if (activeRef.current && container.clientWidth > 0) fit.fit();
+        fitAndResize();
       }, 50);
     });
     observer.observe(container);
@@ -124,11 +132,11 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       observer.disconnect();
       container.removeEventListener('contextmenu', onContextMenu);
       onData.dispose();
-      onResize.dispose();
       detach();
       unregisterProbe();
       term.dispose();
       termRef.current = null;
+      fitNowRef.current = () => undefined;
     };
   }, [tab.id]);
 
@@ -148,7 +156,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       webgl = null; // Sem WebGL: fica o renderer DOM.
     }
     requestAnimationFrame(() => {
-      fitRef.current?.fit();
+      fitNowRef.current();
       term.focus();
     });
     return () => {
@@ -162,7 +170,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     if (!term || !settings) return;
     term.options.fontFamily = settings.terminalFontFamily;
     term.options.fontSize = settings.terminalFontSize;
-    if (active) fitRef.current?.fit();
+    if (active) fitNowRef.current();
   }, [settings, active]);
 
   useEffect(() => {
