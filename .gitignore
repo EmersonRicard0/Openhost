@@ -17,5 +17,8 @@ Thumbs.db
 .idea/
 tests/fixtures/keys/generated/
 
+# Fila local de trabalho entre agentes (Claude Code ⇄ Codex); ver specs/002-wails-migration/coordination.md
+.agente-queue/
+
 # Skill de terceiros sem licença declarada: reinstalar via skills-lock.json (npx skills add)
 .claude/skills/brand-kit/

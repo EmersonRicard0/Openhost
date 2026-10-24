@@ -18,6 +18,12 @@ git worktree add ../shellvault-codex -b 002-codex-backend 002-wails-migration
 O Codex faz `git rebase 002-wails-migration` antes de começar cada tarefa e o Claude Code faz
 o merge de `002-codex-backend` quando o Codex avisar que um bloco terminou (testes verdes).
 
+## Fila
+
+As tarefas do Codex estão em cartões na fila local `C:\Users\emerson\Documents\shellvault\.agente-queue\`
+(fora do git; protocolo em `.agente-queue/README.md`). O Codex a acessa pelo caminho absoluto e
+avisa o Claude Code em `.agente-queue/messages/to-claude.md`.
+
 ## Tarefas
 
 **Claude Code — frontend e aparência**
