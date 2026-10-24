@@ -11,19 +11,15 @@ import (
 	"shellvault/internal/validate"
 )
 
-type Appearance struct {
-	Glass        bool `json:"glass"`
-	HighContrast bool `json:"highContrast"`
-	Dark         bool `json:"dark"`
-}
+type Appearance = appwin.Appearance
 
 type PreferencesPatch map[string]any
 
 type AppService struct {
 	preferences *appwin.PreferenceStore
+	appearance  *appwin.AppearanceMonitor
 	closeGuard  *appwin.CloseGuard
 	context     func() context.Context
-	emit        func(string, any)
 
 	minimise       func(context.Context)
 	toggleMaximise func(context.Context)
@@ -33,15 +29,15 @@ type AppService struct {
 
 func newAppService(
 	preferences *appwin.PreferenceStore,
+	appearance *appwin.AppearanceMonitor,
 	closeGuard *appwin.CloseGuard,
 	contextFn func() context.Context,
-	emit func(string, any),
 ) *AppService {
 	return &AppService{
 		preferences: preferences,
+		appearance:  appearance,
 		closeGuard:  closeGuard,
 		context:     contextFn,
-		emit:        emit,
 		minimise:    wruntime.WindowMinimise,
 		toggleMaximise: func(ctx context.Context) {
 			wruntime.WindowToggleMaximise(ctx)
@@ -52,11 +48,7 @@ func newAppService(
 }
 
 func (s *AppService) GetAppearance() (Appearance, error) {
-	preferences, err := s.preferences.Get()
-	if err != nil {
-		return Appearance{}, clean(err)
-	}
-	return appearanceOf(preferences), nil
+	return s.appearance.Current(), nil
 }
 
 func (s *AppService) GetPreferences() (appwin.Preferences, error) {
@@ -108,6 +100,12 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
 			}
 			preferences.SidebarCollapsed = value
+		case "accent":
+			value, ok := raw.(string)
+			if !ok || !appwin.ValidAccent(value) {
+				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
+			}
+			preferences.Accent = value
 		case "defaultShell":
 			value, ok := raw.(string)
 			if !ok || validate.OneOf(value, "powershell", "cmd") != nil {
@@ -135,7 +133,7 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 	if err := s.preferences.Save(preferences); err != nil {
 		return appwin.Preferences{}, clean(err)
 	}
-	s.emit("app:appearance", appearanceOf(preferences))
+	s.appearance.EmitCurrent()
 	return preferences, nil
 }
 
@@ -168,13 +166,6 @@ func (s *AppService) OpenExternalUrl(rawURL string) error {
 	}
 	s.openURL(s.context(), parsed.String())
 	return nil
-}
-
-func appearanceOf(preferences appwin.Preferences) Appearance {
-	return Appearance{
-		Glass: preferences.GlassEnabled,
-		Dark:  preferences.Theme != "light",
-	}
 }
 
 func bridgeStrings(value any) ([]string, bool) {

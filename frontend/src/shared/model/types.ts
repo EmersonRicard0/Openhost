@@ -131,12 +131,16 @@ export interface Settings {
   sidebarCollapsed: boolean;
   /** Vidro ligado pelo usuário (FR-162). */
   glassEnabled: boolean;
+  /** `system` segue o Windows; os demais valores são ids da paleta da marca. */
+  accent: string;
 }
 
 export interface Appearance {
   glass: boolean;
   highContrast: boolean;
   dark: boolean;
+  /** Cor DWM convertida de ABGR para #rrggbb. */
+  systemAccent: string | null;
 }
 
 // --- Sessões (só em memória) ------------------------------------------------

@@ -1,6 +1,7 @@
 package appwin
 
 import (
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
@@ -9,6 +10,8 @@ import (
 )
 
 const preferencesKey = "preferences"
+
+var accentID = regexp.MustCompile(`^[a-z][a-z0-9-]{0,31}$`)
 
 type WindowBounds struct {
 	Width     int  `json:"width"`
@@ -25,6 +28,7 @@ type Preferences struct {
 	Window             WindowBounds `json:"window"`
 	GlassEnabled       bool         `json:"glassEnabled"`
 	SidebarCollapsed   bool         `json:"sidebarCollapsed"`
+	Accent             string       `json:"accent"`
 	DefaultShell       string       `json:"defaultShell"`
 	CollapsedGroups    []string     `json:"collapsedGroups"`
 }
@@ -37,6 +41,7 @@ func DefaultPreferences() Preferences {
 		Window:             WindowBounds{Width: 1200, Height: 780},
 		GlassEnabled:       true,
 		SidebarCollapsed:   false,
+		Accent:             "system",
 		DefaultShell:       "powershell",
 		CollapsedGroups:    []string{},
 	}
@@ -106,8 +111,13 @@ func normalizedPreferences(preferences Preferences) Preferences {
 	if preferences.DefaultShell != "powershell" && preferences.DefaultShell != "cmd" {
 		preferences.DefaultShell = defaults.DefaultShell
 	}
+	if !ValidAccent(preferences.Accent) {
+		preferences.Accent = defaults.Accent
+	}
 	if preferences.CollapsedGroups == nil {
 		preferences.CollapsedGroups = []string{}
 	}
 	return preferences
 }
+
+func ValidAccent(value string) bool { return value == "system" || accentID.MatchString(value) }

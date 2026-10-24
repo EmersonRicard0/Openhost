@@ -54,6 +54,8 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.credentialService = newCredentialService(store, s.Context)
 	s.sessionService = newSessionService(store, s.sessions)
 	preferences := appwin.NewPreferenceStore(store)
+	appearance := appwin.NewAppearanceMonitor(appwin.RegistryAppearanceReader{}, preferences.Get,
+		func(value appwin.Appearance) { s.emit("app:appearance", value) })
 	s.closeGuard = appwin.NewCloseGuard(
 		func() appwin.ActiveSummary {
 			return appwin.ActiveSummary{Sessions: s.sessions.ActiveCount()}
@@ -65,7 +67,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 			}
 		},
 	)
-	s.appService = newAppService(preferences, s.closeGuard, s.Context, s.emit)
+	s.appService = newAppService(preferences, appearance, s.closeGuard, s.Context)
 	store.OnStatus(func(status vault.Status) { s.emit("vault:state", status) })
 	return s, nil
 }
@@ -92,6 +94,7 @@ func (s *Services) Startup(ctx context.Context) {
 	s.ctxMu.Lock()
 	s.ctx = ctx
 	s.ctxMu.Unlock()
+	s.appService.appearance.Start(ctx)
 }
 
 // BeforeClose devolve true para impedir o fechamento (confirmação de FR-028, T038).

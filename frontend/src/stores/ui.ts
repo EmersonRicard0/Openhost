@@ -13,7 +13,12 @@ interface UiState {
   setSettings: (s: Settings) => void;
 }
 
-const initialAppearance: Appearance = { glass: false, highContrast: false, dark: true };
+const initialAppearance: Appearance = {
+  glass: false,
+  highContrast: false,
+  dark: true,
+  systemAccent: null,
+};
 
 function derive(appearance: Appearance, settings: Settings | null) {
   const preference = settings?.theme ?? 'system';

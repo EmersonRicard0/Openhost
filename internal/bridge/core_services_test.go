@@ -33,10 +33,11 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		"theme":            "light",
 		"glassEnabled":     false,
 		"sidebarCollapsed": true,
+		"accent":           "brand-violet",
 		"defaultShell":     "cmd",
 		"collapsedGroups":  []any{groupID},
 	})
-	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 {
+	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 {
 		t.Fatalf("preferências atualizadas %+v, %v", updated, err)
 	}
 	persisted, err := app.GetPreferences()

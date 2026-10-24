@@ -6,3 +6,59 @@ o que é embutido como **conteúdo** (ícones, fontes, esquemas de cores), com o
 | Item | Origem | Licença | Uso |
 |---|---|---|---|
 | Lucide (`lucide-react` 1.52.0) | https://lucide.dev | ISC | todos os ícones da interface (FR-169) |
+| OpenConnect Dark | tokens próprios em `frontend/src/theme/tokens.ts` | licença do projeto | preset de cores padrão |
+| Dracula | https://github.com/dracula/windows-terminal | MIT | preset de cores embutido |
+| Nord | https://github.com/nordtheme/terminal-app | MIT | preset de cores embutido |
+| Solarized Dark | https://github.com/altercation/solarized | MIT | preset de cores embutido |
+| Solarized Light | https://github.com/altercation/solarized | MIT | preset de cores embutido |
+| One Dark | https://github.com/atom/one-dark-syntax | MIT | preset de cores embutido |
+| Tokyo Night | https://github.com/enkia/tokyo-night-vscode-theme | MIT | preset de cores embutido |
+| Catppuccin Mocha | https://github.com/catppuccin/catppuccin | MIT | preset de cores embutido |
+
+## Dependências Go
+
+Versões e licenças conferidas no `go.mod` e nos arquivos de licença dos módulos locais.
+
+| Item | Origem | Licença | Uso |
+|---|---|---|---|
+| `git.sr.ht/~jackmordaunt/go-toast/v2` 2.0.3 | https://git.sr.ht/~jackmordaunt/go-toast | Unlicense OR MIT | notificações nativas |
+| `github.com/Microsoft/go-winio` 0.6.4 | https://github.com/microsoft/go-winio | MIT | comunicação IPC no Windows |
+| `github.com/aymanbagabas/go-pty` 0.2.3 | https://github.com/aymanbagabas/go-pty | MIT | pseudoterminal |
+| `github.com/bep/debounce` 1.2.1 | https://github.com/bep/debounce | MIT | debounce de eventos |
+| `github.com/creack/pty` 1.1.24 | https://github.com/creack/pty | MIT | pseudoterminal |
+| `github.com/dustin/go-humanize` 1.1.0 | https://github.com/dustin/go-humanize | MIT | formatação legível |
+| `github.com/gabriel-vasile/mimetype` 1.4.16 | https://github.com/gabriel-vasile/mimetype | MIT | detecção de MIME |
+| `github.com/go-ole/go-ole` 1.3.0 | https://github.com/go-ole/go-ole | MIT | integração OLE no Windows |
+| `github.com/godbus/dbus/v5` 5.1.0 | https://github.com/godbus/dbus | BSD-2-Clause | integração D-Bus |
+| `github.com/google/uuid` 1.6.0 | https://github.com/google/uuid | BSD-3-Clause | identificadores UUID |
+| `github.com/gorilla/websocket` 1.5.3 | https://github.com/gorilla/websocket | BSD-2-Clause | comunicação WebSocket |
+| `github.com/jchv/go-winloader` 2021-07-11 | https://github.com/jchv/go-winloader | ISC | carregamento de DLL no Windows |
+| `github.com/labstack/echo/v4` 4.15.3 | https://github.com/labstack/echo | MIT | servidor HTTP interno |
+| `github.com/labstack/gommon` 0.5.0 | https://github.com/labstack/gommon | MIT | utilitários do Echo |
+| `github.com/leaanthony/go-ansi-parser` 1.6.1 | https://github.com/leaanthony/go-ansi-parser | MIT | análise de sequências ANSI |
+| `github.com/leaanthony/gosod` 1.0.4 | https://github.com/leaanthony/gosod | MIT | utilitário do Wails |
+| `github.com/leaanthony/slicer` 1.6.0 | https://github.com/leaanthony/slicer | MIT | utilitário do Wails |
+| `github.com/leaanthony/u` 1.1.1 | https://github.com/leaanthony/u | MIT | utilitário do Wails |
+| `github.com/mattn/go-colorable` 0.1.14 | https://github.com/mattn/go-colorable | MIT | saída colorida no Windows |
+| `github.com/mattn/go-isatty` 0.0.24 | https://github.com/mattn/go-isatty | MIT | detecção de terminal |
+| `github.com/ncruces/go-strftime` 1.1.0 | https://github.com/ncruces/go-strftime | MIT | formatação de datas no SQLite |
+| `github.com/pkg/browser` 2024-01-02 | https://github.com/pkg/browser | BSD-2-Clause | abertura do navegador padrão |
+| `github.com/pkg/errors` 0.9.1 | https://github.com/pkg/errors | BSD-2-Clause | encadeamento de erros |
+| `github.com/remyoudompheng/bigfft` 2023-01-29 | https://github.com/remyoudompheng/bigfft | BSD-3-Clause | operações FFT do SQLite |
+| `github.com/rivo/uniseg` 0.4.7 | https://github.com/rivo/uniseg | MIT | segmentação Unicode |
+| `github.com/samber/lo` 1.49.1 | https://github.com/samber/lo | MIT | utilitários de coleções |
+| `github.com/tkrajina/go-reflector` 0.5.8 | https://github.com/tkrajina/go-reflector | Apache-2.0 | reflexão de tipos |
+| `github.com/u-root/u-root` 0.16.0 | https://github.com/u-root/u-root | BSD-3-Clause | suporte a pseudoterminal |
+| `github.com/valyala/bytebufferpool` 1.0.0 | https://github.com/valyala/bytebufferpool | MIT | buffers do Echo |
+| `github.com/valyala/fasttemplate` 1.2.2 | https://github.com/valyala/fasttemplate | MIT | templates do Echo |
+| `github.com/wailsapp/go-webview2` 1.0.22 (cópia local) | https://github.com/wailsapp/go-webview2 | MIT | WebView2 |
+| `github.com/wailsapp/wails/v2` 2.17.0 | https://github.com/wailsapp/wails | MIT | framework desktop |
+| `go.uber.org/goleak` 1.3.0 | https://github.com/uber-go/goleak | MIT | detecção de goroutines vazadas em testes |
+| `golang.org/x/crypto` 0.58.0 | https://cs.opensource.google/go/x/crypto | BSD-3-Clause | criptografia e SSH |
+| `golang.org/x/net` 0.60.0 | https://cs.opensource.google/go/x/net | BSD-3-Clause | protocolos de rede |
+| `golang.org/x/sys` 0.49.0 | https://cs.opensource.google/go/x/sys | BSD-3-Clause | chamadas de sistema |
+| `golang.org/x/text` 0.43.0 | https://cs.opensource.google/go/x/text | BSD-3-Clause | suporte Unicode |
+| `modernc.org/libc` 1.79.0 | https://gitlab.com/cznic/libc | BSD-3-Clause | runtime C em Go |
+| `modernc.org/mathutil` 1.7.1 | https://gitlab.com/cznic/mathutil | BSD-3-Clause | utilitários matemáticos |
+| `modernc.org/memory` 1.12.1 | https://gitlab.com/cznic/memory | BSD-3-Clause | alocação de memória |
+| `modernc.org/sqlite` 1.61.0 | https://gitlab.com/cznic/sqlite | BSD-3-Clause | banco de dados SQLite |
