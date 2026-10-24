@@ -269,7 +269,7 @@ func TestNoPlaintextOnDisk(t *testing.T) {
 
 func TestMigratableAndUnreadable(t *testing.T) {
 	dir := t.TempDir()
-	_ = os.WriteFile(filepath.Join(dir, "vault.svlt"), []byte("SVLT"), 0o600)
+	_ = os.WriteFile(filepath.Join(dir, "vault.svlt"), []byte("SVLT\x00\x01\x00\x00\x00\x02{}"), 0o600)
 	s := openTest(t, dir)
 	if s.Status().State != StateMigratable {
 		t.Fatalf("com vault.svlt: %s", s.Status().State)

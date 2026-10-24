@@ -75,13 +75,15 @@ reconfirmadas na tarefa que adota a dependência (Princípio I).
 
 ## R5. Migração do cofre da 001 (FR-102, FR-103)
 
-- **Decisão**: na primeira execução sem `shellvault.db` e com `vault.svlt` presente, a tela de
-  desbloqueio pede a senha mestra, decifra o `.svlt` (formato v1, `schemaVersion` 1 e
-  migrações de conteúdo da 001), grava tudo em `shellvault.db.tmp` numa transação, reabre e
-  confere contagens e um hash do conteúdo, e só então renomeia para `shellvault.db` e o
-  original para `vault.svlt.migrated` (mantido; o usuário pode apagar depois). Uma falha em
-  qualquer passo apaga o `.tmp` e deixa o `.svlt` intacto. `settings.json` da 001 é importado
-  para as preferências.
+- **Decisão**: com o cofre ainda inexistente no banco e `vault.svlt` presente (estado
+  `migratable`), a tela de desbloqueio pede a senha mestra, decifra o `.svlt` (formato v1,
+  `schemaVersion` 1), grava tudo no `shellvault.db` numa única transação, lê de volta e confere
+  o conteúdo inteiro, e só então renomeia o original para `vault.svlt.migrated` (mantido; o
+  usuário pode apagar depois). Falha antes do commit desfaz a transação; falha na conferência
+  apaga o cofre recém-criado. Nos dois casos o `.svlt` fica intacto e o estado volta a
+  `migratable`. `settings.json` da 001 é importado para as preferências.
+  *(Revisto na T031: o banco fica sempre aberto por causa das preferências, então a transação
+  substitui o arquivo `.tmp` previsto antes.)*
 - **Justificativa**: Princípio III (caminho de migração documentado) e SC-114. A KEK é
   derivada de novo com sal novo; a DEK é gerada nova (não há motivo para carregar a antiga).
 - **Teste**: fixture `tests/fixtures/vault-001/` gerada pelo código Electron com `TEST_KDF`

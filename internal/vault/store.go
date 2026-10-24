@@ -130,10 +130,7 @@ func (s *Store) probe() Status {
 	if n > 0 {
 		return Status{State: StateLocked}
 	}
-	if _, err := os.Stat(filepath.Join(s.dir, LegacyFile)); err == nil {
-		return Status{State: StateMigratable}
-	}
-	return Status{State: StateNonexistent}
+	return probeLegacy(s.dir)
 }
 
 func (s *Store) Close() error {
