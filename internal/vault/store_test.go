@@ -319,3 +319,58 @@ func TestNoopMutateAfterReloadWritesNothing(t *testing.T) {
 		t.Fatal("mutação vazia regravou a linha (assinatura de leitura difere da de escrita)")
 	}
 }
+
+func TestColorSchemeStoreDeleteAndSeedRefresh(t *testing.T) {
+	dir := t.TempDir()
+	s := openTest(t, dir)
+	free := brandScheme()
+	free.ID, free.Name, free.Origin = "00000000-0000-4000-8000-0000000000a1", "Livre", model.SchemeCustom
+	if err := s.SaveColorScheme(free); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteColorScheme(free.ID); err != nil {
+		t.Fatal(err)
+	}
+	wantCode(t, s.DeleteColorScheme(free.ID), apperr.NotFound)
+
+	inUse := free
+	inUse.ID, inUse.Name = "00000000-0000-4000-8000-0000000000a2", "Em uso"
+	if err := s.SaveColorScheme(inUse); err != nil {
+		t.Fatal(err)
+	}
+	global, err := s.GlobalProfile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	global.ColorSchemeID = inUse.ID
+	if err := s.SaveGlobalProfile(global); err != nil {
+		t.Fatal(err)
+	}
+	wantCode(t, s.DeleteColorScheme(inUse.ID), apperr.InUse)
+
+	mutated := brandScheme()
+	mutated.Name, mutated.Origin = "Nome antigo", model.SchemeCustom
+	if err := s.SaveColorScheme(mutated); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened := openTest(t, dir)
+	schemes, err := reopened.ColorSchemes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, scheme := range schemes {
+		if scheme.ID == BrandSchemeID {
+			found = true
+			if scheme.Name != "OpenConnect Dark" || scheme.Origin != model.SchemeBuiltin {
+				t.Fatalf("builtin não foi atualizado no Open: %+v", scheme)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("builtin da marca ausente após reabrir")
+	}
+}

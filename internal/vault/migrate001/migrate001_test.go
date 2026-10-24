@@ -128,8 +128,12 @@ func TestMigratePreservesEverything(t *testing.T) {
 		t.Errorf("tema não migrou: %q", theme)
 	}
 	var font TerminalFont
-	if ok, _ := s.Preference(PrefLegacyTerminalFont, &font); !ok || font.Family != "Consolas, monospace" || font.Size != 15 {
-		t.Errorf("fonte não migrou: %+v", font)
+	if ok, _ := s.Preference(PrefLegacyTerminalFont, &font); ok {
+		t.Errorf("preferência temporária da fonte não foi removida: %+v", font)
+	}
+	profile, err := s.GlobalProfile()
+	if err != nil || profile.FontFamily != "Consolas, monospace" || profile.FontSize != 15 {
+		t.Errorf("fonte não migrou para o perfil global: %+v, %v", profile, err)
 	}
 
 	// Reabrir: cofre novo, sem pedir migração de novo.
