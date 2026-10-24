@@ -3,6 +3,7 @@ package sshx
 import (
 	"io"
 	"sync"
+	"time"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -18,6 +19,11 @@ type Terminal struct {
 
 func NewTerminal(c *Client) *Terminal {
 	return &Terminal{client: c}
+}
+
+// Latency expõe à sessão o RTT medido pelo keepalive para a barra de status.
+func (t *Terminal) Latency() time.Duration {
+	return t.client.Latency()
 }
 
 // Start pede o PTY já com o tamanho do primeiro fit e abre o shell.

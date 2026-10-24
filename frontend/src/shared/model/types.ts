@@ -16,6 +16,8 @@ export interface VaultSettings {
   autoLockMinutes: number | null;
   /** 5–120 segundos. */
   connectTimeoutSeconds: number;
+  /** 10–300 segundos; padrão 30. */
+  keepaliveSeconds: number;
 }
 
 // --- Hosts, grupos, credenciais --------------------------------------------

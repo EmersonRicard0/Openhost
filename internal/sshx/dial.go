@@ -4,9 +4,9 @@ package sshx
 import (
 	"context"
 	"net"
-	"slices"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -53,13 +53,19 @@ type Options struct {
 // Client é a conexão autenticada; Close também para o keepalive.
 type Client struct {
 	*ssh.Client
-	stop chan struct{}
-	once sync.Once
+	stop         chan struct{}
+	once         sync.Once
+	latencyNanos atomic.Int64
 }
 
 func (c *Client) Close() error {
 	c.once.Do(func() { close(c.stop) })
 	return c.Client.Close()
+}
+
+// Latency devolve o RTT da última resposta de keepalive, ou zero antes da primeira resposta.
+func (c *Client) Latency() time.Duration {
+	return time.Duration(c.latencyNanos.Load())
 }
 
 // deadline limita o tempo de rede da conexão e pausa enquanto o usuário responde.
@@ -129,48 +135,13 @@ func Dial(ctx context.Context, o Options, ix session.Interactor) (*Client, error
 		return nil, ctx.Err()
 	}
 	if o.Keepalive > 0 {
-		go client.keepalive(o.Keepalive)
+		go func() {
+			_ = runKeepalive(client.stop, client.Client, o.Keepalive, func(rtt time.Duration) {
+				client.latencyNanos.Store(int64(rtt))
+			})
+		}()
 	}
 	return client, nil
-}
-
-// transportAlgorithms: só os seguros, a não ser que o host peça os legados
-// (diffie-hellman-group14-sha1, aes128-cbc).
-func transportAlgorithms(legacy bool) (kex, ciphers, macs []string) {
-	a := ssh.SupportedAlgorithms()
-	kex, ciphers, macs = a.KeyExchanges, a.Ciphers, a.MACs
-	if legacy {
-		kex = append(kex, ssh.InsecureKeyExchangeDH14SHA1)
-		ciphers = append(ciphers, ssh.InsecureCipherAES128CBC)
-	}
-	return kex, ciphers, macs
-}
-
-// algorithmsFor: algoritmos de assinatura de um tipo de chave.
-func algorithmsFor(keyType string, legacy bool) []string {
-	if keyType == ssh.KeyAlgoRSA {
-		out := []string{ssh.KeyAlgoRSASHA512, ssh.KeyAlgoRSASHA256}
-		if legacy {
-			out = append(out, ssh.KeyAlgoRSA)
-		}
-		return out
-	}
-	return []string{keyType}
-}
-
-// hostKeyAlgorithms põe primeiro o tipo da chave já aceita, para o servidor não apresentar
-// outra chave e parecer uma chave alterada.
-func hostKeyAlgorithms(legacy bool, known string) []string {
-	all := ssh.SupportedAlgorithms().HostKeys
-	if legacy {
-		all = append(all, ssh.KeyAlgoRSA)
-	}
-	if known == "" {
-		return all
-	}
-	first := algorithmsFor(known, legacy)
-	rest := slices.DeleteFunc(slices.Clone(all), func(a string) bool { return slices.Contains(first, a) })
-	return append(first, rest...)
 }
 
 type hostKeyCheck struct {
@@ -209,38 +180,4 @@ func (h *hostKeyCheck) callback(_ string, _ net.Addr, key ssh.PublicKey) error {
 	}
 	h.ix.SetState(session.StateAuthenticating)
 	return nil
-}
-
-// keepalive manda keepalive@openssh.com a cada intervalo; três sem resposta derrubam a conexão.
-func (c *Client) keepalive(interval time.Duration) {
-	t := time.NewTicker(interval)
-	defer t.Stop()
-	replies := make(chan error, 1)
-	inflight, missed := false, 0
-	for {
-		select {
-		case <-c.stop:
-			return
-		case err := <-replies:
-			inflight = false
-			if err != nil {
-				_ = c.Client.Close()
-				return
-			}
-			missed = 0
-		case <-t.C:
-			if inflight {
-				if missed++; missed >= 3 {
-					_ = c.Client.Close()
-					return
-				}
-				continue
-			}
-			inflight = true
-			go func() {
-				_, _, err := c.SendRequest("keepalive@openssh.com", true, nil)
-				replies <- err
-			}()
-		}
-	}
 }
