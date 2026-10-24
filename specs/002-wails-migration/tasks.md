@@ -142,7 +142,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 - [X] T056 [US3] Implementar `internal/sshx/algorithms.go` e o mapeamento de erro em `internal/bridge/result.go` para passar a T052
 - [X] T057 [US3] Implementar `internal/sshx/keepalive.go`, ligar ao dial e acrescentar `keepaliveSeconds` a `vault_settings` e ao diálogo de configurações (`frontend/src/features/settings/SettingsDialog.tsx`) para passar a T053
-- [ ] T058 [US3] Implementar `internal/sshx/agent.go` (`go-winio`, pipe `\\.\pipe\openssh-ssh-agent`, `SHELLVAULT_AGENT_PIPE` só para testes) e o método `agent` na autenticação para passar a T054
+- [X] T058 [US3] Implementar `internal/sshx/agent.go` (`go-winio`, pipe `\\.\pipe\openssh-ssh-agent`, `SHELLVAULT_AGENT_PIPE` só para testes) e o método `agent` na autenticação para passar a T054
 - [ ] T059 [US3] `frontend/src/features/hosts/HostForm.tsx`: opção "Algoritmos legados (inseguros)" com texto de aviso, método "Agente SSH" (esconde credencial); selo de aviso para hosts legados em `HostList.tsx`; textos em `pt-BR.ts`
 - [ ] T060 [US3] Criar `frontend/src/app/shortcuts.ts` (captura antes do xterm: Ctrl+T, Ctrl+W com confirmação se conectada, Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+Shift+F, Ctrl+K, Ctrl+=, Ctrl+-, Ctrl+0, Ctrl+Shift+T) e o item de menu da aba "Enviar combinação de teclas" → `SessionService.SendKeys`
 - [ ] T061 [US3] Criar `frontend/src/features/palette/CommandPalette.tsx` e `palette.ts`: conectar em host, abrir SFTP, shell local, configurações, bloquear cofre, alternar tema, busca no terminal
