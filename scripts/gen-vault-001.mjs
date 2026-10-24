@@ -1,6 +1,7 @@
 // Gera tests/fixtures/vault-001: cofre real da versão Electron (001) para testar a migração
 // para a versão Wails (research R5). Usa o código da 001 e o custo mínimo de KDF (TEST_KDF).
 // Uso: node scripts/gen-vault-001.mjs
+import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { createServer } from 'vite';
@@ -28,7 +29,7 @@ try {
   const { createPassword, importKey, generateEd25519 } = await load(
     '/src/main/domain/credentials.ts',
   );
-  const { acceptHostKey } = await load('/src/main/domain/knownHosts.ts');
+  const { acceptHostKey, endpointOf } = await load('/src/main/domain/knownHosts.ts');
   const { createRule } = await load('/src/main/domain/forwardRules.ts');
 
   rmSync(OUT, { recursive: true, force: true });
@@ -42,6 +43,15 @@ try {
     join(ROOT, 'tests', 'fixtures', 'keys', 'generated', 'rsa-pem'),
     'utf8',
   );
+  // Host key fixa do sshd de teste (tests/fixtures/sshd): o E2E de migração conecta sem nova
+  // confirmação (T042).
+  const sshdKeyBlob = Buffer.from(
+    readFileSync(join(ROOT, 'tests', 'fixtures', 'sshd', 'ssh_host_ed25519_key.pub'), 'utf8').split(
+      ' ',
+    )[1],
+    'base64',
+  );
+  const sshdFingerprint = `SHA256:${createHash('sha256').update(sshdKeyBlob).digest('base64').replace(/=+$/, '')}`;
   let snapshot;
   await store.mutate((c) => {
     const noc = createGroup(c, 'NOC', null);
@@ -88,6 +98,19 @@ try {
       },
       NOW,
     );
+    createHost(
+      c,
+      {
+        label: 'Sshd de teste',
+        address: '127.0.0.1',
+        port: 2222,
+        username: 'pwuser',
+        authMethod: 'password',
+        credentialId: pw.id,
+        groupId: noc.id,
+      },
+      NOW,
+    );
     void rsa;
     acceptHostKey(
       c,
@@ -103,6 +126,7 @@ try {
       'SHA256:BBBBexemploDeFingerprintDoServidorLinux0000',
       NOW,
     );
+    acceptHostKey(c, endpointOf('127.0.0.1', 2222), 'ssh-ed25519', sshdFingerprint, NOW);
     createRule(c, {
       hostId: h1.id,
       label: 'Web da OLT',
