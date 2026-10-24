@@ -3,6 +3,7 @@
 package appwin
 
 import (
+	"errors"
 	"fmt"
 	"unsafe"
 
@@ -45,22 +46,35 @@ func (RegistryAppearanceReader) ReadAppearance() (SystemAppearance, error) {
 	if ok == 0 {
 		return SystemAppearance{}, callErr
 	}
+	var accent *uint64
 	dwm, err := registry.OpenKey(registry.CURRENT_USER, `Software\Microsoft\Windows\DWM`, registry.QUERY_VALUE)
-	if err != nil {
+	if err == nil {
+		defer dwm.Close()
+		value, _, valueErr := dwm.GetIntegerValue("AccentColor")
+		switch {
+		case valueErr == nil:
+			accent = &value
+		case !errors.Is(valueErr, registry.ErrNotExist):
+			return SystemAppearance{}, valueErr
+		}
+	} else if !errors.Is(err, registry.ErrNotExist) {
 		return SystemAppearance{}, err
 	}
-	defer dwm.Close()
-	accent, _, err := dwm.GetIntegerValue("AccentColor")
-	if err != nil {
-		return SystemAppearance{}, err
+	return appearanceFromValues(transparency, light, hc.Flags, accent), nil
+}
+
+func appearanceFromValues(transparency, light uint64, highContrastFlags uint32, accent *uint64) SystemAppearance {
+	var accentHex *string
+	if accent != nil {
+		value := accentColorHex(uint32(*accent))
+		accentHex = &value
 	}
-	accentHex := accentColorHex(uint32(accent))
 	return SystemAppearance{
 		TransparencyEnabled: transparency != 0,
 		AppsUseLightTheme:   light != 0,
-		HighContrast:        hc.Flags&hcfHighContrastOn != 0,
-		SystemAccent:        &accentHex,
-	}, nil
+		HighContrast:        highContrastFlags&hcfHighContrastOn != 0,
+		SystemAccent:        accentHex,
+	}
 }
 
 func accentColorHex(abgr uint32) string {
