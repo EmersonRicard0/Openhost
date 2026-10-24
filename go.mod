@@ -3,6 +3,7 @@ module shellvault
 go 1.26.0
 
 require (
+	github.com/Microsoft/go-winio v0.6.4
 	github.com/aymanbagabas/go-pty v0.2.3
 	github.com/wailsapp/go-webview2 v1.0.22
 	github.com/wailsapp/wails/v2 v2.17.0

@@ -23,7 +23,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m)
+	goleak.VerifyTestMain(m,
+		// go-winio mantém um processador IOCP global até o fim do processo.
+		goleak.IgnoreAnyFunction("github.com/Microsoft/go-winio.ioCompletionProcessor"),
+	)
 }
 
 // --- servidor SSH em processo ----------------------------------------------------------------
