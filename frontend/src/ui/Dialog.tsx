@@ -42,8 +42,11 @@ export function Dialog({
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const root = ref.current;
-    const first = root?.querySelector<HTMLElement>('[autofocus], input, select, textarea') ?? root;
-    first?.focus();
+    // `autoFocus` do React já focou um botão antes deste efeito: não roubar esse foco.
+    if (!root?.contains(document.activeElement)) {
+      const first = root?.querySelector<HTMLElement>('input, select, textarea') ?? root;
+      first?.focus();
+    }
     stack.push(titleId);
 
     // No document: Esc funciona mesmo se o elemento focado sumiu e o foco caiu no body (B2).

@@ -104,6 +104,8 @@ textarea {
 
 .raised {
   background: var(--surface-raised);
+  /* O que fica por trás (texto do terminal) vira borrão e não compete com o conteúdo. */
+  backdrop-filter: blur(24px) saturate(140%);
   border-radius: 14px;
   box-shadow: var(--shadow);
 }

@@ -1,14 +1,19 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
+import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
+import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { Terminal, type ITheme } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import type { Tab } from '../../stores/sessions';
 import { useUi } from '../../stores/ui';
+import { fontSizeOf, useWorkspace } from '../../stores/workspace';
 import { ANSI, type ThemeTokens } from '../../theme/tokens';
 import { attach } from './dataBus';
-import { registerTerminalFocus } from './focusRegistry';
+import { needsConfirm } from './paste';
+import { SearchBar } from './SearchBar';
+import { registerTerminal } from './terminalRegistry';
 import { countResize, registerProbe } from './testProbe';
 import s from './terminal.module.css';
 
@@ -31,9 +36,11 @@ async function copySelection(term: Terminal): Promise<boolean> {
   return true;
 }
 
-async function paste(term: Terminal): Promise<void> {
-  const text = await navigator.clipboard.readText();
-  if (text) term.paste(text);
+/** Cola; várias linhas passam antes pela confirmação (FR-144). */
+function pasteText(sessionId: string, term: Terminal, text: string): void {
+  if (!text) return;
+  if (needsConfirm(text)) useWorkspace.getState().setPendingPaste({ sessionId, text });
+  else term.paste(text);
 }
 
 export interface TerminalViewProps {
@@ -52,6 +59,8 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
   const settings = useUi((u) => u.settings);
   const tokens = useUi((u) => u.tokens);
   const dark = useUi((u) => u.dark);
+  const zoom = useWorkspace((w) => w.zoom);
+  const searching = useWorkspace((w) => w.searchFor === tab.id);
   useEffect(() => {
     activeRef.current = active;
   }, [active]);
@@ -66,12 +75,24 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       allowProposedApi: true,
       cursorBlink: true,
       fontFamily: ui.settings?.terminalFontFamily ?? 'Cascadia Mono, Consolas, monospace',
-      fontSize: ui.settings?.terminalFontSize ?? 14,
+      fontSize: fontSizeOf(
+        tab.id,
+        ui.settings?.terminalFontSize ?? 14,
+        useWorkspace.getState().zoom,
+      ),
       theme: xtermTheme(ui.tokens, ui.dark),
       rightClickSelectsWord: false,
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
+    const search = new SearchAddon();
+    term.loadAddon(search);
+    // Ctrl+clique abre no navegador padrão; o app não faz a requisição (FR-145).
+    term.loadAddon(
+      new WebLinksAddon((event, uri) => {
+        if (event.ctrlKey) void window.shellvault.app.openExternalUrl(uri);
+      }),
+    );
     term.loadAddon(new Unicode11Addon());
     term.unicode.activeVersion = '11';
     term.open(container);
@@ -93,8 +114,12 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     };
     fitNowRef.current = fitAndResize;
     const unregisterProbe = registerProbe(sessionId, term);
-    const unregisterFocus = registerTerminalFocus(sessionId, () => {
-      if (activeRef.current) term.focus();
+    const unregisterTerminal = registerTerminal(sessionId, {
+      term,
+      search,
+      focus: () => {
+        if (activeRef.current) term.focus();
+      },
     });
     const detach = attach(sessionId, (data) => {
       term.write(data);
@@ -109,18 +134,33 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
         void copySelection(term);
         return false;
       }
-      if (e.code === 'KeyV') {
-        void paste(term);
-        return false;
-      }
+      // Ctrl+Shift+V: o xterm não trata a tecla; a colagem chega pelo evento `paste` abaixo.
+      if (e.code === 'KeyV') return false;
       return true;
     });
-    // Clique direito: copia se houver seleção, senão cola.
+    // Selecionar copia (FR-143); por isso o clique direito só cola (FR-144).
+    let copyTimer: ReturnType<typeof setTimeout> | null = null;
+    const onSelection = term.onSelectionChange(() => {
+      if (copyTimer) clearTimeout(copyTimer);
+      copyTimer = setTimeout(() => {
+        const text = term.getSelection();
+        if (text) void navigator.clipboard.writeText(text);
+      }, 120);
+    });
     const onContextMenu = (e: MouseEvent) => {
       e.preventDefault();
-      void copySelection(term).then((copied) => (copied ? undefined : paste(term)));
+      void navigator.clipboard.readText().then((text) => {
+        pasteText(sessionId, term, text);
+      });
     };
     container.addEventListener('contextmenu', onContextMenu);
+    // Toda colagem nativa (Ctrl+Shift+V, menu do sistema) passa pela confirmação antes do xterm.
+    const onPaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      pasteText(sessionId, term, e.clipboardData?.getData('text/plain') ?? '');
+    };
+    container.addEventListener('paste', onPaste, true);
 
     let timer: ReturnType<typeof setTimeout> | null = null;
     const observer = new ResizeObserver(() => {
@@ -151,8 +191,11 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       if (timer) clearTimeout(timer);
       observer.disconnect();
       stopDpr();
-      unregisterFocus();
+      if (copyTimer) clearTimeout(copyTimer);
+      onSelection.dispose();
+      unregisterTerminal();
       container.removeEventListener('contextmenu', onContextMenu);
+      container.removeEventListener('paste', onPaste, true);
       onData.dispose();
       detach();
       unregisterProbe();
@@ -191,9 +234,9 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     const term = termRef.current;
     if (!term || !settings) return;
     term.options.fontFamily = settings.terminalFontFamily;
-    term.options.fontSize = settings.terminalFontSize;
+    term.options.fontSize = fontSizeOf(tab.id, settings.terminalFontSize, zoom);
     if (active) fitNowRef.current();
-  }, [settings, active]);
+  }, [settings, zoom, tab.id, active]);
 
   useEffect(() => {
     const term = termRef.current;
@@ -208,6 +251,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       data-session-id={tab.id}
     >
       {banner}
+      {searching && <SearchBar sessionId={tab.id} />}
       <div ref={containerRef} className={`${s.xterm} solid`} />
     </div>
   );

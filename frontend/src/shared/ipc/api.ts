@@ -14,6 +14,7 @@ import type {
   HostKeyEvent,
   HostView,
   LocalShell,
+  SendKeysCombo,
   PromptEvent,
   RemoteEntry,
   SessionDataEvent,
@@ -82,6 +83,8 @@ export interface ShellVaultApi {
     close: (sessionId: string) => R<void>;
     answerHostKey: (sessionId: string, accept: boolean) => R<void>;
     answerPrompt: (sessionId: string, answers: string[] | null) => R<void>;
+    /** Combinação que o app captura como atalho, enviada ao shell (`ctrl+w`, `ctrl+t`, `ctrl+tab`, `ctrl+k`). */
+    sendKeys: (sessionId: string, combo: SendKeysCombo) => R<void>;
     activeSummary: () => R<ActiveSummary>;
     onData: On<SessionDataEvent>;
     onState: On<SessionStateEvent>;
@@ -122,6 +125,8 @@ export interface ShellVaultApi {
     windowToggleMaximise: () => R<void>;
     windowClose: () => R<void>;
     windowIsMaximised: () => R<boolean>;
+    /** Só `http`/`https`; abre no navegador padrão (FR-145). */
+    openExternalUrl: (url: string) => R<void>;
     onAppearanceChanged: On<Appearance>;
     onCloseRequested: On<ActiveSummary>;
   };
@@ -173,6 +178,7 @@ export const API_SHAPE = {
       'close',
       'answerHostKey',
       'answerPrompt',
+      'sendKeys',
       'activeSummary',
     ],
     events: ['onData', 'onState', 'onHostKey', 'onPrompt', 'onClosed'],
@@ -205,6 +211,7 @@ export const API_SHAPE = {
       'windowToggleMaximise',
       'windowClose',
       'windowIsMaximised',
+      'openExternalUrl',
     ],
     events: ['onAppearanceChanged', 'onCloseRequested'],
   },

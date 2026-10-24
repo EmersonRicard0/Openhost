@@ -1,15 +1,20 @@
 import { useEffect } from 'react';
+import { installShortcuts } from '../../app/shortcuts';
 import { t } from '../../i18n/pt-BR';
 import { closeTab, useSessions, type Tab } from '../../stores/sessions';
 import { useVault } from '../../stores/vault';
+import { useWorkspace } from '../../stores/workspace';
+import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Button } from '../../ui/Button';
 import { RefreshIcon, TerminalIcon } from '../../ui/icons';
 import { toastError } from '../../ui/Toast';
 import { focusUnlock } from '../vault/UnlockScreen';
 import { ConflictDialog } from '../sftp/ConflictDialog';
 import { SftpView } from '../sftp/SftpView';
+import { runShortcut } from './commands';
 import { HostKeyDialog } from './HostKeyDialog';
 import { openLocal } from './openLocal';
+import { PasteConfirmDialog } from './PasteConfirmDialog';
 import { PromptDialog } from './PromptDialog';
 import { TabBar } from './TabBar';
 import { TerminalView } from './TerminalView';
@@ -55,6 +60,28 @@ function Banner({ tab }: { tab: Tab }) {
   return null;
 }
 
+function CloseTabConfirm() {
+  const id = useWorkspace((w) => w.confirmClose);
+  const setConfirmClose = useWorkspace((w) => w.setConfirmClose);
+  const tab = useSessions((st) => st.tabs.find((tb) => tb.id === id));
+  if (!id || !tab) return null;
+  return (
+    <ConfirmDialog
+      title={t.terminal.closeConnected.title}
+      message={t.terminal.closeConnected.message(tab.title)}
+      confirmLabel={t.terminal.closeConnected.confirm}
+      danger
+      onCancel={() => {
+        setConfirmClose(null);
+      }}
+      onConfirm={() => {
+        setConfirmClose(null);
+        void closeTab(id);
+      }}
+    />
+  );
+}
+
 const NEW_LOCAL = [
   { label: t.terminal.powershell, onSelect: () => void openLocal('powershell') },
   { label: t.terminal.cmd, onSelect: () => void openLocal('cmd') },
@@ -63,20 +90,8 @@ const NEW_LOCAL = [
 export function Workspace() {
   const { tabs, activeId } = useSessions();
 
-  // Ctrl+Shift+T abre PowerShell; captura antes do xterm para não virar ^T.
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && !e.altKey && e.code === 'KeyT') {
-        e.preventDefault();
-        e.stopPropagation();
-        if (!e.repeat) void openLocal('powershell');
-      }
-    };
-    window.addEventListener('keydown', onKeyDown, true);
-    return () => {
-      window.removeEventListener('keydown', onKeyDown, true);
-    };
-  }, []);
+  // Atalhos de FR-140, capturados antes do xterm para não virarem caracteres de controle.
+  useEffect(() => installShortcuts(runShortcut), []);
 
   return (
     <>
@@ -106,6 +121,8 @@ export function Workspace() {
       </div>
       <HostKeyDialog />
       <PromptDialog />
+      <PasteConfirmDialog />
+      <CloseTabConfirm />
       <ConflictDialog />
     </>
   );

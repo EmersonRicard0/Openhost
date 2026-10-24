@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
+import { CommandPalette } from '../features/palette/CommandPalette';
 import { ForwardsIndicator } from '../features/forwarding/ForwardsIndicator';
 import { SettingsDialog } from '../features/settings/SettingsDialog';
 import { Workspace } from '../features/terminal/Workspace';
@@ -8,6 +9,7 @@ import { UnreadableScreen } from '../features/vault/UnreadableScreen';
 import { HostSidebar } from '../features/hosts/HostSidebar';
 import { t } from '../i18n/pt-BR';
 import { subscribeVault, useVault } from '../stores/vault';
+import { useWorkspace } from '../stores/workspace';
 import { Button } from '../ui/Button';
 import { LockIcon, SettingsIcon } from '../ui/icons';
 import { Toasts } from '../ui/Toast';
@@ -27,7 +29,8 @@ function FullscreenFrame({ children }: { children: React.ReactNode }) {
 
 export function App() {
   const { status, refresh, lock } = useVault();
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsOpen = useWorkspace((w) => w.settingsOpen);
+  const setSettingsOpen = useWorkspace((w) => w.setSettingsOpen);
 
   useEffect(() => {
     subscribeVault();
@@ -98,6 +101,7 @@ export function App() {
           }}
         />
       )}
+      <CommandPalette />
       <CloseConfirmDialog />
       <Toasts />
     </div>

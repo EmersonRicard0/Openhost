@@ -40,6 +40,9 @@ export interface ThemeTokens {
   terminalForeground: string;
   terminalCursor: string;
   terminalSelection: string;
+  /** Ocorrências da busca no terminal; o xterm exige `#rrggbb`. */
+  terminalMatch: string;
+  terminalMatchActive: string;
 }
 
 const darkTerminal = {
@@ -47,6 +50,8 @@ const darkTerminal = {
   terminalForeground: '#e3e6ee',
   terminalCursor: '#a99bff',
   terminalSelection: 'rgba(139, 120, 255, 0.32)',
+  terminalMatch: '#5a4a1c',
+  terminalMatchActive: '#b8860b',
 };
 
 const lightTerminal = {
@@ -54,6 +59,8 @@ const lightTerminal = {
   terminalForeground: '#1b1e27',
   terminalCursor: '#5b3df0',
   terminalSelection: 'rgba(91, 61, 240, 0.20)',
+  terminalMatch: '#fbe7a1',
+  terminalMatchActive: '#f2b632',
 };
 
 const dark = {
@@ -162,6 +169,8 @@ export const THEMES: Record<ThemeMode, ThemeTokens> = {
     terminalForeground: 'CanvasText',
     terminalCursor: 'CanvasText',
     terminalSelection: 'Highlight',
+    terminalMatch: '#000080',
+    terminalMatchActive: '#008080',
   },
 };
 

@@ -123,6 +123,8 @@ export interface Settings {
   terminalFontFamily: string;
   terminalFontSize: number;
   window: WindowBounds;
+  /** Shell aberto pelo Ctrl+T. */
+  defaultShell: LocalShell;
 }
 
 export interface Appearance {
@@ -135,6 +137,7 @@ export interface Appearance {
 
 export type SessionKind = 'ssh' | 'local' | 'sftp';
 export type LocalShell = 'powershell' | 'cmd';
+export type SendKeysCombo = 'ctrl+w' | 'ctrl+t' | 'ctrl+tab' | 'ctrl+k';
 
 export type SessionState =
   | 'connecting'

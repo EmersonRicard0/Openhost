@@ -165,3 +165,89 @@
   align-items: flex-start;
   gap: 8px;
 }
+
+/* Busca no terminal (FR-142): flutua no canto superior direito, sobre o terminal. */
+.searchBar {
+  position: absolute;
+  top: 8px;
+  right: 18px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 4px 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  animation: search-in 120ms ease;
+}
+
+@keyframes search-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.searchInput {
+  width: 220px;
+  height: 28px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.searchInput:focus-visible {
+  outline: none;
+}
+
+.searchBar:focus-within {
+  border-color: var(--focus);
+}
+
+.searchInput[aria-invalid='true'] {
+  color: var(--danger);
+}
+
+.searchCount {
+  min-width: 92px;
+  padding: 0 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.searchInvalid {
+  color: var(--danger);
+}
+
+.searchToggle[aria-pressed='true'] {
+  background: var(--selected);
+  color: var(--accent);
+}
+
+.searchDivider {
+  width: 1px;
+  height: 18px;
+  margin: 0 4px;
+  background: var(--border);
+}
+
+.pastePreview {
+  max-height: 220px;
+  margin: 4px 0 0;
+  padding: 10px 12px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--input-background);
+  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre;
+  user-select: text;
+}

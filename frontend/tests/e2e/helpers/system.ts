@@ -34,6 +34,12 @@ export function readClipboard(): string {
   return powershell('Get-Clipboard -Raw').replace(/\r?\n$/, '');
 }
 
+/** Põe linhas na área de transferência do Windows (unidas por CRLF). */
+export function writeClipboard(lines: string[]): void {
+  const quoted = lines.map((l) => `'${l.replace(/'/g, "''")}'`).join(',');
+  powershell(`Set-Clipboard -Value @(${quoted})`);
+}
+
 /** PIDs dos processos em execução cujo executável é `exePath`. */
 export function processesOf(exePath: string): number[] {
   const escaped = exePath.replace(/'/g, "''");

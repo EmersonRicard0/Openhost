@@ -5,7 +5,7 @@ import { useInteractions } from '../../stores/interactions';
 import { useSessions } from '../../stores/sessions';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
-import { focusTerminal } from './focusRegistry';
+import { focusTerminal } from './terminalRegistry';
 import { WarningIcon } from '../../ui/icons';
 import s from './terminal.module.css';
 

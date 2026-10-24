@@ -1,9 +1,12 @@
 import { useState, type ReactNode } from 'react';
 import { t } from '../../i18n/pt-BR';
-import { closeTab, useSessions, type Tab } from '../../stores/sessions';
+import type { SendKeysCombo } from '@shared/model/types';
+import { closeTab, isLive, useSessions, type Tab } from '../../stores/sessions';
 import { Button } from '../../ui/Button';
-import { CloseIcon, PlusIcon } from '../../ui/icons';
+import { CloseIcon, KeyboardIcon, PlusIcon, RenameIcon } from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
+import { toastError } from '../../ui/Toast';
+import { closeActiveTab } from './commands';
 import s from './terminal.module.css';
 
 function stateLabel(tab: Tab): string {
@@ -19,10 +22,45 @@ function stateLabel(tab: Tab): string {
   }
 }
 
+/** Combinações que o app usa como atalho; o menu da aba as envia ao shell (FR-140). */
+const SEND_KEYS: [SendKeysCombo, string][] = [
+  ['ctrl+w', 'Ctrl+W'],
+  ['ctrl+t', 'Ctrl+T'],
+  ['ctrl+tab', 'Ctrl+Tab'],
+  ['ctrl+k', 'Ctrl+K'],
+];
+
+function tabMenu(tab: Tab, startRename: () => void): MenuItem[] {
+  const items: MenuItem[] = [
+    { label: t.terminal.renameTab, icon: <RenameIcon />, onSelect: startRename },
+  ];
+  if (tab.kind !== 'sftp' && isLive(tab.state))
+    for (const [combo, label] of SEND_KEYS)
+      items.push({
+        label: t.terminal.sendKeys(label),
+        icon: <KeyboardIcon />,
+        onSelect: () => {
+          void window.shellvault.sessions.sendKeys(tab.id, combo).then((res) => {
+            if (!res.ok) toastError(res.error);
+          });
+        },
+      });
+  items.push({
+    label: t.terminal.closeTab,
+    icon: <CloseIcon />,
+    onSelect: () => {
+      useSessions.getState().activate(tab.id);
+      closeActiveTab();
+    },
+  });
+  return items;
+}
+
 function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
   const { activate, rename, reorder } = useSessions();
   const [editing, setEditing] = useState(false);
   const [dropTarget, setDropTarget] = useState(false);
+  const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
 
   return (
     <div
@@ -37,6 +75,11 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
       }}
       onDoubleClick={() => {
         setEditing(true);
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        activate(tab.id);
+        setMenuAt({ x: e.clientX, y: e.clientY });
       }}
       onAuxClick={(e) => {
         if (e.button === 1) void closeTab(tab.id);
@@ -94,6 +137,17 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
       >
         <CloseIcon width={12} height={12} />
       </Button>
+      {menuAt && (
+        <Menu
+          anchor={menuAt}
+          items={tabMenu(tab, () => {
+            setEditing(true);
+          })}
+          onClose={() => {
+            setMenuAt(null);
+          }}
+        />
+      )}
     </div>
   );
 }

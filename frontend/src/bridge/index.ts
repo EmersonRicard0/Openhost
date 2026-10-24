@@ -146,6 +146,7 @@ function createApi(): ShellVaultApi {
       close: (sessionId) => call(S, 'Close', sessionId),
       answerHostKey: (sessionId, accept) => call(S, 'AnswerHostKey', sessionId, accept),
       answerPrompt: (sessionId, answers) => call(S, 'AnswerPrompt', sessionId, answers),
+      sendKeys: (sessionId, combo) => call(S, 'SendKeys', sessionId, combo),
       activeSummary: () => call(S, 'ActiveSummary'),
       onData: ev('term:data'),
       onState: ev('term:state'),
@@ -184,6 +185,7 @@ function createApi(): ShellVaultApi {
       windowMinimise: () => call(A, 'WindowMinimise'),
       windowToggleMaximise: () => call(A, 'WindowToggleMaximise'),
       windowClose: () => call(A, 'WindowClose'),
+      openExternalUrl: (url) => call(A, 'OpenExternalUrl', url),
       windowIsMaximised: async () => {
         try {
           return { ok: true, value: await WindowIsMaximised() };
