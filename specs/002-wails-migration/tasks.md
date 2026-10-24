@@ -109,7 +109,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 ### Tests for User Story 2 ⚠️
 
 - [ ] T043 [P] [US2] E2E `frontend/tests/e2e/layout.spec.ts`: com duas abas, 20 ciclos `Maximise`/`Restore`/`SetSize` (TestService) em `SHELLVAULT_E2E_SCALE` 1, 1.25 e 1.5; após cada ciclo, o retângulo do app cobre a viewport (pontos dos quatro cantos pertencem ao app), o contêiner do terminal tem altura > 0 e o canvas/linhas do xterm ocupam o contêiner, e `ServerSizeOf(sessionId)` = `cols×rows` do xterm (regressão do bug 3); arrastar a borda gera no máximo 5 resizes no servidor
-- [ ] T044 [P] [US2] E2E `frontend/tests/e2e/menus.spec.ts`: no tamanho mínimo da janela, o menu do "+" abre com o topo a ≤ 8 px da base do botão e inteiro na viewport, acima do terminal (`elementFromPoint` no centro do menu é o menu) (regressão do bug 4); menu de contexto de host aberto perto dos quatro cantos fica inteiro; Esc fecha o diálogo de encaminhamento mesmo depois de o botão focado sumir (regressão B2); após aceitar a host key, digitar vai para o terminal sem clicar (regressão B3)
+- [X] T044 [P] [US2] E2E `frontend/tests/e2e/menus.spec.ts`: no tamanho mínimo da janela, o menu do "+" abre com o topo a ≤ 8 px da base do botão e inteiro na viewport, acima do terminal (`elementFromPoint` no centro do menu é o menu) (regressão do bug 4); menu de contexto de host aberto perto dos quatro cantos fica inteiro; Esc fecha o diálogo de encaminhamento mesmo depois de o botão focado sumir (regressão B2); após aceitar a host key, digitar vai para o terminal sem clicar (regressão B3)
 - [X] T045 [P] [US2] Teste em `frontend/src/features/hosts/tree.test.ts`: hosts da raiz depois de um grupo expandido têm o mesmo recuo dos grupos da raiz (regressão B4)
 
 ### Implementation for User Story 2
@@ -118,7 +118,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 - [X] T047 [US2] `frontend/src/features/terminal/TerminalView.tsx`: `ResizeObserver` no contêiner → `fit()` com debounce de 50 ms → `Resize` só com dimensões > 0 e diferentes das últimas; ouvinte de `matchMedia('(resolution: …dppx)')` refaz o fit ao trocar de monitor
 - [X] T048 [US2] Criar `frontend/src/ui/Popover.tsx` sobre `@floating-ui/react-dom` (`flip`, `shift`, `size`, portal no `body`, `z-index` do token de camada de menu) e reescrever `frontend/src/ui/Menu.tsx` ancorado a um elemento ou a um ponto; atualizar usos em `TabBar.tsx`, `HostList.tsx`, `SftpView.tsx`
 - [X] T049 [US2] Criar `frontend/src/app/TitleBar.tsx`: área de arrasto (`--wails-draggable: drag`), botões minimizar, maximizar/restaurar (ícone conforme estado) e fechar chamando `AppService`, duplo clique alterna maximizar; substituir o cabeçalho de `App.tsx`
-- [ ] T050 [US2] `frontend/src/ui/Dialog.tsx`: pilha de diálogos com Esc tratado no `document` para o diálogo do topo (corrige B2) e alvo de foco ao fechar configurável; `HostKeyDialog`/`PromptDialog` devolvem o foco ao terminal da sessão (corrige B3)
+- [X] T050 [US2] `frontend/src/ui/Dialog.tsx`: pilha de diálogos com Esc tratado no `document` para o diálogo do topo (corrige B2) e alvo de foco ao fechar configurável; `HostKeyDialog`/`PromptDialog` devolvem o foco ao terminal da sessão (corrige B3)
 - [X] T051 [US2] Corrigir o recuo em `frontend/src/features/hosts/HostList.tsx` e `tree.ts` (corrige B4) para passar a T045
 
 **Checkpoint**: US1 + US2 — app estável em qualquer tamanho

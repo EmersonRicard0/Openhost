@@ -1,9 +1,12 @@
-import { useEffect, useId, useRef, type SubmitEvent, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, type SubmitEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import s from './ui.module.css';
 
 const FOCUSABLE =
   'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/** Diálogos abertos, do mais antigo ao do topo: só o do topo reage a Esc e Tab. */
+const stack: string[] = [];
 
 export interface DialogProps {
   title: string;
@@ -15,6 +18,8 @@ export interface DialogProps {
   /** Impede fechar com Esc/clique fora (ex.: decisão de host key). */
   modal?: boolean;
   width?: number;
+  /** Para onde vai o foco ao fechar; padrão: o elemento focado ao abrir, se ainda existir. */
+  returnFocus?: () => void;
 }
 
 export function Dialog({
@@ -25,38 +30,59 @@ export function Dialog({
   onSubmit,
   modal = false,
   width,
+  returnFocus,
 }: DialogProps) {
   const titleId = useId();
   const ref = useRef<HTMLDivElement>(null);
+  const latest = useRef({ onClose, modal, returnFocus });
+  useLayoutEffect(() => {
+    latest.current = { onClose, modal, returnFocus };
+  });
 
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     const root = ref.current;
     const first = root?.querySelector<HTMLElement>('[autofocus], input, select, textarea') ?? root;
     first?.focus();
-    return () => previous?.focus();
-  }, []);
+    stack.push(titleId);
 
-  function onKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Escape' && !modal) {
-      e.stopPropagation();
-      onClose();
-      return;
-    }
-    if (e.key !== 'Tab' || !ref.current) return;
-    // Mantém o foco dentro do diálogo.
-    const items = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
-    const first = items[0];
-    const last = items[items.length - 1];
-    if (!first || !last) return;
-    if (e.shiftKey && document.activeElement === first) {
-      e.preventDefault();
-      last.focus();
-    } else if (!e.shiftKey && document.activeElement === last) {
-      e.preventDefault();
-      first.focus();
-    }
-  }
+    // No document: Esc funciona mesmo se o elemento focado sumiu e o foco caiu no body (B2).
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (stack[stack.length - 1] !== titleId || e.defaultPrevented || !ref.current) return;
+      if (e.key === 'Escape') {
+        if (latest.current.modal) return;
+        e.preventDefault();
+        latest.current.onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      // Mantém o foco dentro do diálogo.
+      const items = [...ref.current.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      const head = items[0];
+      const tail = items[items.length - 1];
+      if (!head || !tail) return;
+      const inside = ref.current.contains(document.activeElement);
+      if (!inside) {
+        e.preventDefault();
+        (e.shiftKey ? tail : head).focus();
+      } else if (e.shiftKey && document.activeElement === head) {
+        e.preventDefault();
+        tail.focus();
+      } else if (!e.shiftKey && document.activeElement === tail) {
+        e.preventDefault();
+        head.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      stack.splice(stack.indexOf(titleId), 1);
+      const back = latest.current.returnFocus;
+      if (back) back();
+      else if (previous?.isConnected) previous.focus();
+    };
+  }, [titleId]);
 
   function submit(e: SubmitEvent) {
     e.preventDefault();
@@ -88,7 +114,6 @@ export function Dialog({
         tabIndex={-1}
         className={`${s.dialog} raised glass-edge`}
         style={width ? { width: `min(${width}px, calc(100vw - 48px))` } : undefined}
-        onKeyDown={onKeyDown}
       >
         {onSubmit ? (
           <form onSubmit={submit} style={{ display: 'contents' }}>

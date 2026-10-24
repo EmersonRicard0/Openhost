@@ -1,7 +1,18 @@
-// Menus ancorados e inteiros na janela (T044; regressão do bug 4, FR-132).
+// Menus ancorados e inteiros na janela (T044; regressão do bug 4, FR-132) e foco de diálogos
+// (regressões B2 e B3).
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { SSHD, up } from '../../../scripts/sshd.mjs';
 import { launchApp, testService } from './helpers/launch';
-import { addHost, createVault, hostItem, openLocalTab } from './helpers/ui';
+import {
+  acceptHostKey,
+  addHost,
+  createVault,
+  expectTerminalLine,
+  hostItem,
+  openLocalTab,
+  sessionIdOf,
+  waitConnected,
+} from './helpers/ui';
 
 interface Box {
   x: number;
@@ -105,6 +116,59 @@ test('menu de contexto de host aberto perto dos quatro cantos fica inteiro', asy
       await page.keyboard.press('Escape');
       await expect(menu).toBeHidden();
     }
+  } finally {
+    await app.close();
+  }
+});
+
+test('Esc fecha o diálogo de encaminhamento depois de o botão focado sumir (B2)', async () => {
+  const app = await launchApp();
+  const { page } = app;
+  try {
+    await createVault(page);
+    await addHost(page, {
+      label: 'acme-web',
+      address: '10.1.2.3',
+      port: 22,
+      username: 'deploy',
+      method: 'Perguntar ao conectar',
+    });
+    await hostItem(page, 'acme-web').click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Encaminhamento de portas' }).click();
+    const dialog = page.getByRole('dialog', { name: /Encaminhamento de portas/ });
+    await expect(dialog).toBeVisible();
+
+    // "Nova regra" some ao abrir o formulário; "Cancelar" some ao fechá-lo.
+    await dialog.getByRole('button', { name: 'Nova regra' }).click();
+    await dialog.getByRole('button', { name: 'Cancelar' }).click();
+    await expect(dialog.getByRole('button', { name: 'Nova regra' })).toBeVisible();
+    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+  } finally {
+    await app.close();
+  }
+});
+
+test('depois de aceitar a host key, digitar vai para o terminal sem clicar (B3)', async () => {
+  await up();
+  const app = await launchApp();
+  const { page } = app;
+  try {
+    await createVault(page);
+    await addHost(page, {
+      label: 'pw-host',
+      address: SSHD.host,
+      port: SSHD.port,
+      username: 'pwuser',
+      password: 'pw-test-123',
+    });
+    await hostItem(page, 'pw-host').dblclick();
+    await acceptHostKey(page);
+    await waitConnected(page, 'pw-host');
+    const id = await sessionIdOf(page, 'pw-host');
+    await page.keyboard.type('echo foco-ok\n');
+    await expectTerminalLine(page, id, 'foco-ok');
   } finally {
     await app.close();
   }

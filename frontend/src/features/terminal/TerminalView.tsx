@@ -8,6 +8,7 @@ import type { Tab } from '../../stores/sessions';
 import { useUi } from '../../stores/ui';
 import { ANSI, type ThemeTokens } from '../../theme/tokens';
 import { attach } from './dataBus';
+import { registerTerminalFocus } from './focusRegistry';
 import { registerProbe } from './testProbe';
 import s from './terminal.module.css';
 
@@ -91,6 +92,9 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     };
     fitNowRef.current = fitAndResize;
     const unregisterProbe = registerProbe(sessionId, term);
+    const unregisterFocus = registerTerminalFocus(sessionId, () => {
+      if (activeRef.current) term.focus();
+    });
     const detach = attach(sessionId, (data) => {
       term.write(data);
     });
@@ -146,6 +150,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       if (timer) clearTimeout(timer);
       observer.disconnect();
       stopDpr();
+      unregisterFocus();
       container.removeEventListener('contextmenu', onContextMenu);
       onData.dispose();
       detach();

@@ -5,6 +5,7 @@ import { useInteractions } from '../../stores/interactions';
 import { useSessions } from '../../stores/sessions';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
+import { focusTerminal } from './focusRegistry';
 import { WarningIcon } from '../../ui/icons';
 import s from './terminal.module.css';
 
@@ -26,6 +27,9 @@ export function HostKeyDialog() {
       key={event.sessionId}
       title={changed ? t.terminal.hostKeyChangedTitle : t.terminal.hostKeyNewTitle}
       modal
+      returnFocus={() => {
+        focusTerminal(event.sessionId);
+      }}
       onClose={() => {
         reply(false);
       }}

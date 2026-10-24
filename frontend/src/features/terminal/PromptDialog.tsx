@@ -5,6 +5,7 @@ import { useInteractions } from '../../stores/interactions';
 import { useSessions } from '../../stores/sessions';
 import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
+import { focusTerminal } from './focusRegistry';
 import { TextField } from '../../ui/TextField';
 
 export function PromptDialog() {
@@ -23,6 +24,9 @@ export function PromptDialog() {
     <Dialog
       key={`${event.sessionId}-${event.prompts.map((p) => p.text).join('|')}`}
       title={event.name || t.terminal.promptTitle}
+      returnFocus={() => {
+        focusTerminal(event.sessionId);
+      }}
       onClose={() => {
         reply(null);
       }}
