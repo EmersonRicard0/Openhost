@@ -25,11 +25,13 @@ function useMaximised(): boolean {
 }
 
 export interface TitleBarProps {
+  /** Antes da marca (alternar a barra lateral). */
+  leading?: ReactNode;
   /** Ações do app à direita (encaminhamentos, bloquear, configurações). */
   actions?: ReactNode;
 }
 
-export function TitleBar({ actions }: TitleBarProps) {
+export function TitleBar({ leading, actions }: TitleBarProps) {
   const maximised = useMaximised();
   const app = window.shellvault.app;
 
@@ -45,6 +47,7 @@ export function TitleBar({ actions }: TitleBarProps) {
           void app.windowToggleMaximise();
       }}
     >
+      {leading && <div className={`${s.leading} no-drag`}>{leading}</div>}
       <span className={s.brand} data-drag-area>
         <Logo size={18} />
         <span className={s.appName} data-drag-area>

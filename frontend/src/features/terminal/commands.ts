@@ -61,6 +61,17 @@ export async function toggleTheme(): Promise<void> {
   else toastError(res.error);
 }
 
+/** Recolhe ou expande a barra lateral (FR-167); a interface muda antes de salvar. */
+export function toggleSidebar(): void {
+  const ui = useUi.getState();
+  if (!ui.settings) return;
+  const sidebarCollapsed = !ui.settings.sidebarCollapsed;
+  ui.setSettings({ ...ui.settings, sidebarCollapsed });
+  void window.shellvault.app.updateUiSettings({ sidebarCollapsed }).then((res) => {
+    if (!res.ok) toastError(res.error);
+  });
+}
+
 /** Algum diálogo (que não a paleta) está aberto: atalhos ficam parados. */
 function dialogOpen(): boolean {
   return document.querySelector('[role="dialog"][aria-modal="true"]:not([data-palette])') !== null;
@@ -91,6 +102,9 @@ export function runShortcut(action: ShortcutAction, repeat: boolean): void {
       break;
     case 'search':
       openSearch();
+      break;
+    case 'toggleSidebar':
+      if (!repeat) toggleSidebar();
       break;
     case 'zoomIn':
       zoom(1);

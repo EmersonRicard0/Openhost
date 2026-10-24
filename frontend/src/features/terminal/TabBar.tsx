@@ -29,6 +29,7 @@ const SEND_KEYS: [SendKeysCombo, string][] = [
   ['ctrl+t', 'Ctrl+T'],
   ['ctrl+tab', 'Ctrl+Tab'],
   ['ctrl+k', 'Ctrl+K'],
+  ['ctrl+b', 'Ctrl+B'],
 ];
 
 function tabMenu(tab: Tab, startRename: () => void): MenuItem[] {

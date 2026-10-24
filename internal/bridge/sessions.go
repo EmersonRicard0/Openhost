@@ -131,6 +131,7 @@ func (s *SessionService) SendKeys(sessionID, combo string) error {
 		"ctrl+t":   "\x14",
 		"ctrl+tab": "\t",
 		"ctrl+k":   "\x0b",
+		"ctrl+b":   "\x02",
 	}[combo]
 	if !ok {
 		return apperr.New(apperr.InvalidInput)

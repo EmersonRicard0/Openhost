@@ -147,7 +147,7 @@ export interface Appearance {
 
 export type SessionKind = 'ssh' | 'local' | 'sftp';
 export type LocalShell = 'powershell' | 'cmd';
-export type SendKeysCombo = 'ctrl+w' | 'ctrl+t' | 'ctrl+tab' | 'ctrl+k';
+export type SendKeysCombo = 'ctrl+w' | 'ctrl+t' | 'ctrl+tab' | 'ctrl+k' | 'ctrl+b';
 
 export type SessionState =
   | 'connecting'

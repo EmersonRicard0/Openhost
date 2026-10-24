@@ -11,7 +11,8 @@ export type ShortcutAction =
   | 'palette'
   | 'zoomIn'
   | 'zoomOut'
-  | 'zoomReset';
+  | 'zoomReset'
+  | 'toggleSidebar';
 
 export interface KeyLike {
   code: string;
@@ -27,6 +28,7 @@ const CTRL: Record<string, ShortcutAction> = {
   KeyW: 'closeTab',
   Tab: 'nextTab',
   KeyK: 'palette',
+  KeyB: 'toggleSidebar',
   Equal: 'zoomIn',
   NumpadAdd: 'zoomIn',
   Minus: 'zoomOut',

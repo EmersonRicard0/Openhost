@@ -19,6 +19,7 @@ describe('matchShortcut (FR-140)', () => {
     [key('Tab', { shiftKey: true }), 'prevTab'],
     [key('KeyF', { shiftKey: true }), 'search'],
     [key('KeyK'), 'palette'],
+    [key('KeyB'), 'toggleSidebar'],
     [key('Equal'), 'zoomIn'],
     [key('Equal', { shiftKey: true }), 'zoomIn'],
     [key('NumpadAdd'), 'zoomIn'],

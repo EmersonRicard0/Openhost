@@ -7,6 +7,12 @@
   padding-left: 14px;
 }
 
+.leading {
+  display: flex;
+  align-items: center;
+  margin: 0 6px 0 -8px;
+}
+
 .brand {
   display: flex;
   align-items: center;

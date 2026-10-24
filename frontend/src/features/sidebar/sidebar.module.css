@@ -1,0 +1,101 @@
+/* Barra lateral (FR-167): a largura vem da coluna do grid em app.module.css. */
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.full {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  /* Largura fixa: durante a transição a lista é cortada, não espremida. */
+  width: 272px;
+  animation: fade-in var(--motion-base) var(--ease-standard);
+}
+
+.full[hidden] {
+  display: none;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+  width: 56px;
+  padding: 10px 0;
+  animation: fade-in var(--motion-base) var(--ease-standard);
+}
+
+.railButton {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
+}
+
+.railButton svg {
+  width: 20px;
+  height: 20px;
+}
+
+.railButton:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.railButton:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.railButton:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.railButton:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.tooltip {
+  padding: 5px 9px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: var(--layer-menu);
+  animation: fade-in var(--motion-fast) var(--ease-standard);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
