@@ -108,7 +108,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 ### Tests for User Story 2 ⚠️
 
-- [ ] T043 [P] [US2] E2E `frontend/tests/e2e/layout.spec.ts`: com duas abas, 20 ciclos `Maximise`/`Restore`/`SetSize` (TestService) em `SHELLVAULT_E2E_SCALE` 1, 1.25 e 1.5; após cada ciclo, o retângulo do app cobre a viewport (pontos dos quatro cantos pertencem ao app), o contêiner do terminal tem altura > 0 e o canvas/linhas do xterm ocupam o contêiner, e `ServerSizeOf(sessionId)` = `cols×rows` do xterm (regressão do bug 3); arrastar a borda gera no máximo 5 resizes no servidor
+- [X] T043 [P] [US2] E2E `frontend/tests/e2e/layout.spec.ts`: com duas abas, 20 ciclos `Maximise`/`Restore`/`SetSize` (TestService) em `SHELLVAULT_E2E_SCALE` 1, 1.25 e 1.5; após cada ciclo, o retângulo do app cobre a viewport (pontos dos quatro cantos pertencem ao app), o contêiner do terminal tem altura > 0 e o canvas/linhas do xterm ocupam o contêiner, e `ServerSizeOf(sessionId)` = `cols×rows` do xterm (regressão do bug 3); arrastar a borda gera no máximo 5 resizes no servidor
 - [X] T044 [P] [US2] E2E `frontend/tests/e2e/menus.spec.ts`: no tamanho mínimo da janela, o menu do "+" abre com o topo a ≤ 8 px da base do botão e inteiro na viewport, acima do terminal (`elementFromPoint` no centro do menu é o menu) (regressão do bug 4); menu de contexto de host aberto perto dos quatro cantos fica inteiro; Esc fecha o diálogo de encaminhamento mesmo depois de o botão focado sumir (regressão B2); após aceitar a host key, digitar vai para o terminal sem clicar (regressão B3)
 - [X] T045 [P] [US2] Teste em `frontend/src/features/hosts/tree.test.ts`: hosts da raiz depois de um grupo expandido têm o mesmo recuo dos grupos da raiz (regressão B4)
 

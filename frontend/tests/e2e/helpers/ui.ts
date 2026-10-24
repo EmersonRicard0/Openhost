@@ -93,6 +93,8 @@ interface Probe {
   text: (id: string) => string | null;
   cells: (id: string, needle: string) => ProbeCell[] | null;
   select: (id: string, needle: string) => boolean;
+  size: (id: string) => { cols: number; rows: number } | null;
+  resizes: (id: string) => number;
 }
 
 declare global {
@@ -114,6 +116,14 @@ export async function terminalCells(
     sessionId,
     needle,
   ] as const);
+}
+
+export async function terminalSize(page: Page, sessionId: string) {
+  return page.evaluate((id) => window.__shellvaultProbe.size(id), sessionId);
+}
+
+export async function resizeCount(page: Page, sessionId: string): Promise<number> {
+  return page.evaluate((id) => window.__shellvaultProbe.resizes(id), sessionId);
 }
 
 export async function selectInTerminal(page: Page, sessionId: string, needle: string) {

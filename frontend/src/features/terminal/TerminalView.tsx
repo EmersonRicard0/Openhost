@@ -9,7 +9,7 @@ import { useUi } from '../../stores/ui';
 import { ANSI, type ThemeTokens } from '../../theme/tokens';
 import { attach } from './dataBus';
 import { registerTerminalFocus } from './focusRegistry';
-import { registerProbe } from './testProbe';
+import { countResize, registerProbe } from './testProbe';
 import s from './terminal.module.css';
 
 function xtermTheme(tokens: ThemeTokens, dark: boolean): ITheme {
@@ -88,6 +88,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       if (size.cols <= 0 || size.rows <= 0) return;
       if (lastSize?.cols === size.cols && lastSize.rows === size.rows) return;
       lastSize = size;
+      countResize(sessionId);
       void api.resize(sessionId, size);
     };
     fitNowRef.current = fitAndResize;

@@ -8,6 +8,17 @@ function enabled(): boolean {
 
 let installed = false;
 const terminals = new Map<string, Terminal>();
+const resizes = new Map<string, number>();
+
+/** Conta os `Resize` enviados ao servidor (E2E de layout: arrastar a borda não inunda). */
+export function countResize(sessionId: string): void {
+  if (enabled()) resizes.set(sessionId, (resizes.get(sessionId) ?? 0) + 1);
+}
+
+function sizeOf(sessionId: string): { cols: number; rows: number } | null {
+  const term = terminals.get(sessionId);
+  return term ? { cols: term.cols, rows: term.rows } : null;
+}
 
 export interface ProbeCell {
   chars: string;
@@ -72,11 +83,18 @@ export function registerProbe(sessionId: string, term: Terminal): () => void {
   if (!installed) {
     installed = true;
     Object.defineProperty(window, '__shellvaultProbe', {
-      value: Object.freeze({ text: textOf, cells: cellsOf, select }),
+      value: Object.freeze({
+        text: textOf,
+        cells: cellsOf,
+        select,
+        size: sizeOf,
+        resizes: (id: string) => resizes.get(id) ?? 0,
+      }),
     });
   }
   terminals.set(sessionId, term);
   return () => {
     terminals.delete(sessionId);
+    resizes.delete(sessionId);
   };
 }
