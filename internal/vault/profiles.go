@@ -7,10 +7,11 @@ import (
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/model"
+	"shellvault/internal/schemes"
 )
 
 const (
-	BrandSchemeID          = "00000000-0000-4000-8000-000000000001"
+	BrandSchemeID          = schemes.BrandSchemeID
 	DefaultGlobalProfileID = "00000000-0000-4000-8000-000000000002"
 )
 
@@ -41,14 +42,7 @@ type colorSchemeData struct {
 }
 
 func brandScheme() model.ColorScheme {
-	return model.ColorScheme{
-		ID: BrandSchemeID, Name: "OpenConnect Dark", Origin: model.SchemeBuiltin,
-		Foreground: "#e3e6ee", Background: "#0e1016", Cursor: "#a99bff", Selection: "#8b78ff52",
-		ANSI: []string{
-			"#1d2026", "#ff7b72", "#5cc98b", "#e8c35a", "#6aa8f0", "#c792ea", "#56c8d8", "#cdd2da",
-			"#5c6370", "#ffa198", "#8ee0ae", "#f5d77f", "#9cc6ff", "#dcb2f5", "#8ce0ec", "#f6f8fa",
-		},
-	}
+	return schemes.Presets()[0]
 }
 
 func defaultGlobalProfile() model.TerminalProfile {
@@ -71,9 +65,11 @@ func seedProfiles(db *sql.DB) error {
 		ON terminal_profiles(is_global) WHERE is_global = 1`); err != nil {
 		return fail(err)
 	}
-	// Presets acompanham o app: reabrir atualiza nome e cores pelo id estável.
-	if err := putColorScheme(tx, brandScheme()); err != nil {
-		return fail(err)
+	// Presets acompanham o app: reabrir atualiza nomes e cores pelos ids estáveis.
+	for _, scheme := range schemes.Presets() {
+		if err := putColorScheme(tx, scheme); err != nil {
+			return fail(err)
+		}
 	}
 	var globals int
 	if err := tx.QueryRow(`SELECT count(*) FROM terminal_profiles WHERE is_global = 1`).Scan(&globals); err != nil {
