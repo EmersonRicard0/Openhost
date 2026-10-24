@@ -5,6 +5,7 @@ import (
 	"io"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -75,6 +76,7 @@ type fakeConn struct {
 	out      io.Writer
 	closed   bool
 	exitCode *int
+	latency  atomic.Int64
 }
 
 func newFakeConn() *fakeConn {
@@ -122,10 +124,48 @@ func (c *fakeConn) Close() error {
 
 func (c *fakeConn) ExitCode() *int { return c.exitCode }
 
+func (c *fakeConn) Latency() time.Duration { return time.Duration(c.latency.Load()) }
+
 func (c *fakeConn) snapshot() (starts, resizes []size) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return append([]size(nil), c.starts...), append([]size(nil), c.resizes...)
+}
+
+func TestLatencyReemitsConnectedStateAfterSignificantChange(t *testing.T) {
+	var r recorder
+	m := NewManager(r.emit)
+	c := newFakeConn()
+	id := m.Open(KindSSH, nil, dialTo(c))
+	_ = m.Resize(id, 80, 24)
+	initial := r.waitState(t, id, StateConnected)
+	if initial.LatencyMs != nil {
+		t.Fatalf("initial latency = %v, want nil", *initial.LatencyMs)
+	}
+
+	c.latency.Store(int64(10 * time.Millisecond))
+	waitFor(t, func() bool {
+		for _, event := range r.snapshot() {
+			if state, ok := event.payload.(StateEvent); ok && state.SessionID == id &&
+				state.LatencyMs != nil && *state.LatencyMs == 10 {
+				return true
+			}
+		}
+		return false
+	})
+	c.latency.Store(int64(13 * time.Millisecond))
+	waitFor(t, func() bool {
+		for _, event := range r.snapshot() {
+			if state, ok := event.payload.(StateEvent); ok && state.SessionID == id &&
+				state.LatencyMs != nil && *state.LatencyMs == 13 {
+				return true
+			}
+		}
+		return false
+	})
+	if err := m.Close(id); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func dialTo(c *fakeConn) Dialer {

@@ -75,7 +75,7 @@ Eventos:
 | Evento | Payload | Regra |
 |---|---|---|
 | `term:data` | `{ sessionId, data }` | lotes de até 8 ms ou 32 KiB; texto UTF-8 completo (R10) |
-| `term:state` | `{ sessionId, state, reason? }` | estados do data-model |
+| `term:state` | `{ sessionId, state, reason?, latencyMs }` | `latencyMs` é o RTT inteiro do último keepalive, ou `null` antes da primeira medição |
 | `term:hostkey` | como `onHostKey` da 001 | |
 | `term:prompt` | como `onPrompt` da 001 | |
 | `term:closed` | `{ sessionId }` | último evento da sessão; nada é emitido depois |

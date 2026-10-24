@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"sync"
+	"time"
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/domain"
@@ -53,6 +54,8 @@ type StateEvent struct {
 	Reason *string `json:"reason"`
 	// Código de saída do shell local, em closed.
 	ExitCode *int `json:"exitCode"`
+	// RTT do último keepalive SSH; nil antes da primeira medição e em sessões locais.
+	LatencyMs *int `json:"latencyMs"`
 }
 
 type HostKeyQuestion struct {
@@ -115,6 +118,10 @@ type ExitCoder interface {
 	ExitCode() *int
 }
 
+type latencyReporter interface {
+	Latency() time.Duration
+}
+
 // Dialer conecta e autentica; deve desistir quando ctx é cancelado.
 type Dialer func(ctx context.Context, ix Interactor) (Conn, error)
 
@@ -137,6 +144,7 @@ type Session struct {
 	started bool
 	size    size
 	sized   chan struct{}
+	latency *int
 
 	reconnect chan Dialer
 	hostKey   chan bool
@@ -381,15 +389,62 @@ func (s *Session) SetState(st State) { s.setState(st, nil, nil) }
 func (s *Session) setState(st State, cause error, exitCode *int) {
 	s.mu.Lock()
 	s.state = st
+	if st != StateConnected {
+		s.latency = nil
+	}
+	latency := s.latency
 	s.mu.Unlock()
 	s.out.Flush()
-	ev := StateEvent{SessionID: s.ID, State: st, ExitCode: exitCode}
+	ev := StateEvent{SessionID: s.ID, State: st, ExitCode: exitCode, LatencyMs: latency}
 	if cause != nil {
 		e := apperr.New(apperr.CodeOf(cause))
 		code := string(e.Code)
 		ev.Code, ev.Reason = &code, &e.Message
 	}
 	s.emit(EventState, ev)
+}
+
+func (s *Session) monitorLatency(stop <-chan struct{}, conn Conn) {
+	reporter, ok := conn.(latencyReporter)
+	if !ok {
+		return
+	}
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
+	last, lastEmit := 0, time.Time{}
+	for {
+		select {
+		case <-stop:
+			return
+		case now := <-ticker.C:
+			rtt := reporter.Latency()
+			if rtt <= 0 {
+				continue
+			}
+			ms := int((rtt + time.Millisecond - 1) / time.Millisecond)
+			changed := last == 0 || absInt(ms-last)*100 > last*20
+			if !changed && now.Sub(lastEmit) < 10*time.Second {
+				continue
+			}
+			s.mu.Lock()
+			if s.state != StateConnected {
+				s.mu.Unlock()
+				continue
+			}
+			value := ms
+			s.latency = &value
+			s.mu.Unlock()
+			s.emit(EventState, StateEvent{SessionID: s.ID, State: StateConnected, LatencyMs: &value})
+			last, lastEmit = ms, now
+		}
+	}
+}
+
+func absInt(n int) int {
+	if n < 0 {
+		return -n
+	}
+	return n
 }
 
 func (s *Session) AskHostKey(q HostKeyQuestion) (bool, error) {
@@ -481,7 +536,15 @@ func (s *Session) connect(dial Dialer) {
 	s.mu.Unlock()
 	s.SetState(StateConnected)
 
+	latencyStop := make(chan struct{})
+	latencyDone := make(chan struct{})
+	go func() {
+		defer close(latencyDone)
+		s.monitorLatency(latencyStop, conn)
+	}()
 	err = conn.Wait()
+	close(latencyStop)
+	<-latencyDone
 	if s.ctx.Err() != nil {
 		return
 	}

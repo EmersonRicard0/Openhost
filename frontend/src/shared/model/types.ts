@@ -127,6 +127,8 @@ export interface Settings {
   window: WindowBounds;
   /** Shell aberto pelo Ctrl+T. */
   defaultShell: LocalShell;
+  /** Barra lateral em modo trilho. */
+  sidebarCollapsed: boolean;
 }
 
 export interface Appearance {
@@ -163,6 +165,8 @@ export interface SessionStateEvent {
   reason: string | null;
   /** Código de saída para `exited`. */
   exitCode: number | null;
+  /** RTT do último keepalive SSH; null antes da primeira medição. */
+  latencyMs: number | null;
 }
 
 export interface SessionDataEvent {

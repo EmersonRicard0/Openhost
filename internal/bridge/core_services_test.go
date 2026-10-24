@@ -25,18 +25,23 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 	app := services.appService
 
 	preferences, err := app.GetPreferences()
-	if err != nil || preferences.DefaultShell != "powershell" || !preferences.GlassEnabled {
+	if err != nil || preferences.DefaultShell != "powershell" || !preferences.GlassEnabled || preferences.SidebarCollapsed {
 		t.Fatalf("preferências %+v, %v", preferences, err)
 	}
 	groupID := "4ce66518-3068-4bef-ad0b-eb3f0141443d"
 	updated, err := app.UpdatePreferences(PreferencesPatch{
-		"theme":           "light",
-		"glassEnabled":    false,
-		"defaultShell":    "cmd",
-		"collapsedGroups": []any{groupID},
+		"theme":            "light",
+		"glassEnabled":     false,
+		"sidebarCollapsed": true,
+		"defaultShell":     "cmd",
+		"collapsedGroups":  []any{groupID},
 	})
-	if err != nil || updated.Theme != "light" || updated.GlassEnabled || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 {
+	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 {
 		t.Fatalf("preferências atualizadas %+v, %v", updated, err)
+	}
+	persisted, err := app.GetPreferences()
+	if err != nil || !persisted.SidebarCollapsed {
+		t.Fatalf("sidebarCollapsed não persistiu: %+v, %v", persisted, err)
 	}
 	wantBridgeCode(t, func() error {
 		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "bash"})

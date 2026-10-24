@@ -24,6 +24,7 @@ type Preferences struct {
 	TerminalFontSize   int          `json:"terminalFontSize"`
 	Window             WindowBounds `json:"window"`
 	GlassEnabled       bool         `json:"glassEnabled"`
+	SidebarCollapsed   bool         `json:"sidebarCollapsed"`
 	DefaultShell       string       `json:"defaultShell"`
 	CollapsedGroups    []string     `json:"collapsedGroups"`
 }
@@ -35,6 +36,7 @@ func DefaultPreferences() Preferences {
 		TerminalFontSize:   14,
 		Window:             WindowBounds{Width: 1200, Height: 780},
 		GlassEnabled:       true,
+		SidebarCollapsed:   false,
 		DefaultShell:       "powershell",
 		CollapsedGroups:    []string{},
 	}
