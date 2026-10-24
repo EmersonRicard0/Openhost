@@ -38,7 +38,7 @@
   padding: 6px 8px;
   border-radius: 9px;
   cursor: default;
-  transition: background-color 100ms ease;
+  transition: background-color var(--motion-fast) var(--ease-standard);
 }
 
 .item:hover {
@@ -168,7 +168,7 @@
   width: 12px;
   height: 12px;
   color: var(--text-secondary);
-  transition: transform 120ms ease;
+  transition: transform var(--motion-fast) var(--ease-standard);
 }
 
 .chevronOpen {

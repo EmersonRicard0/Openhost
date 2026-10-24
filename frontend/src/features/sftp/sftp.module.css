@@ -236,7 +236,7 @@
 .progressFill {
   height: 100%;
   background: var(--accent);
-  transition: width 100ms linear;
+  transition: width var(--motion-fast) linear;
 }
 
 .transfer[data-state='failed'] .progressFill,

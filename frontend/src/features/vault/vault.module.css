@@ -14,7 +14,7 @@
   width: min(460px, 100%);
   padding: 32px;
   border-radius: 18px;
-  animation: card-in 220ms ease;
+  animation: card-in var(--motion-slow) var(--ease-standard);
 }
 
 @keyframes card-in {

@@ -22,8 +22,8 @@
   color: var(--text-secondary);
   cursor: pointer;
   transition:
-    background-color 120ms ease,
-    color 120ms ease;
+    background-color var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
 }
 
 .tab:hover {
@@ -179,7 +179,7 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: var(--shadow);
-  animation: search-in 120ms ease;
+  animation: search-in var(--motion-fast) var(--ease-standard);
 }
 
 @keyframes search-in {

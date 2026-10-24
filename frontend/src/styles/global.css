@@ -9,6 +9,22 @@
   --layer-dialog: 100;
   --layer-menu: 200;
   --layer-toast: 300;
+
+  /* Movimento (FR-170): no máximo 250 ms. */
+  --motion-fast: 120ms;
+  --motion-base: 180ms;
+  --motion-slow: 240ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 0ms;
+    --motion-base: 0ms;
+    --motion-slow: 0ms;
+  }
 }
 
 html,
@@ -140,8 +156,8 @@ textarea {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+    animation-duration: 0s !important;
+    transition-duration: 0s !important;
   }
 }
 
