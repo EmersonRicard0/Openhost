@@ -6,8 +6,9 @@ import { createVault, openLocalTab, waitPowerShellPrompt } from './helpers/ui';
 test('requisições externas são barradas e o fluxo básico não usa a rede', async () => {
   const app = await launchApp();
   const { page } = app;
-  // Assets embutidos vêm da origem do próprio app (wails.localhost).
-  const origin = new URL(page.url()).origin;
+  // Assets embutidos vêm da origem do próprio app. Fixa: `page.url()` pode ainda ser
+  // `about:blank` se o primeiro carregamento não terminou.
+  const origin = 'http://wails.localhost';
   const external: string[] = [];
   page.on('request', (req) => {
     const url = req.url();
