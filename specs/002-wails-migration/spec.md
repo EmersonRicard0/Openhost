@@ -248,6 +248,7 @@ port forwarding) na versão nova, com o mesmo servidor de teste, e obter os mesm
 - **FR-155**: O sistema MUST importar esquemas de cores no formato JSON do Windows Terminal e no formato `.itermcolors` do iTerm2, e exportar esquemas em JSON reimportável.
 - **FR-156**: Configurações de terminal MUST existir como perfil global padrão e como perfil opcional por host, que sobrescreve o global apenas nas sessões desse host.
 - **FR-157**: Mudanças de perfil MUST ser aplicadas às abas abertas sem reconectar e sem perder o conteúdo exibido.
+- **FR-158a**: As configurações MUST ser feitas por seleção, sem digitar valores livres: esquemas de cores numa galeria em que cada opção mostra uma amostra de terminal com suas cores; fontes numa lista em que cada opção é desenhada na própria fonte; tamanho, peso, altura de linha, espaçamento, histórico, opacidade, desfoque e espaçamento interno por opções predefinidas ou controles deslizantes com o valor visível; cursor por opções ilustradas. Texto livre só onde não há lista possível (nomes de esquemas, hosts).
 - **FR-158**: Perfis de terminal e esquemas de cores MUST ser persistidos localmente e sobreviver a reinícios.
 
 **Identidade visual**
