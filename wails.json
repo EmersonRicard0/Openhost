@@ -1,6 +1,6 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "ShellVault",
+  "name": "OpenConnect",
   "outputfilename": "shellvault",
   "frontend:dir": "frontend",
   "frontend:install": "npm install",
@@ -12,10 +12,10 @@
     "name": "emerson"
   },
   "info": {
-    "productName": "ShellVault",
+    "productName": "OpenConnect",
     "productVersion": "0.2.0",
     "companyName": "",
-    "copyright": "© 2026 ShellVault",
+    "copyright": "© 2026 OpenConnect",
     "comments": "Cliente SSH local-first com cofre criptografado"
   }
 }

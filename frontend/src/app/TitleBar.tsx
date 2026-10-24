@@ -48,7 +48,7 @@ export function TitleBar({ actions }: TitleBarProps) {
       <span className={s.brand} data-drag-area>
         <Logo size={18} />
         <span className={s.appName} data-drag-area>
-          ShellVault
+          {t.common.appName}
         </span>
       </span>
       <span className={s.spacer} data-drag-area />

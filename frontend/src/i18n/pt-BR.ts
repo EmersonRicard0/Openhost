@@ -8,7 +8,7 @@ export const t = {
     close: 'Fechar',
   },
   common: {
-    appName: 'ShellVault',
+    appName: 'OpenConnect',
     cancel: 'Cancelar',
     confirm: 'Confirmar',
     save: 'Salvar',
@@ -52,7 +52,7 @@ export const t = {
     unreadableCorrupted:
       'O arquivo do cofre está corrompido. Ele não foi alterado. Você pode apagá-lo e criar um novo cofre.',
     unreadableVersion:
-      'O cofre foi criado por uma versão mais nova do ShellVault. Atualize o app para abri-lo. O arquivo não foi alterado.',
+      'O cofre foi criado por uma versão mais nova do OpenConnect. Atualize o app para abri-lo. O arquivo não foi alterado.',
     eraseTitle: 'Apagar o cofre',
     eraseWarning:
       'Todos os hosts, senhas, chaves e regras de encaminhamento serão apagados permanentemente. Esta ação não pode ser desfeita.',
@@ -307,7 +307,7 @@ export const t = {
       n === 1 ? '1 encaminhamento ativo' : `${String(n)} encaminhamentos ativos`,
   },
   closing: {
-    title: 'Fechar o ShellVault?',
+    title: 'Fechar o OpenConnect?',
     intro: 'Ao fechar, tudo isto será encerrado:',
     sessions: (n: number) => (n === 1 ? '1 sessão aberta' : `${String(n)} sessões abertas`),
     transfers: (n: number) =>
