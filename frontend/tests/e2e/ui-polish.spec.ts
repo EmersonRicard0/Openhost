@@ -31,7 +31,7 @@ async function expectServerMatches(page: Page, sessionId: string): Promise<void>
     .toBe(true);
 }
 
-test('Ctrl+B recolhe e expande a lateral sem reconectar e o estado volta após reiniciar (FR-167)', async () => {
+test('Ctrl+Shift+B recolhe e expande a lateral sem reconectar e o estado volta após reiniciar (FR-167)', async () => {
   let app = await launchApp();
   const { dataDir } = app;
   try {
@@ -42,7 +42,7 @@ test('Ctrl+B recolhe e expande a lateral sem reconectar e o estado volta após r
     const before = await terminalSize(page, id);
     if (!before) throw new Error('terminal sem tamanho');
 
-    await page.keyboard.press('Control+B');
+    await page.keyboard.press('Control+Shift+B');
     await expect(rail(page)).toBeVisible();
     await expect(sidebarHosts(page)).toBeHidden();
     await expect
@@ -56,7 +56,7 @@ test('Ctrl+B recolhe e expande a lateral sem reconectar e o estado volta após r
     await rail(page).getByRole('button', { name: 'Encaminhamentos ativos' }).hover();
     await expect(page.getByRole('tooltip')).toHaveText('Encaminhamentos ativos');
 
-    await page.keyboard.press('Control+B');
+    await page.keyboard.press('Control+Shift+B');
     await expect(sidebarHosts(page)).toBeVisible();
     await expect(rail(page)).toBeHidden();
     await expect.poll(async () => (await terminalSize(page, id))?.cols).toBe(before.cols);
@@ -65,7 +65,7 @@ test('Ctrl+B recolhe e expande a lateral sem reconectar e o estado volta após r
     expect(await resizeCount(page, id)).toBeLessThanOrEqual(6);
 
     // Recolhida, a escolha persiste entre execuções.
-    await page.getByRole('button', { name: 'Recolher barra lateral (Ctrl+B)' }).click();
+    await page.getByRole('button', { name: 'Recolher barra lateral (Ctrl+Shift+B)' }).click();
     await expect(rail(page)).toBeVisible();
     await app.close();
 
@@ -91,7 +91,7 @@ test('configurações abrem como página, Esc volta à aba e a barra de status m
     await expect(status.getByTestId('status-tab')).toContainText('PowerShell');
     await expect(status.getByTestId('status-state')).toHaveText('Em execução');
 
-    await page.keyboard.press('Control+K');
+    await page.keyboard.press('Control+Shift+P');
     await page.keyboard.type('configura');
     await page.keyboard.press('Enter');
     const settings = page.getByRole('region', { name: 'Configurações' });

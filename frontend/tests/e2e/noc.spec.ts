@@ -23,18 +23,18 @@ const PS = 'PowerShell';
 const tabs = (page: Page) => page.getByRole('tab');
 const palette = (page: Page) => page.getByRole('dialog', { name: 'Paleta de comandos' });
 
-test('atalhos de abas, fonte, busca e paleta (FR-140)', async () => {
+test('atalhos de abas, fonte, busca e paleta (FR-140, FR-173)', async () => {
   const app = await launchApp();
   const { page } = app;
   try {
     await createVault(page);
 
-    // Ctrl+T abre o shell padrão (PowerShell) duas vezes.
-    await page.keyboard.press('Control+T');
+    // Ctrl+Shift+T abre o shell padrão (PowerShell) duas vezes.
+    await page.keyboard.press('Control+Shift+T');
     await expect(tabs(page)).toHaveCount(1);
     const first = await sessionIdOf(page, PS);
     await waitPowerShellPrompt(page, first);
-    await page.keyboard.press('Control+T');
+    await page.keyboard.press('Control+Shift+T');
     await expect(tabs(page)).toHaveCount(2);
     await expect(tabs(page).nth(1)).toHaveAttribute('aria-selected', 'true');
 
@@ -69,17 +69,17 @@ test('atalhos de abas, fonte, busca e paleta (FR-140)', async () => {
     await page.keyboard.press('Escape');
     await expect(search).toBeHidden();
 
-    // Ctrl+K abre e fecha a paleta.
-    await page.keyboard.press('Control+K');
+    // Ctrl+Shift+P abre e fecha a paleta.
+    await page.keyboard.press('Control+Shift+P');
     await expect(palette(page)).toBeVisible();
-    await page.keyboard.press('Control+K');
+    await page.keyboard.press('Control+Shift+P');
     await expect(palette(page)).toBeHidden();
 
-    // Ctrl+W fecha a aba local sem perguntar.
-    await page.keyboard.press('Control+W');
+    // Ctrl+Shift+W fecha a aba local sem perguntar.
+    await page.keyboard.press('Control+Shift+W');
     await expect(tabs(page)).toHaveCount(1);
 
-    // Ctrl+T não chega ao shell como ^T: o texto digitado depois continua intacto.
+    // O atalho não chega ao shell: o texto digitado depois continua intacto.
     await typeInTerminal(page, PS, 'Write-Host atalho-ok\r');
     const remaining = await sessionIdOf(page, PS);
     await expectTerminalLine(page, remaining, 'atalho-ok');
@@ -145,7 +145,7 @@ test('busca com regex e colagem de 5 linhas com confirmação (FR-142, FR-144)',
   }
 });
 
-test('paleta conecta num host só pelo teclado; Ctrl+W pede confirmação (FR-141)', async () => {
+test('paleta conecta num host só pelo teclado; Ctrl+Shift+W pede confirmação (FR-141)', async () => {
   await up();
   const app = await launchApp();
   const { page } = app;
@@ -159,7 +159,7 @@ test('paleta conecta num host só pelo teclado; Ctrl+W pede confirmação (FR-14
       password: 'pw-test-123',
     });
 
-    await page.keyboard.press('Control+K');
+    await page.keyboard.press('Control+Shift+P');
     await expect(palette(page)).toBeVisible();
     await page.keyboard.type('pw host');
     await expect(palette(page).getByRole('option')).toHaveCount(0);
@@ -175,13 +175,13 @@ test('paleta conecta num host só pelo teclado; Ctrl+W pede confirmação (FR-14
     await page.keyboard.type('echo pela-paleta\n');
     await expectTerminalLine(page, id, 'pela-paleta');
 
-    await page.keyboard.press('Control+W');
+    await page.keyboard.press('Control+Shift+W');
     const ask = page.getByRole('dialog', { name: 'Fechar a aba?' });
     await expect(ask).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(ask).toBeHidden();
     await expect(tab(page, 'pw-host')).toBeVisible();
-    await page.keyboard.press('Control+W');
+    await page.keyboard.press('Control+Shift+W');
     await page.keyboard.press('Enter');
     await expect(tab(page, 'pw-host')).toBeHidden();
   } finally {

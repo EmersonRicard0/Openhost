@@ -125,7 +125,7 @@ export interface Settings {
   terminalFontFamily: string;
   terminalFontSize: number;
   window: WindowBounds;
-  /** Shell aberto pelo Ctrl+T. */
+  /** Shell aberto pela nova aba (Ctrl+Shift+T). */
   defaultShell: LocalShell;
   /** Barra lateral em modo trilho. */
   sidebarCollapsed: boolean;
@@ -133,6 +133,8 @@ export interface Settings {
   glassEnabled: boolean;
   /** `system` segue o Windows; os demais valores são ids da paleta da marca. */
   accent: string;
+  /** Atalhos alterados pelo usuário: ação → combinação (`""` = desativado) (FR-173). */
+  shortcuts?: Record<string, string>;
 }
 
 export interface Appearance {

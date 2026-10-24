@@ -25,6 +25,7 @@ import { toastError } from '../../ui/Toast';
 import { focusTerminal } from '../terminal/terminalRegistry';
 import { ChangePasswordDialog } from '../vault/ChangePasswordDialog';
 import { EraseVaultDialog } from '../vault/EraseVaultDialog';
+import { ShortcutsEditor } from './ShortcutsEditor';
 import { GlobalTerminalSettings } from './TerminalSettings';
 import s from './settings.module.css';
 
@@ -278,30 +279,7 @@ function VaultFields({
 function ShortcutsSection() {
   return (
     <Group>
-      <p className={s.hint}>{t.settings.shortcutsIntro}</p>
-      <table className={s.shortcuts}>
-        <thead>
-          <tr>
-            <th scope="col">{t.settings.shortcutKeys}</th>
-            <th scope="col">{t.settings.shortcutAction}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {t.settings.shortcutList.map(([keys, action]) => (
-            <tr key={keys}>
-              <td>
-                {keys.split(' / ').map((combo, i) => (
-                  <span key={combo}>
-                    {i > 0 && ' / '}
-                    <kbd className={s.kbd}>{combo}</kbd>
-                  </span>
-                ))}
-              </td>
-              <td>{action}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ShortcutsEditor />
     </Group>
   );
 }
@@ -419,7 +397,10 @@ export function SettingsPage() {
             </button>
           ))}
         </nav>
-        <div className={`${s.content} ${section === 'terminal' ? s.wide : ''}`} key={section}>
+        <div
+          className={`${s.content} ${section === 'terminal' ? s.wide : section === 'shortcuts' ? s.medium : ''}`}
+          key={section}
+        >
           <h2 className={s.sectionTitle}>{t.settings.sections[section]}</h2>
           {settings && section === 'general' && <GeneralSection settings={settings} />}
           {settings && section === 'appearance' && <AppearanceSection settings={settings} />}

@@ -32,7 +32,7 @@ test('PowerShell abre com o cofre bloqueado e mostra o encerramento', async () =
     });
     await expect(tab(page, 'PowerShell')).toHaveAttribute('title', /Processo encerrado/);
 
-    // Ctrl+Shift+T abre outro PowerShell; Prompt de Comando pelo menu.
+    // Ctrl+Shift+T abre outro PowerShell (shell padrão); Prompt de Comando pelo menu.
     await page.keyboard.press('Control+Shift+T');
     await expect(page.getByRole('tab', { name: 'PowerShell' })).toHaveCount(2);
     const cmd = await openLocalTab(page, 'Prompt de Comando');

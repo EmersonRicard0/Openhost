@@ -19,6 +19,20 @@ describe('toAppError', () => {
     const e = toAppError('dial tcp 10.0.0.1:22: senha=segredo');
     expect(e.code).toBe('INTERNAL');
     expect(e.message).not.toContain('segredo');
+    expect(e.detail).not.toContain('segredo');
+  });
+
+  it('guarda a operação e o detalhe técnico (FR-174)', () => {
+    const e = toAppError(
+      '{"code":"SFTP_ERROR","message":"Falha no SFTP.","detail":"open /x: permission denied"}',
+      'SftpService.List',
+    );
+    expect(e).toEqual({
+      code: 'SFTP_ERROR',
+      message: 'Falha no SFTP.',
+      op: 'SftpService.List',
+      detail: 'open /x: permission denied',
+    });
   });
 
   it('rejeita código desconhecido', () => {

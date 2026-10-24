@@ -18,6 +18,7 @@ import { trackActivity } from './activity';
 import { CloseConfirmDialog } from './CloseConfirmDialog';
 import { StatusBar } from './StatusBar';
 import { TitleBar } from './TitleBar';
+import { useShortcutLabel, withShortcut } from './useShortcuts';
 import s from './app.module.css';
 
 function FullscreenFrame({ children }: { children: React.ReactNode }) {
@@ -33,6 +34,10 @@ export function App() {
   const { status, refresh, lock } = useVault();
   const view = useWorkspace((w) => w.view);
   const collapsed = useUi((u) => u.settings?.sidebarCollapsed ?? false);
+  const sidebarLabel = withShortcut(
+    collapsed ? t.sidebar.expand : t.sidebar.collapse,
+    useShortcutLabel('toggleSidebar'),
+  );
   const setView = useWorkspace((w) => w.setView);
 
   useEffect(() => {
@@ -84,8 +89,8 @@ export function App() {
           <Button
             variant="ghost"
             iconOnly
-            aria-label={collapsed ? t.sidebar.expand : t.sidebar.collapse}
-            title={collapsed ? t.sidebar.expand : t.sidebar.collapse}
+            aria-label={sidebarLabel}
+            title={sidebarLabel}
             aria-expanded={!collapsed}
             onClick={toggleSidebar}
           >

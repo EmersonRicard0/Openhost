@@ -245,9 +245,9 @@ seção de conexão, shells detectados e opções de terminal que faltavam. Go c
 frontend com o Claude.
 
 - [ ] T115 [P] Go: preferência `shortcuts` (`map[ação]combinação`, `""` = desativado) em `Preferences`/`Settings`, validada (ação conhecida, combinação no formato `Ctrl+Shift+T`, sem duplicata) e devolvida por `GetPreferences`; teste em `internal/appwin`
-- [ ] T116 Frontend: `frontend/src/app/shortcuts.ts` passa a ler o mapa (padrões Ctrl+Shift de FR-173), seção Atalhos com gravação da combinação, "Desativado", recusa de conflito com o nome da ação e aviso para Ctrl+letra sem Shift; `shortcuts.test.ts`, `TabBar` e textos de ajuda atualizados
+- [X] T116 Frontend: `frontend/src/app/shortcuts.ts` passa a ler o mapa (padrões Ctrl+Shift de FR-173), seção Atalhos com gravação da combinação, "Desativado", recusa de conflito com o nome da ação e aviso para Ctrl+letra sem Shift; `shortcuts.test.ts`, `TabBar` e textos de ajuda atualizados
 - [ ] T117 [P] Go: erros da ponte com `op` (serviço.método) e `detail` técnico separado da mensagem, sem segredos; teste em `internal/bridge`
-- [ ] T118 Frontend: `toastError` com causa por código (`frontend/src/i18n/errors.ts`), código visível e "Copiar detalhes" (código, detalhe, operação, data/hora, versão); teste unitário
+- [X] T118 Frontend: `toastError` com causa por código (`frontend/src/i18n/errors.ts`), código visível e "Copiar detalhes" (código, detalhe, operação, data/hora, versão); teste unitário
 - [ ] T119 [P] Go: `connectTimeoutSeconds`, `legacyDefault` e `term` (`xterm-256color` | `xterm` | `vt100` | `linux`) nas configurações; `term` vai no pedido de PTY e `legacyDefault` vale para hosts criados sem o campo; testes
 - [ ] T120 Frontend: seção "Conexão (SSH)" nas configurações (keepalive e tempo limite saem de "Cofre e segurança", padrão de algoritmos legados, `$TERM` por seleção); formulário de host novo usa `legacyDefault`
 - [ ] T121 [P] Go: detecção de shells — `pwsh` (PATH e `%ProgramFiles%\PowerShell\*`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe` e registro), distros WSL (`wsl.exe -l -q`, saída UTF-16) — em `LocalShell` com id estável; testes com leitores falsos

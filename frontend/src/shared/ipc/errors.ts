@@ -36,4 +36,8 @@ export interface AppError {
   code: ErrorCode;
   /** Texto pt-BR pronto para a interface; nunca contém segredos nem stack trace. */
   message: string;
+  /** Serviço.método da ponte que falhou (FR-174). */
+  op?: string;
+  /** Detalhe técnico para "Copiar detalhes", já sem segredos. */
+  detail?: string;
 }

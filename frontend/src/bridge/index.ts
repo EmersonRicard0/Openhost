@@ -22,26 +22,44 @@ function isErrorCode(code: unknown): code is ErrorCode {
 }
 
 /** Converte a rejeição do Wails (texto do erro Go) em AppError. */
-export function toAppError(reason: unknown): AppError {
+export function toAppError(reason: unknown, op?: string): AppError {
   const text = typeof reason === 'string' ? reason : reason instanceof Error ? reason.message : '';
+  const where = op ? { op } : {};
   try {
-    const parsed = JSON.parse(text) as { code?: unknown; message?: unknown };
+    const parsed = JSON.parse(text) as {
+      code?: unknown;
+      message?: unknown;
+      op?: unknown;
+      detail?: unknown;
+    };
     if (isErrorCode(parsed.code) && typeof parsed.message === 'string') {
-      return { code: parsed.code, message: parsed.message };
+      return {
+        code: parsed.code,
+        message: parsed.message,
+        ...where,
+        ...(typeof parsed.op === 'string' ? { op: parsed.op } : {}),
+        ...(typeof parsed.detail === 'string' ? { detail: parsed.detail } : {}),
+      };
     }
   } catch {
-    // Texto que não é JSON: erro fora do contrato, não é repassado.
+    // Texto que não é JSON: erro fora do contrato; o texto não é repassado (pode ter segredos).
   }
-  return INTERNAL;
+  return { ...INTERNAL, ...where, detail: 'Resposta fora do contrato da ponte.' };
 }
 
 async function call<T>(service: string, method: string, ...args: unknown[]): Promise<Result<T>> {
+  const op = `${service}.${method}`;
   const fn = window.go?.bridge?.[service]?.[method];
-  if (!fn) return { ok: false, error: INTERNAL };
+  if (!fn) {
+    return {
+      ok: false,
+      error: { ...INTERNAL, op, detail: `O método ${op} não existe nesta versão do app.` },
+    };
+  }
   try {
     return { ok: true, value: (await fn(...args)) as T };
   } catch (reason) {
-    return { ok: false, error: toAppError(reason) };
+    return { ok: false, error: toAppError(reason, op) };
   }
 }
 

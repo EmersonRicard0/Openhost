@@ -1,4 +1,4 @@
-// Paleta de comandos (Ctrl+K, FR-141): busca e executa ações e conexões só pelo teclado.
+// Paleta de comandos (Ctrl+Shift+P, FR-141): busca e executa ações e conexões só pelo teclado.
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { t } from '../../i18n/pt-BR';
@@ -18,6 +18,7 @@ import { connectHost } from '../hosts/connect';
 import { openSftp } from '../sftp/openSftp';
 import { activeTerminalId, openSearch, toggleTheme } from '../terminal/commands';
 import { openLocal } from '../terminal/openLocal';
+import { useShortcutLabel } from '../../app/useShortcuts';
 import { filterCommands, type Command } from './palette';
 import s from './palette.module.css';
 
@@ -31,6 +32,8 @@ function useCommands(): Entry[] {
   const hosts = useHosts((h) => h.hosts);
   const lock = useVault((v) => v.lock);
   const setView = useWorkspace((w) => w.setView);
+  const powershellKey = useShortcutLabel('newPowerShell') ?? '';
+  const searchKey = useShortcutLabel('search') ?? '';
 
   return useMemo(() => {
     const p = t.palette;
@@ -38,7 +41,7 @@ function useCommands(): Entry[] {
       {
         id: 'local:powershell',
         label: p.newPowerShell,
-        hint: 'Ctrl+Shift+T',
+        hint: powershellKey,
         group: 'action',
         icon: <TerminalIcon />,
         run: () => void openLocal('powershell'),
@@ -56,7 +59,7 @@ function useCommands(): Entry[] {
       actions.push({
         id: 'search',
         label: p.search,
-        hint: 'Ctrl+Shift+F',
+        hint: searchKey,
         group: 'action',
         icon: <SearchIcon />,
         run: openSearch,
@@ -112,7 +115,7 @@ function useCommands(): Entry[] {
       ];
     });
     return [...actions, ...hostEntries];
-  }, [unlocked, hosts, lock, setView]);
+  }, [unlocked, hosts, lock, setView, powershellKey, searchKey]);
 }
 
 export function CommandPalette() {

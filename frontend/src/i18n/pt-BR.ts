@@ -82,7 +82,7 @@ export const t = {
       shortcuts: 'Atalhos',
       about: 'Sobre',
     },
-    defaultShell: 'Shell da nova aba (Ctrl+T)',
+    defaultShell: 'Shell da nova aba',
     shellPowerShell: 'PowerShell',
     shellCmd: 'Prompt de Comando',
     autoLock: 'Bloquear automaticamente após inatividade',
@@ -104,20 +104,36 @@ export const t = {
     glassHint:
       'Transparência com desfoque na barra lateral, nas abas e nos menus. Fica opaco em alto contraste ou com a transparência do Windows desligada.',
     shortcutsIntro:
-      'Para mandar um desses atalhos ao programa que roda no terminal, use o menu da aba.',
+      'Os atalhos usam Ctrl+Shift para não roubar teclas do terminal (Ctrl+W, Ctrl+K, Ctrl+T e o Ctrl+B do tmux continuam indo para o servidor). Clique em uma combinação para trocá-la.',
     shortcutKeys: 'Teclas',
     shortcutAction: 'Ação',
-    shortcutList: [
-      ['Ctrl+T', 'Nova aba com o shell padrão'],
-      ['Ctrl+Shift+T', 'Novo terminal PowerShell'],
-      ['Ctrl+W', 'Fechar a aba'],
-      ['Ctrl+Tab', 'Próxima aba'],
-      ['Ctrl+Shift+Tab', 'Aba anterior'],
-      ['Ctrl+K', 'Paleta de comandos'],
-      ['Ctrl+B', 'Recolher / expandir a barra lateral'],
-      ['Ctrl+Shift+F', 'Buscar no terminal'],
-      ['Ctrl+= / Ctrl+−', 'Aumentar / diminuir a fonte'],
-      ['Ctrl+0', 'Tamanho padrão da fonte'],
+    shortcutActions: {
+      newTab: 'Nova aba com o shell padrão',
+      newPowerShell: 'Novo terminal PowerShell',
+      closeTab: 'Fechar a aba',
+      nextTab: 'Próxima aba',
+      prevTab: 'Aba anterior',
+      palette: 'Paleta de comandos',
+      search: 'Buscar no terminal',
+      toggleSidebar: 'Recolher / expandir a barra lateral',
+      zoomIn: 'Aumentar a fonte',
+      zoomOut: 'Diminuir a fonte',
+      zoomReset: 'Tamanho padrão da fonte',
+    },
+    shortcutDisabled: 'Desativado',
+    shortcutChange: (action: string) => `Trocar o atalho de "${action}"`,
+    shortcutDisable: 'Desativar',
+    shortcutReset: 'Padrão',
+    shortcutResetAll: 'Restaurar todos os padrões',
+    shortcutRecording: 'Pressione a combinação… (Esc cancela)',
+    shortcutConflict: (action: string) => `Já usado por "${action}".`,
+    shortcutNeedsModifier: 'Use Ctrl ou Alt com a tecla, ou uma tecla F.',
+    shortcutSteals: (combo: string) =>
+      `${combo} deixa de chegar ao terminal (no bash, Ctrl+letra apaga, move ou é prefixo do tmux).`,
+    shortcutUseAnyway: 'Usar mesmo assim',
+    shortcutFixedTitle: 'Fixos do terminal',
+    shortcutFixed: [
+      ['Ctrl+Shift+C', 'Copiar a seleção'],
       ['Ctrl+Shift+V', 'Colar'],
       ['Ctrl+clique', 'Abrir link do terminal'],
     ] as const,
@@ -205,8 +221,10 @@ export const t = {
   terminal: {
     newLocal: 'Novo terminal local',
     emptyTitle: 'Nenhuma sessão aberta',
-    emptyHint:
-      'Dê dois cliques em um host para conectar ou pressione Ctrl+Shift+T para abrir o PowerShell.',
+    emptyHint: (shortcut: string | null) =>
+      shortcut
+        ? `Dê dois cliques em um host para conectar ou pressione ${shortcut} para abrir um terminal.`
+        : 'Dê dois cliques em um host para conectar ou use o + para abrir um terminal.',
     powershell: 'PowerShell',
     cmd: 'Prompt de Comando',
     connecting: 'Conectando…',
@@ -341,8 +359,8 @@ export const t = {
     brightColors: 'Cores claras',
   },
   sidebar: {
-    collapse: 'Recolher barra lateral (Ctrl+B)',
-    expand: 'Expandir barra lateral (Ctrl+B)',
+    collapse: 'Recolher barra lateral',
+    expand: 'Expandir barra lateral',
     railLabel: 'Barra lateral recolhida',
     hosts: 'Hosts',
     unlock: 'Desbloquear o cofre',
@@ -492,6 +510,8 @@ export const t = {
   },
   errors: {
     unexpected: 'Ocorreu um erro inesperado.',
+    copyDetails: 'Copiar detalhes',
+    detailsCopied: 'Copiado',
   },
 } as const;
 

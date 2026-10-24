@@ -10,6 +10,7 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  ClipboardCopy,
   ClipboardPaste,
   Keyboard,
   Moon,
@@ -80,6 +81,7 @@ export const KeyboardIcon = icon(Keyboard);
 export const ThemeIcon = icon(Moon);
 export const RenameIcon = icon(Pencil);
 export const CheckIcon = icon(Check);
+export const CopyIcon = icon(ClipboardCopy);
 export const MinusIcon = icon(Minus);
 export const BackIcon = icon(ArrowLeft);
 export const InfoIcon = icon(Info);

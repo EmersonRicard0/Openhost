@@ -116,6 +116,10 @@
   max-width: 920px;
 }
 
+.content.medium {
+  max-width: 720px;
+}
+
 .sectionTitle {
   margin: 0;
   font-size: 15px;
@@ -164,27 +168,144 @@
   font-weight: 600;
 }
 
-.shortcuts {
-  width: 100%;
-  border-collapse: collapse;
+/* Atalhos remapeáveis (FR-173). */
+.shortcutList {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.shortcuts th {
-  padding: 0 0 6px;
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 500;
-  text-align: left;
-}
-
-.shortcuts td {
-  padding: 7px 0;
+.shortcutRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, auto) minmax(120px, auto);
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
   border-top: 1px solid var(--border);
 }
 
-.shortcuts td:first-child {
-  width: 46%;
+.shortcutName {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.shortcutRow[data-changed] .shortcutName::after {
+  content: '•';
+  margin-left: 6px;
+  color: var(--accent);
+}
+
+.shortcutKeys,
+.shortcutKeysStatic {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-self: start;
+}
+
+.shortcutKeys {
+  padding: 4px 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.shortcutKeys:hover {
+  border-color: var(--border);
+  background: var(--hover);
+}
+
+.shortcutKeys:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 1px;
+}
+
+.shortcutKeysStatic {
+  padding: 4px 6px;
+}
+
+.shortcutOff {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.shortcutActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.recorderWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0;
+}
+
+.recorder {
+  padding: 6px 10px;
+  border: 1px dashed var(--accent);
+  border-radius: 7px;
+  background: var(--input-background);
+  color: var(--text-secondary);
+  font-size: 12px;
+  outline: none;
+  animation: recorder-pulse 1.4s var(--ease-standard) infinite;
+}
+
+@keyframes recorder-pulse {
+  50% {
+    border-color: var(--border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recorder {
+    animation: none;
+  }
+}
+
+.recorderProblem {
+  display: grid;
+  grid-template-columns: 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 4px 6px;
+  max-width: 360px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+/* Mensagem sem ícone ocupa a linha toda. */
+.recorderProblem > :only-child {
+  grid-column: 1 / -1;
+}
+
+.recorderProblem svg {
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  color: var(--warning);
+}
+
+.recorderProblem > button {
+  grid-column: 2;
+  justify-self: start;
+  margin-left: -8px;
+}
+
+.subTitle {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .kbd {

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { installShortcuts } from '../../app/shortcuts';
+import { currentKeymap, useShortcutLabel } from '../../app/useShortcuts';
 import { t } from '../../i18n/pt-BR';
 import { closeTab, useSessions, type Tab } from '../../stores/sessions';
 import { useWorkspace } from '../../stores/workspace';
@@ -78,9 +79,10 @@ const NEW_LOCAL = [
 export function Workspace() {
   const { tabs, activeId } = useSessions();
   const settings = useWorkspace((w) => w.view === 'settings');
+  const newTabShortcut = useShortcutLabel('newTab');
 
-  // Atalhos de FR-140, capturados antes do xterm para não virarem caracteres de controle.
-  useEffect(() => installShortcuts(runShortcut), []);
+  // Atalhos de FR-140/FR-173, capturados antes do xterm para não virarem caracteres de controle.
+  useEffect(() => installShortcuts(runShortcut, currentKeymap), []);
 
   return (
     <>
@@ -95,7 +97,7 @@ export function Workspace() {
                 <TerminalIcon width={28} height={28} />
               </span>
               <p className={app.emptyTitle}>{t.terminal.emptyTitle}</p>
-              <p className={app.emptyHint}>{t.terminal.emptyHint}</p>
+              <p className={app.emptyHint}>{t.terminal.emptyHint(newTabShortcut)}</p>
             </div>
           )}
           {tabs.map((tab) =>
