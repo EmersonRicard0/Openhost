@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig, type Plugin } from 'vite';
@@ -11,8 +12,13 @@ const devCsp: Plugin = {
     html.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"),
 };
 
+const { version } = JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as {
+  version: string;
+};
+
 export default defineConfig({
   plugins: [react(), devCsp],
+  define: { __APP_VERSION__: JSON.stringify(version) },
   resolve: { alias: { '@shared': resolve(import.meta.dirname, 'src/shared') } },
   build: { outDir: 'dist', emptyOutDir: true },
 });

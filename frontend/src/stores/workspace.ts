@@ -4,6 +4,9 @@ import { create } from 'zustand';
 export const FONT_MIN = 8;
 export const FONT_MAX = 32;
 
+/** O que ocupa a área principal: as abas ou a página de configurações (FR-168). */
+export type MainView = 'terminal' | 'settings';
+
 interface PendingPaste {
   sessionId: string;
   text: string;
@@ -15,7 +18,7 @@ interface WorkspaceState {
   /** Aba com a barra de busca aberta. */
   searchFor: string | null;
   paletteOpen: boolean;
-  settingsOpen: boolean;
+  view: MainView;
   pendingPaste: PendingPaste | null;
   /** Aba esperando confirmação para fechar (Ctrl+W com conexão ativa). */
   confirmClose: string | null;
@@ -23,7 +26,7 @@ interface WorkspaceState {
   zoomReset: (sessionId: string) => void;
   setSearchFor: (sessionId: string | null) => void;
   setPaletteOpen: (open: boolean) => void;
-  setSettingsOpen: (open: boolean) => void;
+  setView: (view: MainView) => void;
   setPendingPaste: (paste: PendingPaste | null) => void;
   setConfirmClose: (sessionId: string | null) => void;
 }
@@ -32,7 +35,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   zoom: {},
   searchFor: null,
   paletteOpen: false,
-  settingsOpen: false,
+  view: 'terminal',
   pendingPaste: null,
   confirmClose: null,
   zoomBy(sessionId, delta, base) {
@@ -51,8 +54,8 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   setPaletteOpen(paletteOpen) {
     set({ paletteOpen });
   },
-  setSettingsOpen(settingsOpen) {
-    set({ settingsOpen });
+  setView(view) {
+    set({ view });
   },
   setPendingPaste(pendingPaste) {
     set({ pendingPaste });

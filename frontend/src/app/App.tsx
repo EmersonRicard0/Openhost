@@ -1,13 +1,13 @@
 import { useEffect } from 'react';
 import { CommandPalette } from '../features/palette/CommandPalette';
 import { ForwardsIndicator } from '../features/forwarding/ForwardsIndicator';
-import { SettingsDialog } from '../features/settings/SettingsDialog';
 import { Workspace } from '../features/terminal/Workspace';
 import { CreateVaultScreen } from '../features/vault/CreateVaultScreen';
 import { UnlockPanel } from '../features/vault/UnlockScreen';
 import { UnreadableScreen } from '../features/vault/UnreadableScreen';
 import { HostSidebar } from '../features/hosts/HostSidebar';
 import { t } from '../i18n/pt-BR';
+import { useSessions } from '../stores/sessions';
 import { subscribeVault, useVault } from '../stores/vault';
 import { useWorkspace } from '../stores/workspace';
 import { Button } from '../ui/Button';
@@ -29,14 +29,30 @@ function FullscreenFrame({ children }: { children: React.ReactNode }) {
 
 export function App() {
   const { status, refresh, lock } = useVault();
-  const settingsOpen = useWorkspace((w) => w.settingsOpen);
-  const setSettingsOpen = useWorkspace((w) => w.setSettingsOpen);
+  const view = useWorkspace((w) => w.view);
+  const setView = useWorkspace((w) => w.setView);
 
   useEffect(() => {
     subscribeVault();
     void refresh();
     return trackActivity(() => void window.shellvault.vault.reportActivity());
   }, [refresh]);
+
+  // Abrir ou trocar de aba (não fechar) leva de volta às abas.
+  useEffect(
+    () =>
+      useSessions.subscribe((next, prev) => {
+        if (next.activeId !== prev.activeId && next.tabs.length >= prev.tabs.length) {
+          useWorkspace.getState().setView('terminal');
+        }
+      }),
+    [],
+  );
+
+  // Cofre apagado: ao criar o novo, começa pelas abas.
+  useEffect(() => {
+    if (status?.state === 'nonexistent') setView('terminal');
+  }, [status?.state, setView]);
 
   if (!status) return null;
 
@@ -80,8 +96,9 @@ export function App() {
               iconOnly
               aria-label={t.settings.title}
               title={t.settings.title}
+              aria-pressed={view === 'settings'}
               onClick={() => {
-                setSettingsOpen(true);
+                setView(view === 'settings' ? 'terminal' : 'settings');
               }}
             >
               <SettingsIcon />
@@ -94,13 +111,6 @@ export function App() {
       <main className={s.main}>
         <Workspace />
       </main>
-      {settingsOpen && (
-        <SettingsDialog
-          onClose={() => {
-            setSettingsOpen(false);
-          }}
-        />
-      )}
       <CommandPalette />
       <CloseConfirmDialog />
       <Toasts />

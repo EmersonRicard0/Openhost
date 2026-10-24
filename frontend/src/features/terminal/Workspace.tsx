@@ -10,6 +10,7 @@ import { RefreshIcon, TerminalIcon } from '../../ui/icons';
 import { toastError } from '../../ui/Toast';
 import { focusUnlock } from '../vault/UnlockScreen';
 import { ConflictDialog } from '../sftp/ConflictDialog';
+import { SettingsPage } from '../settings/SettingsPage';
 import { SftpView } from '../sftp/SftpView';
 import { runShortcut } from './commands';
 import { HostKeyDialog } from './HostKeyDialog';
@@ -89,6 +90,7 @@ const NEW_LOCAL = [
 
 export function Workspace() {
   const { tabs, activeId } = useSessions();
+  const settings = useWorkspace((w) => w.view === 'settings');
 
   // Atalhos de FR-140, capturados antes do xterm para não virarem caracteres de controle.
   useEffect(() => installShortcuts(runShortcut), []);
@@ -97,27 +99,32 @@ export function Workspace() {
     <>
       <TabBar newTabItems={NEW_LOCAL} />
       <div className={`${app.content} solid`} data-terminal-area>
-        {tabs.length === 0 && (
-          <div className={app.empty}>
-            <span className={app.emptyIcon}>
-              <TerminalIcon width={28} height={28} />
-            </span>
-            <p className={app.emptyTitle}>{t.terminal.emptyTitle}</p>
-            <p className={app.emptyHint}>{t.terminal.emptyHint}</p>
-          </div>
-        )}
-        {tabs.map((tab) =>
-          tab.kind === 'sftp' ? (
-            <SftpView key={tab.id} tab={tab} active={tab.id === activeId} />
-          ) : (
-            <TerminalView
-              key={tab.id}
-              tab={tab}
-              active={tab.id === activeId}
-              banner={<Banner tab={tab} />}
-            />
-          ),
-        )}
+        {/* Sob a página de configurações as abas ficam escondidas, não desmontadas:
+            sessões e tamanho do xterm seguem intactos (FR-168). */}
+        <div className={app.workspaceLayer} inert={settings}>
+          {tabs.length === 0 && (
+            <div className={app.empty}>
+              <span className={app.emptyIcon}>
+                <TerminalIcon width={28} height={28} />
+              </span>
+              <p className={app.emptyTitle}>{t.terminal.emptyTitle}</p>
+              <p className={app.emptyHint}>{t.terminal.emptyHint}</p>
+            </div>
+          )}
+          {tabs.map((tab) =>
+            tab.kind === 'sftp' ? (
+              <SftpView key={tab.id} tab={tab} active={tab.id === activeId} />
+            ) : (
+              <TerminalView
+                key={tab.id}
+                tab={tab}
+                active={tab.id === activeId}
+                banner={<Banner tab={tab} />}
+              />
+            ),
+          )}
+        </div>
+        {settings && <SettingsPage />}
       </div>
       <HostKeyDialog />
       <PromptDialog />

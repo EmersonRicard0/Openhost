@@ -35,6 +35,14 @@
   min-height: 0;
 }
 
+.workspaceLayer {
+  display: contents;
+}
+
+.workspaceLayer[inert] {
+  visibility: hidden;
+}
+
 /* Painel do terminal/SFTP: cartão opaco com cantos arredondados sobre a moldura. */
 .content {
   position: relative;

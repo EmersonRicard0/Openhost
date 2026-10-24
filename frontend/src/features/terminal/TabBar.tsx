@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { t } from '../../i18n/pt-BR';
 import type { SendKeysCombo } from '@shared/model/types';
 import { closeTab, isLive, useSessions, type Tab } from '../../stores/sessions';
+import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
 import { CloseIcon, KeyboardIcon, PlusIcon, RenameIcon } from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
@@ -72,6 +73,7 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
       draggable={!editing}
       onClick={() => {
         activate(tab.id);
+        useWorkspace.getState().setView('terminal');
       }}
       onDoubleClick={() => {
         setEditing(true);

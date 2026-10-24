@@ -30,7 +30,7 @@ function useCommands(): Entry[] {
   const unlocked = useVault((v) => v.status?.state === 'unlocked');
   const hosts = useHosts((h) => h.hosts);
   const lock = useVault((v) => v.lock);
-  const setSettingsOpen = useWorkspace((w) => w.setSettingsOpen);
+  const setView = useWorkspace((w) => w.setView);
 
   return useMemo(() => {
     const p = t.palette;
@@ -69,7 +69,7 @@ function useCommands(): Entry[] {
         group: 'action',
         icon: <SettingsIcon />,
         run: () => {
-          setSettingsOpen(true);
+          setView('settings');
         },
       },
       {
@@ -112,7 +112,7 @@ function useCommands(): Entry[] {
       ];
     });
     return [...actions, ...hostEntries];
-  }, [unlocked, hosts, lock, setSettingsOpen]);
+  }, [unlocked, hosts, lock, setView]);
 }
 
 export function CommandPalette() {

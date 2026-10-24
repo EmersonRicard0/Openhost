@@ -294,6 +294,7 @@ textarea.input {
 }
 
 .numberWrap {
+  max-width: 200px;
   padding: 0 3px;
 }
 

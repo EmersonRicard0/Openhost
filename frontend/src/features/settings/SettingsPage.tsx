@@ -1,0 +1,470 @@
+// Configurações como página na área principal (FR-168): navegação por seções à esquerda,
+// conteúdo à direita e salvamento automático. As abas seguem vivas por baixo.
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import type { LocalShell, Settings, ThemePreference, VaultSettings } from '@shared/model/types';
+import { t } from '../../i18n/pt-BR';
+import { useSessions } from '../../stores/sessions';
+import { useUi } from '../../stores/ui';
+import { useVault } from '../../stores/vault';
+import { useWorkspace } from '../../stores/workspace';
+import { Button } from '../../ui/Button';
+import { Checkbox } from '../../ui/Checkbox';
+import {
+  BackIcon,
+  GeneralIcon,
+  InfoIcon,
+  KeyboardIcon,
+  PaletteIcon,
+  ShieldIcon,
+  TerminalIcon,
+} from '../../ui/icons';
+import { useSlidingIndicator } from '../../ui/motion';
+import { NumberField } from '../../ui/NumberField';
+import { Select } from '../../ui/Select';
+import { TextField } from '../../ui/TextField';
+import { toastError } from '../../ui/Toast';
+import { focusTerminal } from '../terminal/terminalRegistry';
+import { ChangePasswordDialog } from '../vault/ChangePasswordDialog';
+import { EraseVaultDialog } from '../vault/EraseVaultDialog';
+import s from './settings.module.css';
+
+type Section = keyof typeof t.settings.sections;
+
+const SECTIONS: { id: Section; icon: ReactNode }[] = [
+  { id: 'general', icon: <GeneralIcon /> },
+  { id: 'appearance', icon: <PaletteIcon /> },
+  { id: 'terminal', icon: <TerminalIcon /> },
+  { id: 'vault', icon: <ShieldIcon /> },
+  { id: 'shortcuts', icon: <KeyboardIcon /> },
+  { id: 'about', icon: <InfoIcon /> },
+];
+
+const THEMES: { value: ThemePreference; label: string }[] = [
+  { value: 'system', label: t.settings.themeSystem },
+  { value: 'light', label: t.settings.themeLight },
+  { value: 'dark', label: t.settings.themeDark },
+];
+
+const SHELLS: { value: LocalShell; label: string }[] = [
+  { value: 'powershell', label: t.settings.shellPowerShell },
+  { value: 'cmd', label: t.settings.shellCmd },
+];
+
+const SAVE_DELAY_MS = 400;
+
+function intIn(text: string, min: number, max: number): number | null {
+  const n = Number(text);
+  return Number.isInteger(n) && n >= min && n <= max ? n : null;
+}
+
+/** Estado local de um campo que acompanha o valor salvo quando ele muda por fora. */
+function useField<T>(source: T): [T, (value: T) => void] {
+  const [value, setValue] = useState(source);
+  const [from, setFrom] = useState(source);
+  if (source !== from) {
+    setFrom(source);
+    setValue(source);
+  }
+  return [value, setValue];
+}
+
+/** Salva `desired` depois de uma pausa na digitação, se for válido e diferente do salvo. */
+function useAutosave<T>(desired: T | null, saved: T, save: (value: T) => void) {
+  const key = desired === null ? null : JSON.stringify(desired);
+  const savedKey = JSON.stringify(saved);
+  const latest = useRef(save);
+  useEffect(() => {
+    latest.current = save;
+  });
+  useEffect(() => {
+    if (key === null || key === savedKey) return;
+    const timer = setTimeout(() => {
+      latest.current(JSON.parse(key) as T);
+    }, SAVE_DELAY_MS);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [key, savedKey]);
+}
+
+async function saveUi(patch: Partial<Omit<Settings, 'window'>>): Promise<void> {
+  const res = await window.shellvault.app.updateUiSettings(patch);
+  if (res.ok) useUi.getState().setSettings(res.value);
+  else toastError(res.error);
+}
+
+function Group({ title, children }: { title?: string; children: ReactNode }) {
+  return (
+    <div className={s.group}>
+      {title && <h3 className={s.groupTitle}>{title}</h3>}
+      {children}
+    </div>
+  );
+}
+
+function GeneralSection({ settings }: { settings: Settings }) {
+  return (
+    <Group>
+      <Select
+        label={t.settings.defaultShell}
+        value={settings.defaultShell}
+        options={SHELLS}
+        onChange={(defaultShell) => void saveUi({ defaultShell })}
+      />
+    </Group>
+  );
+}
+
+function AppearanceSection({ settings }: { settings: Settings }) {
+  return (
+    <Group>
+      <Select
+        label={t.settings.theme}
+        value={settings.theme}
+        options={THEMES}
+        onChange={(theme) => void saveUi({ theme })}
+      />
+      <Checkbox
+        label={t.settings.glass}
+        hint={t.settings.glassHint}
+        checked={settings.glassEnabled}
+        onChange={(e) => void saveUi({ glassEnabled: e.target.checked })}
+      />
+    </Group>
+  );
+}
+
+function TerminalSection({ settings }: { settings: Settings }) {
+  const [font, setFont] = useField(settings.terminalFontFamily);
+  const [size, setSize] = useField(String(settings.terminalFontSize));
+  const sizeValue = intIn(size, 8, 32);
+  const fontValue = font.trim();
+
+  useAutosave(fontValue || null, settings.terminalFontFamily, (terminalFontFamily) => {
+    void saveUi({ terminalFontFamily });
+  });
+  useAutosave(sizeValue, settings.terminalFontSize, (terminalFontSize) => {
+    void saveUi({ terminalFontSize });
+  });
+
+  return (
+    <Group>
+      <TextField
+        label={t.settings.font}
+        value={font}
+        error={fontValue ? null : t.common.required}
+        onChange={(e) => {
+          setFont(e.target.value);
+        }}
+      />
+      <NumberField
+        label={t.settings.fontSize}
+        min={8}
+        max={32}
+        unit="px"
+        value={size}
+        error={sizeValue === null ? '8–32' : null}
+        onChange={setSize}
+      />
+    </Group>
+  );
+}
+
+function VaultSection() {
+  const { status, settings, loadSettings, updateSettings } = useVault();
+  const unlocked = status?.state === 'unlocked';
+  const [sub, setSub] = useState<'password' | 'erase' | null>(null);
+
+  useEffect(() => {
+    if (unlocked) void loadSettings();
+  }, [unlocked, loadSettings]);
+
+  if (!unlocked) return <p className={s.notice}>{t.settings.vaultLocked}</p>;
+  if (!settings) return null;
+
+  return (
+    <>
+      <VaultFields
+        saved={settings}
+        save={(patch) => {
+          void updateSettings(patch).then((res) => {
+            if (!res.ok) toastError(res.error);
+          });
+        }}
+      />
+      <Group title={t.settings.masterPassword}>
+        <div className={s.actions}>
+          <Button
+            onClick={() => {
+              setSub('password');
+            }}
+          >
+            {t.settings.changePassword}
+          </Button>
+          <Button
+            variant="danger"
+            onClick={() => {
+              setSub('erase');
+            }}
+          >
+            {t.settings.eraseVault}
+          </Button>
+        </div>
+        <p className={s.hint}>{t.settings.eraseHint}</p>
+      </Group>
+      {sub === 'password' && (
+        <ChangePasswordDialog
+          onClose={() => {
+            setSub(null);
+          }}
+        />
+      )}
+      {sub === 'erase' && (
+        <EraseVaultDialog
+          onClose={() => {
+            setSub(null);
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function VaultFields({
+  saved,
+  save,
+}: {
+  saved: VaultSettings;
+  save: (value: VaultSettings) => void;
+}) {
+  const [autoLockOn, setAutoLockOn] = useField(saved.autoLockMinutes !== null);
+  const [autoLock, setAutoLock] = useField(String(saved.autoLockMinutes ?? 15));
+  const [timeout, setTimeoutText] = useField(String(saved.connectTimeoutSeconds));
+  const [keepalive, setKeepalive] = useField(String(saved.keepaliveSeconds));
+  const autoLockValue = intIn(autoLock, 1, 120);
+  const timeoutValue = intIn(timeout, 5, 120);
+  const keepaliveValue = intIn(keepalive, 10, 300);
+  const valid =
+    (!autoLockOn || autoLockValue !== null) && timeoutValue !== null && keepaliveValue !== null;
+
+  useAutosave(
+    valid
+      ? {
+          autoLockMinutes: autoLockOn ? autoLockValue : null,
+          connectTimeoutSeconds: timeoutValue,
+          keepaliveSeconds: keepaliveValue,
+        }
+      : null,
+    {
+      autoLockMinutes: saved.autoLockMinutes,
+      connectTimeoutSeconds: saved.connectTimeoutSeconds,
+      keepaliveSeconds: saved.keepaliveSeconds,
+    },
+    save,
+  );
+
+  return (
+    <>
+      <Group>
+        <Checkbox
+          label={t.settings.autoLock}
+          checked={autoLockOn}
+          onChange={(e) => {
+            setAutoLockOn(e.target.checked);
+          }}
+        />
+        {autoLockOn && (
+          <NumberField
+            label={t.settings.autoLockMinutes}
+            min={1}
+            max={120}
+            unit="min"
+            value={autoLock}
+            error={autoLockValue === null ? '1–120' : null}
+            onChange={setAutoLock}
+          />
+        )}
+      </Group>
+      <Group>
+        <NumberField
+          label={t.settings.connectTimeout}
+          min={5}
+          max={120}
+          unit="s"
+          value={timeout}
+          error={timeoutValue === null ? '5–120' : null}
+          onChange={setTimeoutText}
+        />
+        <NumberField
+          label={t.settings.keepalive}
+          hint={t.settings.keepaliveHint}
+          min={10}
+          max={300}
+          step={5}
+          unit="s"
+          value={keepalive}
+          error={keepaliveValue === null ? '10–300' : null}
+          onChange={setKeepalive}
+        />
+      </Group>
+    </>
+  );
+}
+
+function ShortcutsSection() {
+  return (
+    <Group>
+      <p className={s.hint}>{t.settings.shortcutsIntro}</p>
+      <table className={s.shortcuts}>
+        <thead>
+          <tr>
+            <th scope="col">{t.settings.shortcutKeys}</th>
+            <th scope="col">{t.settings.shortcutAction}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {t.settings.shortcutList.map(([keys, action]) => (
+            <tr key={keys}>
+              <td>
+                {keys.split(' / ').map((combo, i) => (
+                  <span key={combo}>
+                    {i > 0 && ' / '}
+                    <kbd className={s.kbd}>{combo}</kbd>
+                  </span>
+                ))}
+              </td>
+              <td>{action}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </Group>
+  );
+}
+
+function AboutSection() {
+  return (
+    <Group>
+      <p className={s.appName}>{t.common.appName}</p>
+      <p className={s.hint}>{t.settings.version(__APP_VERSION__)}</p>
+      <p>{t.settings.aboutDescription}</p>
+      <p className={s.hint}>{t.settings.aboutOffline}</p>
+    </Group>
+  );
+}
+
+export function SettingsPage() {
+  const setView = useWorkspace((w) => w.setView);
+  const settings = useUi((u) => u.settings);
+  const [section, setSection] = useState<Section>('general');
+  const navRef = useRef<HTMLElement>(null);
+  const indicator = useSlidingIndicator(navRef, section, 'y', '[aria-current="page"]');
+
+  function close() {
+    setView('terminal');
+    const active = useSessions.getState().activeId;
+    if (active) {
+      requestAnimationFrame(() => {
+        focusTerminal(active);
+      });
+    }
+  }
+  const closeRef = useRef(close);
+  useEffect(() => {
+    closeRef.current = close;
+  });
+
+  // Esc volta às abas, a menos que um diálogo ou lista aberta já tenha tratado a tecla.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape' || e.defaultPrevented) return;
+      if (document.querySelector('[aria-modal="true"]')) return;
+      e.preventDefault();
+      closeRef.current();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
+  // Foco na seção ativa ao abrir (depois que a paleta, se veio dela, devolver o foco).
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      navRef.current?.querySelector<HTMLElement>('[aria-current="page"]')?.focus();
+    }, 0);
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
+
+  function onNavKey(e: React.KeyboardEvent) {
+    const i = SECTIONS.findIndex((x) => x.id === section);
+    let next: number;
+    if (e.key === 'ArrowDown') next = (i + 1) % SECTIONS.length;
+    else if (e.key === 'ArrowUp') next = (i - 1 + SECTIONS.length) % SECTIONS.length;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = SECTIONS.length - 1;
+    else return;
+    e.preventDefault();
+    const id = SECTIONS[next]?.id ?? 'general';
+    setSection(id);
+    navRef.current?.querySelector<HTMLElement>(`[data-section="${id}"]`)?.focus();
+  }
+
+  return (
+    <section className={s.page} aria-labelledby="settings-title">
+      <header className={s.header}>
+        <Button
+          variant="ghost"
+          iconOnly
+          aria-label={t.settings.back}
+          title={t.settings.back}
+          onClick={close}
+        >
+          <BackIcon />
+        </Button>
+        <h1 id="settings-title" className={s.title}>
+          {t.settings.title}
+        </h1>
+        <span className={s.autosave}>{t.settings.autosave}</span>
+      </header>
+      <div className={s.body}>
+        <nav
+          ref={navRef}
+          className={s.nav}
+          aria-label={t.settings.sectionsLabel}
+          style={indicator ?? undefined}
+          data-indicator={indicator ? '' : undefined}
+          onKeyDown={onNavKey}
+        >
+          {SECTIONS.map(({ id, icon }) => (
+            <button
+              key={id}
+              type="button"
+              data-section={id}
+              className={s.navItem}
+              aria-current={id === section ? 'page' : undefined}
+              tabIndex={id === section ? 0 : -1}
+              onClick={() => {
+                setSection(id);
+              }}
+            >
+              {icon}
+              {t.settings.sections[id]}
+            </button>
+          ))}
+        </nav>
+        <div className={s.content} key={section}>
+          <h2 className={s.sectionTitle}>{t.settings.sections[section]}</h2>
+          {settings && section === 'general' && <GeneralSection settings={settings} />}
+          {settings && section === 'appearance' && <AppearanceSection settings={settings} />}
+          {settings && section === 'terminal' && <TerminalSection settings={settings} />}
+          {section === 'vault' && <VaultSection />}
+          {section === 'shortcuts' && <ShortcutsSection />}
+          {section === 'about' && <AboutSection />}
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -129,6 +129,8 @@ export interface Settings {
   defaultShell: LocalShell;
   /** Barra lateral em modo trilho. */
   sidebarCollapsed: boolean;
+  /** Vidro ligado pelo usuário (FR-162). */
+  glassEnabled: boolean;
 }
 
 export interface Appearance {

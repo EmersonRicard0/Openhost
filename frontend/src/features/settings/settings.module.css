@@ -1,0 +1,209 @@
+/* Página de configurações (FR-168): cobre o painel do terminal, que segue montado por baixo. */
+.page {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  background: var(--panel-solid);
+  overflow: hidden;
+  animation: page-in var(--motion-base) var(--ease-emphasized);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 18px 12px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.1px;
+}
+
+.autosave {
+  margin-left: auto;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: 210px minmax(0, 1fr);
+  flex: 1;
+  min-height: 0;
+}
+
+.nav {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 10px;
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+
+/* Indicador que desliza até a seção ativa (FR-166). */
+.nav[data-indicator]::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  height: var(--indicator-size);
+  border-radius: 8px;
+  background: var(--selected);
+  transform: translateY(var(--indicator-offset));
+  transition:
+    transform var(--motion-base) var(--ease-emphasized),
+    height var(--motion-base) var(--ease-emphasized);
+  pointer-events: none;
+}
+
+.navItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color var(--motion-fast) var(--ease-standard),
+    background-color var(--motion-fast) var(--ease-standard);
+}
+
+.navItem:hover {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.navItem[aria-current='page'] {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.navItem[aria-current='page']:hover {
+  background: transparent;
+}
+
+.navItem:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 560px;
+  padding: 22px 28px 32px;
+  overflow-y: auto;
+  animation: section-in var(--motion-base) var(--ease-standard);
+}
+
+.sectionTitle {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.group + .group {
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+
+.groupTitle {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.group p {
+  margin: 0;
+}
+
+.hint,
+.notice {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.notice {
+  font-size: 13px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.appName {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.shortcuts {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.shortcuts th {
+  padding: 0 0 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+}
+
+.shortcuts td {
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+}
+
+.shortcuts td:first-child {
+  width: 46%;
+  white-space: nowrap;
+}
+
+.kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--input-background);
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 18px;
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes section-in {
+  from {
+    opacity: 0;
+    transform: translateX(6px);
+  }
+}

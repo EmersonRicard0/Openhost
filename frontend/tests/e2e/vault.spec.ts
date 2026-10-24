@@ -37,7 +37,9 @@ test('criar, desbloquear, bloquear, trocar senha e apagar o cofre', async () => 
     // Trocar a senha mestra.
     await unlock(page);
     await page.getByRole('button', { name: 'Configurações' }).click();
-    await page.getByRole('button', { name: 'Trocar senha mestra…' }).click();
+    const settings = page.getByRole('region', { name: 'Configurações' });
+    await settings.getByRole('button', { name: 'Cofre e segurança' }).click();
+    await settings.getByRole('button', { name: 'Trocar senha mestra…' }).click();
     const change = page.getByRole('dialog', { name: 'Trocar senha mestra' });
     await change.getByLabel('Senha atual', { exact: true }).fill(MASTER_PASSWORD);
     await change.getByLabel('Nova senha mestra', { exact: true }).fill(NEW_PASSWORD);
@@ -46,6 +48,7 @@ test('criar, desbloquear, bloquear, trocar senha e apagar o cofre', async () => 
     await expect(page.getByText('Senha mestra alterada.')).toBeVisible({ timeout: 30_000 });
     await expect(change).toBeHidden();
     await page.keyboard.press('Escape');
+    await expect(settings).toBeHidden();
 
     await page.getByRole('button', { name: 'Bloquear cofre' }).click();
     await unlock(page);
