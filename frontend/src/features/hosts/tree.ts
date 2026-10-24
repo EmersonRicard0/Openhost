@@ -5,6 +5,14 @@ export type TreeRow =
   | { kind: 'group'; group: Group; depth: number; expanded: boolean; hostCount: number }
   | { kind: 'host'; host: HostView; depth: number };
 
+/** Recuo à esquerda (px) de uma linha: grupos e hosts do mesmo nível alinham (B4). */
+export const INDENT_BASE = 8;
+export const INDENT_STEP = 16;
+
+export function rowIndent(row: TreeRow): number {
+  return INDENT_BASE + row.depth * INDENT_STEP;
+}
+
 const byLabel = (a: HostView, b: HostView) => a.label.localeCompare(b.label, 'pt-BR');
 const byOrder = (a: Group, b: Group) =>
   a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'pt-BR');

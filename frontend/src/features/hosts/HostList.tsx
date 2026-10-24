@@ -14,7 +14,7 @@ import { openSftp } from '../sftp/openSftp';
 import { connectHost } from './connect';
 import { GroupNameDialog, MoveDialog } from './GroupDialogs';
 import { buildIndex, filterHosts } from './search';
-import { buildRows, groupPaths, type TreeRow } from './tree';
+import { buildRows, groupPaths, rowIndent, type TreeRow } from './tree';
 import s from './hosts.module.css';
 
 const HOST_MIME = 'application/x-shellvault-host';
@@ -215,7 +215,7 @@ export function HostList({ query, listRef, onEdit }: HostListProps) {
     e.dataTransfer.types.includes(HOST_MIME) || e.dataTransfer.types.includes(GROUP_MIME);
 
   function renderRow(row: TreeRow, position: number) {
-    const indent = { paddingLeft: 8 + row.depth * 16 };
+    const indent = { paddingLeft: rowIndent(row) };
     if (row.kind === 'group') {
       const { group, expanded } = row;
       const key = rowKey(row);
