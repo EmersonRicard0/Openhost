@@ -4,6 +4,13 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* Camadas: menus sempre acima de diálogos e do terminal; toasts acima de tudo. */
+  --layer-dialog: 100;
+  --layer-menu: 200;
+  --layer-toast: 300;
+}
+
 html,
 body,
 #root {

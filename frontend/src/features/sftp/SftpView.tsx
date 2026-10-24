@@ -18,6 +18,7 @@ import {
   UploadIcon,
 } from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
+import type { PopoverAnchor } from '../../ui/Popover';
 import { NameDialog } from '../../ui/NameDialog';
 import { toastError } from '../../ui/Toast';
 import { focusUnlock } from '../vault/UnlockScreen';
@@ -73,7 +74,7 @@ export function SftpView({ tab, active }: SftpViewProps) {
   const [loaded, setLoaded] = useState(false);
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [anchor, setAnchor] = useState<string | null>(null);
-  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
+  const [menu, setMenu] = useState<{ anchor: PopoverAnchor; items: MenuItem[] } | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const connected = tab.state === 'connected';
 
@@ -370,7 +371,7 @@ export function SftpView({ tab, active }: SftpViewProps) {
         onContextMenu={(e) => {
           if (e.target !== e.currentTarget || !connected) return;
           e.preventDefault();
-          setMenu({ x: e.clientX, y: e.clientY, items: backgroundMenu() });
+          setMenu({ anchor: { x: e.clientX, y: e.clientY }, items: backgroundMenu() });
         }}
       >
         <table className={s.table} aria-label={t.sftp.files} aria-multiselectable="true">
@@ -410,7 +411,7 @@ export function SftpView({ tab, active }: SftpViewProps) {
                 onContextMenu={(e) => {
                   e.preventDefault();
                   if (!selected.has(entry.path)) setSelected(new Set([entry.path]));
-                  setMenu({ x: e.clientX, y: e.clientY, items: rowMenu(entry) });
+                  setMenu({ anchor: { x: e.clientX, y: e.clientY }, items: rowMenu(entry) });
                 }}
               >
                 <td className={s.colName}>
@@ -435,8 +436,7 @@ export function SftpView({ tab, active }: SftpViewProps) {
 
       {menu && (
         <Menu
-          x={menu.x}
-          y={menu.y}
+          anchor={menu.anchor}
           items={menu.items}
           onClose={() => {
             setMenu(null);

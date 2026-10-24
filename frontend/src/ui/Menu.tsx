@@ -1,5 +1,5 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useRef, type ReactNode } from 'react';
+import { Popover, type PopoverAnchor } from './Popover';
 import s from './ui.module.css';
 
 export interface MenuItem {
@@ -11,77 +11,84 @@ export interface MenuItem {
 }
 
 export interface MenuProps {
-  x: number;
-  y: number;
+  /** Botão que abriu o menu, ou o ponto do clique direito. */
+  anchor: PopoverAnchor;
   items: MenuItem[];
   onClose: () => void;
 }
 
-/** Menu de contexto navegável por teclado (setas, Enter, Esc). */
-export function Menu({ x, y, items, onClose }: MenuProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [pos, setPos] = useState({ x, y });
+/** Menu navegável por teclado (setas, Enter, Esc), ancorado e sempre inteiro na janela. */
+export function Menu({ anchor, items, onClose }: MenuProps) {
+  const ref = useRef<HTMLDivElement | null>(null);
 
-  useLayoutEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const r = el.getBoundingClientRect();
-    setPos({
-      x: Math.min(x, window.innerWidth - r.width - 8),
-      y: Math.min(y, window.innerHeight - r.height - 8),
-    });
-    el.querySelector<HTMLElement>('button:not([disabled])')?.focus();
-  }, [x, y]);
+  function focusFirst() {
+    ref.current?.querySelector<HTMLElement>('button:not([disabled])')?.focus();
+  }
 
   useEffect(() => {
     const close = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) onClose();
+      const target = e.target as Node;
+      // O botão que abriu alterna o menu no próprio clique.
+      if (ref.current?.contains(target) || (anchor instanceof Element && anchor.contains(target)))
+        return;
+      onClose();
     };
-    window.addEventListener('mousedown', close);
+    window.addEventListener('mousedown', close, true);
     window.addEventListener('blur', onClose);
     return () => {
-      window.removeEventListener('mousedown', close);
+      window.removeEventListener('mousedown', close, true);
       window.removeEventListener('blur', onClose);
     };
-  }, [onClose]);
+  }, [anchor, onClose]);
 
   function onKeyDown(e: React.KeyboardEvent) {
     const buttons = [
       ...(ref.current?.querySelectorAll<HTMLElement>('button:not([disabled])') ?? []),
     ];
     const i = buttons.indexOf(document.activeElement as HTMLElement);
-    if (e.key === 'Escape') onClose();
-    else if (e.key === 'ArrowDown') buttons[(i + 1) % buttons.length]?.focus();
+    if (e.key === 'Escape') {
+      onClose();
+      if (anchor instanceof HTMLElement) anchor.focus();
+    } else if (e.key === 'ArrowDown') buttons[(i + 1) % buttons.length]?.focus();
     else if (e.key === 'ArrowUp') buttons[(i - 1 + buttons.length) % buttons.length]?.focus();
+    else if (e.key === 'Home') buttons[0]?.focus();
+    else if (e.key === 'End') buttons[buttons.length - 1]?.focus();
+    else if (e.key === 'Tab') onClose();
     else return;
-    e.preventDefault();
+    if (e.key !== 'Tab') e.preventDefault();
   }
 
-  return createPortal(
-    <div
-      ref={ref}
-      role="menu"
-      className={`${s.menu} raised glass-edge`}
-      style={{ left: pos.x, top: pos.y }}
-      onKeyDown={onKeyDown}
-    >
-      {items.map((item) => (
-        <button
-          key={item.label}
-          type="button"
-          role="menuitem"
-          disabled={item.disabled}
-          className={`${s.menuItem} ${item.danger ? s.menuItemDanger : ''}`}
-          onClick={() => {
-            onClose();
-            item.onSelect();
+  return (
+    <Popover anchor={anchor} onPositioned={focusFirst}>
+      {({ ref: setFloating, style }) => (
+        <div
+          ref={(el) => {
+            ref.current = el;
+            if (typeof setFloating === 'function') setFloating(el);
           }}
+          role="menu"
+          className={`${s.menu} raised glass-edge`}
+          style={style}
+          onKeyDown={onKeyDown}
         >
-          {item.icon}
-          {item.label}
-        </button>
-      ))}
-    </div>,
-    document.body,
+          {items.map((item) => (
+            <button
+              key={item.label}
+              type="button"
+              role="menuitem"
+              disabled={item.disabled}
+              className={`${s.menuItem} ${item.danger ? s.menuItemDanger : ''}`}
+              onClick={() => {
+                onClose();
+                item.onSelect();
+              }}
+            >
+              {item.icon}
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </Popover>
   );
 }

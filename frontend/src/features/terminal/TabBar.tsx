@@ -106,7 +106,7 @@ export interface TabBarProps {
 
 export function TabBar({ newTabItems, trailing }: TabBarProps) {
   const { tabs, activeId, reorder } = useSessions();
-  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
 
   return (
     <div
@@ -129,22 +129,23 @@ export function TabBar({ newTabItems, trailing }: TabBarProps) {
           iconOnly
           className={`${s.newTab} no-drag`}
           aria-label={t.terminal.newLocal}
+          aria-haspopup="menu"
+          aria-expanded={menuAnchor !== null}
           onClick={(e) => {
-            const r = e.currentTarget.getBoundingClientRect();
-            setMenu({ x: r.left, y: r.bottom + 4 });
+            const el = e.currentTarget;
+            setMenuAnchor((cur) => (cur ? null : el));
           }}
         >
           <PlusIcon />
         </Button>
       )}
       {trailing}
-      {menu && (
+      {menuAnchor && (
         <Menu
-          x={menu.x}
-          y={menu.y}
+          anchor={menuAnchor}
           items={newTabItems}
           onClose={() => {
-            setMenu(null);
+            setMenuAnchor(null);
           }}
         />
       )}

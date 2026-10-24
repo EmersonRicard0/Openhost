@@ -6,6 +6,7 @@ import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Menu, type MenuItem } from '../../ui/Menu';
+import type { PopoverAnchor } from '../../ui/Popover';
 import { Avatar } from '../../ui/Avatar';
 import { ChevronIcon, FolderIcon, FolderOpenIcon } from '../../ui/icons';
 import { toastError } from '../../ui/Toast';
@@ -104,7 +105,7 @@ export function HostList({ query, listRef, onEdit }: HostListProps) {
   const { hosts, groups, loaded } = useHosts();
   const [selected, setSelected] = useState<string | null>(null);
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
-  const [menu, setMenu] = useState<{ x: number; y: number; items: MenuItem[] } | null>(null);
+  const [menu, setMenu] = useState<{ anchor: PopoverAnchor; items: MenuItem[] } | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
 
@@ -250,7 +251,7 @@ export function HostList({ query, listRef, onEdit }: HostListProps) {
           onContextMenu={(e) => {
             e.preventDefault();
             setSelected(key);
-            setMenu({ x: e.clientX, y: e.clientY, items: groupMenu(group) });
+            setMenu({ anchor: { x: e.clientX, y: e.clientY }, items: groupMenu(group) });
           }}
           onDragStart={(e) => {
             e.stopPropagation();
@@ -313,7 +314,7 @@ export function HostList({ query, listRef, onEdit }: HostListProps) {
         onContextMenu={(e) => {
           e.preventDefault();
           setSelected(host.id);
-          setMenu({ x: e.clientX, y: e.clientY, items: hostMenu(host) });
+          setMenu({ anchor: { x: e.clientX, y: e.clientY }, items: hostMenu(host) });
         }}
         onDragStart={(e) => {
           e.dataTransfer.setData(HOST_MIME, host.id);
@@ -448,8 +449,7 @@ export function HostList({ query, listRef, onEdit }: HostListProps) {
       {content}
       {menu && (
         <Menu
-          x={menu.x}
-          y={menu.y}
+          anchor={menu.anchor}
           items={menu.items}
           onClose={() => {
             setMenu(null);
