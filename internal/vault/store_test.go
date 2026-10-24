@@ -365,7 +365,7 @@ func TestColorSchemeStoreDeleteAndSeedRefresh(t *testing.T) {
 	for _, scheme := range schemes {
 		if scheme.ID == BrandSchemeID {
 			found = true
-			if scheme.Name != "OpenHosts Dark" || scheme.Origin != model.SchemeBuiltin {
+			if scheme.Name != "OpenHost Dark" || scheme.Origin != model.SchemeBuiltin {
 				t.Fatalf("builtin não foi atualizado no Open: %+v", scheme)
 			}
 		}

@@ -8,7 +8,7 @@ const BrandSchemeID = "00000000-0000-4000-8000-000000000001"
 // Presets devolve cópias dos esquemas embutidos para que chamadores possam alterá-las.
 func Presets() []model.ColorScheme {
 	return []model.ColorScheme{
-		preset(BrandSchemeID, "OpenHosts Dark", "#e8e8e8", "#050505", "#f5f5f5", "#ffffff38",
+		preset(BrandSchemeID, "OpenHost Dark", "#e8e8e8", "#050505", "#f5f5f5", "#ffffff38",
 			"#1d2026", "#ff7b72", "#5cc98b", "#e8c35a", "#6aa8f0", "#c792ea", "#56c8d8", "#cdd2da", "#5c6370", "#ffa198", "#8ee0ae", "#f5d77f", "#9cc6ff", "#dcb2f5", "#8ce0ec", "#f6f8fa"), // TODO(T081): confirmar com os tokens finais da marca.
 		preset("00000000-0000-4000-8000-000000000003", "Dracula", "#f8f8f2", "#282a36", "#f8f8f2", "#44475a",
 			"#000000", "#ff5555", "#50fa7b", "#f1fa8c", "#bd93f9", "#ff79c6", "#8be9fd", "#bfbfbf", "#4d4d4d", "#ff6e67", "#5af78e", "#f4f99d", "#caa9fa", "#ff92d0", "#9aedfe", "#e6e6e6"),

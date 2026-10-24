@@ -61,7 +61,7 @@ var Messages = map[Code]string{
 	VaultExists:             "Já existe um cofre neste computador.",
 	VaultBadPassword:        "Senha incorreta ou cofre inválido.",
 	VaultUnreadable:         "O arquivo do cofre está corrompido e não pode ser aberto.",
-	VaultUnsupportedVersion: "O cofre foi criado por uma versão mais nova do OpenHosts e não pode ser aberto.",
+	VaultUnsupportedVersion: "O cofre foi criado por uma versão mais nova do OpenHost e não pode ser aberto.",
 	VaultMigrationFailed:    "Não foi possível atualizar o cofre da versão anterior. O arquivo original foi mantido intacto.",
 	WeakPassword:            "A senha mestra precisa ter pelo menos 8 caracteres.",
 	NotFound:                "Item não encontrado.",

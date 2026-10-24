@@ -32,7 +32,7 @@ var (
 func main() {
 	if err := run(); err != nil {
 		// Sem arquivo de log (FR-030): o erro vai só para stderr, sem dados do usuário.
-		fmt.Fprintln(os.Stderr, "OpenHosts não pôde iniciar:", err)
+		fmt.Fprintln(os.Stderr, "OpenHost não pôde iniciar:", err)
 		os.Exit(1)
 	}
 }
@@ -56,7 +56,7 @@ func run() error {
 	// Lido pela goroutine da segunda instância; escrito no OnStartup.
 	var appCtx atomic.Pointer[context.Context]
 	return wails.Run(&options.App{
-		Title:              "OpenHosts",
+		Title:              "OpenHost",
 		Width:              1280,
 		Height:             800,
 		MinWidth:           800,

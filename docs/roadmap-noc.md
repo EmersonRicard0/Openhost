@@ -53,6 +53,6 @@ o vazio "Nenhuma aba aberta") com três modos:
 
 ## Decidido
 
-- **Nome**: o app passa a se chamar **OpenHosts** (24/10/2026). "OpenConnect" foi descartado por
+- **Nome**: o app passa a se chamar **OpenHost** (24/10/2026). "OpenConnect" foi descartado por
   ser o cliente VPN open source (compatível com AnyConnect, par do ocserv), o que confundia busca e
   marca no público de redes.

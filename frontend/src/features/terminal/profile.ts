@@ -8,7 +8,7 @@ export const BRAND_SCHEME_ID = '00000000-0000-4000-8000-000000000001';
 /** Esquema da marca, usado até a lista do processo principal chegar. */
 export const BRAND_SCHEME: ColorScheme = {
   id: BRAND_SCHEME_ID,
-  name: 'OpenHosts Dark',
+  name: 'OpenHost Dark',
   origin: 'builtin',
   foreground: '#e8e8e8',
   background: '#050505',
