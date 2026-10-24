@@ -102,6 +102,12 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
 			}
 			preferences.GlassEnabled = value
+		case "sidebarCollapsed":
+			value, ok := raw.(bool)
+			if !ok {
+				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
+			}
+			preferences.SidebarCollapsed = value
 		case "defaultShell":
 			value, ok := raw.(string)
 			if !ok || validate.OneOf(value, "powershell", "cmd") != nil {
