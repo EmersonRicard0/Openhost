@@ -171,7 +171,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 - [X] T068 [US4] Implementar `internal/schemes/presets.go` (Dracula, Nord, Solarized Dark, Solarized Light, One Dark, Tokyo Night, Catppuccin + padrão da marca), `import_wt.go`, `import_iterm.go`, `export.go` para passar a T065; origem e licença de cada preset em `docs/licenses.md`
 - [X] T069 [US4] Implementar `internal/domain/profiles.go` e as tabelas `terminal_profiles`/`color_schemes` no store, semeando perfil global e presets na primeira execução, para passar a T066
 - [X] T070 [P] [US4] Implementar `internal/fonts/fonts.go` (`%WINDIR%\Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, `sfnt`, cache) para passar a T067
-- [ ] T071 [US4] Implementar `ProfileService` em `internal/bridge/profiles.go` (métodos de contracts/bridge.md, diálogos nativos de importar/exportar, evento `profiles:changed`); T013 passa para ele
+- [X] T071 [US4] Implementar `ProfileService` em `internal/bridge/profiles.go` (métodos de contracts/bridge.md, diálogos nativos de importar/exportar, evento `profiles:changed`); T013 passa para ele
 - [ ] T072 [P] [US4] Adicionar JetBrains Mono e Cascadia Code (`woff2`, OFL-1.1) em `frontend/src/assets/fonts/` com `@font-face` em `frontend/src/styles/fonts.css`
 - [ ] T073 [US4] Criar `frontend/src/features/settings/TerminalSettings.tsx` (terminal de amostra ao vivo, controles de FR-152, editor de esquema com seletores de cor, importar/exportar/duplicar, aviso ao reduzir opacidade) acessível pelas configurações e pela paleta
 - [ ] T074 [US4] Criar `frontend/src/features/terminal/profile.ts`: perfil efetivo aplicado a `term.options` + `fit()`, reação a `profiles:changed` em todas as abas, zoom Ctrl+=/−/0 só no `fontSize` efetivo da aba, `allowTransparency` só com opacidade < 1
@@ -221,7 +221,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 ### Tests for User Story 6 ⚠️
 
 - [ ] T088 [P] [US6] Portar `tests/unit/sftp/partial.test.ts` para `internal/sftpx/partial_test.go` (`<nome>.svpart-<id8>`, transições, conflitos)
-- [ ] T089 [P] [US6] Portar `tests/unit/domain/forwardRules.test.ts` para `internal/domain/forwardrules_test.go` ("padrão `127.0.0.1`; outro valor exige `allowNonLoopback: true`", "`bindPort` 1–65535; único entre regras com mesmo `bindAddress`")
+- [X] T089 [P] [US6] Portar `tests/unit/domain/forwardRules.test.ts` para `internal/domain/forwardrules_test.go` ("padrão `127.0.0.1`; outro valor exige `allowNonLoopback: true`", "`bindPort` 1–65535; único entre regras com mesmo `bindAddress`")
 - [ ] T090 [US6] Portar `tests/integration/sftp.test.ts` para `internal/sftpx/sftp_integration_test.go` (listar, mkdir, renomear, excluir recursivo, ida e volta de 100 MB, cancelamento no meio sem deixar parcial, conflito)
 - [ ] T091 [US6] Portar `tests/integration/forwarding.test.ts` para `internal/forwarding/forwarding_integration_test.go` (eco via `echo:7000`, porta em uso → `PORT_IN_USE`, desativar libera a porta, queda da conexão → `inactive`, duas regras do mesmo host compartilham uma conexão)
 
@@ -229,7 +229,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 - [ ] T092 [US6] Implementar `internal/sftpx/browser.go` e `transfers.go` (`pkg/sftp` com escritas concorrentes, 3 transferências simultâneas, parciais, conflito substituir/pular/cancelar tudo, progresso a 10/s) para passar a T088 e T090
 - [ ] T093 [US6] Implementar `SftpService` (diálogos nativos para caminhos locais, eventos `sftp:transfer`/`sftp:conflict`)
-- [ ] T094 [US6] Implementar `internal/domain/forwardrules.go`, `internal/forwarding/manager.go` e `ForwardService` (`ListActive`/`Deactivate` sem cofre) para passar a T089 e T091; T013 passa para todos os 8 serviços
+- [X] T094 [US6] Implementar `internal/domain/forwardrules.go`, `internal/forwarding/manager.go` e `ForwardService` (`ListActive`/`Deactivate` sem cofre) para passar a T089 e T091; T013 passa para todos os 8 serviços
 - [ ] T095 [US6] Adaptar `frontend/src/features/sftp/*` e `frontend/src/features/forwarding/*` ao adaptador
 - [ ] T096 [US6] Portar `scripts/bench-sftp.mjs` para `scripts/bench-sftp/main.go` e medir 1 GB (≥ resultado da 001 no mesmo ambiente)
 - [ ] T097 [US6] Portar `tests/e2e/sftp.spec.ts` e `tests/e2e/forwarding.spec.ts` para `frontend/tests/e2e/`

@@ -11,7 +11,9 @@ import (
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/appwin"
+	"shellvault/internal/forwarding"
 	"shellvault/internal/session"
+	"shellvault/internal/sshx"
 	"shellvault/internal/vault"
 )
 
@@ -28,11 +30,14 @@ type Services struct {
 	store    *vault.Store
 	autoLock *vault.AutoLock
 	sessions *session.Manager
+	forwards *forwarding.Manager
 
 	vaultService      *VaultService
 	hostService       *HostService
 	credentialService *CredentialService
 	sessionService    *SessionService
+	forwardService    *ForwardService
+	profileService    *ProfileService
 	appService        *AppService
 	closeGuard        *appwin.CloseGuard
 }
@@ -53,12 +58,25 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.hostService = newHostService(store)
 	s.credentialService = newCredentialService(store, s.Context)
 	s.sessionService = newSessionService(store, s.sessions)
+	s.forwards = forwarding.NewManager(func(hostID string) (forwarding.Client, error) {
+		options, err := s.sessionService.optionsForHost(hostID)
+		if err != nil {
+			return nil, err
+		}
+		ctx := s.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		return sshx.Dial(ctx, options, forwardingInteractor{})
+	}, func(event forwarding.StatusEvent) { s.emit("forwards:status", event) })
+	s.forwardService = newForwardService(store, s.forwards)
+	s.profileService = newProfileService(store, s.sessions, s.Context, s.emit)
 	preferences := appwin.NewPreferenceStore(store)
 	appearance := appwin.NewAppearanceMonitor(appwin.RegistryAppearanceReader{}, preferences.Get,
 		func(value appwin.Appearance) { s.emit("app:appearance", value) })
 	s.closeGuard = appwin.NewCloseGuard(
 		func() appwin.ActiveSummary {
-			return appwin.ActiveSummary{Sessions: s.sessions.ActiveCount()}
+			return appwin.ActiveSummary{Sessions: s.sessions.ActiveCount(), Forwards: s.forwards.ActiveCount()}
 		},
 		func(summary appwin.ActiveSummary) { s.emit("app:close-requested", summary) },
 		func() {
@@ -74,7 +92,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
 func (s *Services) Bound() []any {
-	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.appService}
+	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.forwardService, s.profileService, s.appService}
 }
 
 // Context é o contexto do Wails, disponível depois de Startup.
@@ -103,8 +121,21 @@ func (s *Services) BeforeClose(ctx context.Context) bool {
 }
 
 func (s *Services) Shutdown(ctx context.Context) {
+	s.forwards.CloseAll()
 	s.sessions.CloseAll()
 	_ = s.store.Close()
+}
+
+type forwardingInteractor struct{}
+
+func (forwardingInteractor) SetState(session.State) {}
+
+func (forwardingInteractor) AskHostKey(session.HostKeyQuestion) (bool, error) {
+	return false, apperr.New(apperr.HostKeyRejected)
+}
+
+func (forwardingInteractor) AskPrompt(session.PromptQuestion) ([]string, error) {
+	return nil, apperr.New(apperr.AuthFailed)
 }
 
 // SessionStats é o que os testes E2E leem do gerenciador de sessões.
