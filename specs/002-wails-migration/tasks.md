@@ -220,10 +220,10 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 ### Tests for User Story 6 ⚠️
 
-- [ ] T088 [P] [US6] Portar `tests/unit/sftp/partial.test.ts` para `internal/sftpx/partial_test.go` (`<nome>.svpart-<id8>`, transições, conflitos)
+- [X] T088 [P] [US6] Portar `tests/unit/sftp/partial.test.ts` para `internal/sftpx/partial_test.go` (`<nome>.svpart-<id8>`, transições, conflitos)
 - [X] T089 [P] [US6] Portar `tests/unit/domain/forwardRules.test.ts` para `internal/domain/forwardrules_test.go` ("padrão `127.0.0.1`; outro valor exige `allowNonLoopback: true`", "`bindPort` 1–65535; único entre regras com mesmo `bindAddress`")
-- [ ] T090 [US6] Portar `tests/integration/sftp.test.ts` para `internal/sftpx/sftp_integration_test.go` (listar, mkdir, renomear, excluir recursivo, ida e volta de 100 MB, cancelamento no meio sem deixar parcial, conflito)
-- [ ] T091 [US6] Portar `tests/integration/forwarding.test.ts` para `internal/forwarding/forwarding_integration_test.go` (eco via `echo:7000`, porta em uso → `PORT_IN_USE`, desativar libera a porta, queda da conexão → `inactive`, duas regras do mesmo host compartilham uma conexão)
+- [X] T090 [US6] Portar `tests/integration/sftp.test.ts` para `internal/sftpx/sftp_integration_test.go` (listar, mkdir, renomear, excluir recursivo, ida e volta de 100 MB, cancelamento no meio sem deixar parcial, conflito)
+- [X] T091 [US6] Portar `tests/integration/forwarding.test.ts` para `internal/forwarding/forwarding_integration_test.go` (eco via `echo:7000`, porta em uso → `PORT_IN_USE`, desativar libera a porta, queda da conexão → `inactive`, duas regras do mesmo host compartilham uma conexão)
 
 ### Implementation for User Story 6
 
