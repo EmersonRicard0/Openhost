@@ -99,7 +99,7 @@ atrás de um equipamento que derruba conexões ociosas; operar abas e busca apen
 3. **Given** uma sessão ociosa, **When** passam 30 minutos sem digitação, **Then** a sessão continua conectada graças a sinais periódicos de atividade.
 4. **Given** a conexão caiu (rede ou servidor), **When** a perda é detectada, **Then** a aba mostra o estado "desconectado" com um botão de reconectar em até 90 segundos.
 5. **Given** um agente SSH em execução no computador com chaves carregadas, **When** um host está configurado para usar o agente, **Then** a autenticação usa as chaves do agente sem exigir chave no cofre.
-6. **Given** o foco no app, **When** o usuário usa Ctrl+T, Ctrl+W, Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+Shift+F, Ctrl+K, Ctrl+=, Ctrl+- e Ctrl+0, **Then** respectivamente: abre nova aba local, fecha a aba atual (com confirmação se conectada), vai à próxima e à anterior aba, abre a busca no terminal, abre a paleta de comandos, aumenta, diminui e restaura o tamanho da fonte.
+6. **Given** o foco no app, **When** o usuário usa Ctrl+Shift+T, Ctrl+Shift+W, Ctrl+Tab, Ctrl+Shift+Tab, Ctrl+Shift+F, Ctrl+Shift+P, Ctrl+=, Ctrl+- e Ctrl+0, **Then** respectivamente: abre nova aba local, fecha a aba atual (com confirmação se conectada), vai à próxima e à anterior aba, abre a busca no terminal, abre a paleta de comandos, aumenta, diminui e restaura o tamanho da fonte.
 7. **Given** a paleta de comandos aberta, **When** o usuário digita parte do nome de um host ou de uma ação, **Then** pode conectar no host, abrir SFTP, abrir shell local, abrir configurações ou bloquear o cofre sem usar o mouse.
 8. **Given** texto selecionado no terminal, **When** a seleção termina, **Then** o texto é copiado; **When** o usuário cola várias linhas (Ctrl+Shift+V ou botão direito), **Then** o app pede confirmação mostrando o número de linhas antes de enviar.
 9. **Given** uma URL na saída do terminal, **When** o usuário a aciona com Ctrl+clique, **Then** ela é aberta no navegador padrão do sistema (o app em si continua sem fazer requisições de rede).
@@ -150,7 +150,7 @@ vidro, contra o guia de marca; verificar contraste mínimo de texto em todas.
 3. **Given** qualquer tela, **When** comparada ao guia de marca, **Then** cores, tipografia, raios, sombras e ícones vêm todos do conjunto de tokens da marca, sem valores avulsos.
 4. **Given** uma aba, **When** a sessão muda de estado (conectando, conectado, desconectado, erro), **Then** a aba mostra o estado por cor e ícone, legíveis também para quem não distingue cores.
 5. **Given** a barra lateral, **When** o usuário recolhe ou expande um grupo ou busca um host, **Then** a árvore reflete a ação de imediato e mantém o estado recolhido entre execuções.
-6. **Given** a barra lateral expandida, **When** o usuário a minimiza (botão ou Ctrl+B), **Then** ela vira um trilho estreito só com ícones (hosts, credenciais, SFTP, encaminhamentos, configurações), cada um com rótulo ao passar o mouse, o terminal ganha a largura liberada sem reconectar, e o estado é lembrado entre execuções.
+6. **Given** a barra lateral expandida, **When** o usuário a minimiza (botão ou Ctrl+Shift+B), **Then** ela vira um trilho estreito só com ícones (hosts, credenciais, SFTP, encaminhamentos, configurações), cada um com rótulo ao passar o mouse, o terminal ganha a largura liberada sem reconectar, e o estado é lembrado entre execuções.
 7. **Given** o app aberto com sessões, **When** o usuário abre as configurações, **Then** elas ocupam a área principal como uma página com navegação por seções (Geral, Aparência, Terminal, Cofre e segurança, Atalhos, Sobre), as sessões continuam ativas e voltar ao terminal (botão, Esc ou clique numa aba) restaura a aba anterior.
 8. **Given** botões, menus, campos e abas, **When** o usuário passa o mouse, foca pelo teclado, pressiona ou seleciona um item, **Then** cada estado (repouso, hover, foco, pressionado, selecionado, desabilitado) tem aparência distinta em vidro, com indicador de seleção que desliza entre itens.
 9. **Given** menus, diálogos, abas, página de configurações e o recolhimento da barra lateral, **When** abrem, fecham ou mudam, **Then** a transição é animada em até 250 ms; com "reduzir movimento" ligado no Windows, as mudanças são instantâneas.
@@ -266,6 +266,11 @@ port forwarding) na versão nova, com o mesmo servidor de teste, e obter os mesm
 - **FR-170**: Menus, diálogos, abas, troca de seção, toasts e o recolhimento da barra lateral MUST ter transições de no máximo 250 ms usando as curvas de movimento da marca; com a preferência "reduzir movimento" do sistema, MUST ficar sem animação.
 - **FR-171**: O usuário MUST poder escolher a cor de destaque da interface entre as opções da marca ou seguir a cor de destaque do Windows; a troca vale de imediato em todas as telas, e opções que não atinjam o contraste mínimo no tema atual MUST ser ajustadas automaticamente.
 - **FR-172**: A janela MUST ter uma barra de status no rodapé com host ou shell da aba ativa, estado da conexão, latência das sessões SSH, número de encaminhamentos ativos e estado do cofre; cada item abre a ação correspondente (reconectar, lista de encaminhamentos, bloquear/desbloquear).
+- **FR-173**: Os atalhos do app MUST usar Ctrl+Shift por padrão, para não roubar teclas do shell remoto (Ctrl+W apaga palavra e Ctrl+K apaga até o fim da linha no readline, Ctrl+T transpõe caracteres, Ctrl+B é o prefixo do tmux): Ctrl+Shift+T (nova aba do shell padrão), Ctrl+Shift+W (fechar aba), Ctrl+Shift+P (paleta), Ctrl+Shift+B (barra lateral), Ctrl+Shift+F (buscar), Ctrl+Tab e Ctrl+Shift+Tab (trocar de aba), Ctrl+= / Ctrl+- / Ctrl+0 (tamanho da fonte). Na seção Atalhos, cada ação MUST poder ser remapeada gravando a combinação ou marcada como "Desativado"; combinação já usada por outra ação é recusada com o nome dela; Ctrl+letra sem Shift e combinações com AltGr só podem ser escolhidas com aviso de que deixam de chegar ao terminal. Substitui as teclas de FR-140, FR-167 e da suposição "Atalhos Ctrl+W e Ctrl+T".
+- **FR-174**: Toda mensagem de erro MUST dizer a causa em linguagem simples (pelo código), mostrar o código e oferecer "Copiar detalhes" (código, mensagem técnica, operação, data/hora e versão do app, nunca segredos); "Ocorreu um erro inesperado" só aparece quando não houver código conhecido, e ainda assim com os detalhes copiáveis.
+- **FR-175**: As configurações MUST ter a seção "Conexão (SSH)" com: intervalo de keepalive, tempo limite de conexão, algoritmos legados como padrão para hosts novos e o `$TERM` enviado ao servidor (padrão `xterm-256color`; opções `xterm-256color`, `xterm`, `vt100`, `linux`); esses itens saem de "Cofre e segurança".
+- **FR-176**: A lista de shells locais (nova aba e shell padrão) MUST detectar Windows PowerShell, PowerShell 7 (`pwsh`), Prompt de Comando, Git Bash e cada distribuição WSL instalada, mostrando só os presentes na máquina.
+- **FR-177**: As opções do terminal MUST incluir, por seleção: copiar ao selecionar, botão direito cola, sino (desligado, som ou visual), negrito em cores claras e reconexão automática como opção global.
 
 ### Key Entities
 
@@ -306,9 +311,8 @@ port forwarding) na versão nova, com o mesmo servidor de teste, e obter os mesm
 - **Identidade visual**: o logo, a paleta, a tipografia e os tokens vêm da execução do
   skill `brand-kit` (estágios 0 a 5) dentro desta feature; o briefing já foi levantado
   (terminal + cofre, clima moderno vibrante, pt-BR).
-- **Atalhos Ctrl+W e Ctrl+T**: são reservados ao app, como no Windows Terminal; quem precisar
-  enviar essas combinações ao servidor (ex.: apagar palavra no bash) usa o menu da aba
-  "Enviar combinação de teclas". Demais combinações chegam ao servidor sem interceptação.
+- **Atalhos**: o app usa Ctrl+Shift por padrão (FR-173); Ctrl+letra sem Shift chega ao servidor.
+  O menu da aba "Enviar combinação de teclas" continua para casos raros.
 - **Limites da base técnica** (levantados no planejamento): a cifra `aes256-cbc` não é suportada
   pela biblioteca SSH escolhida e fica fora da opção "algoritmos legados"; a janela sem moldura
   da versão estável do Wails não oferece o menu de layouts de encaixe ao passar o mouse sobre o
