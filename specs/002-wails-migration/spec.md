@@ -150,6 +150,12 @@ vidro, contra o guia de marca; verificar contraste mínimo de texto em todas.
 3. **Given** qualquer tela, **When** comparada ao guia de marca, **Then** cores, tipografia, raios, sombras e ícones vêm todos do conjunto de tokens da marca, sem valores avulsos.
 4. **Given** uma aba, **When** a sessão muda de estado (conectando, conectado, desconectado, erro), **Then** a aba mostra o estado por cor e ícone, legíveis também para quem não distingue cores.
 5. **Given** a barra lateral, **When** o usuário recolhe ou expande um grupo ou busca um host, **Then** a árvore reflete a ação de imediato e mantém o estado recolhido entre execuções.
+6. **Given** a barra lateral expandida, **When** o usuário a minimiza (botão ou Ctrl+B), **Then** ela vira um trilho estreito só com ícones (hosts, credenciais, SFTP, encaminhamentos, configurações), cada um com rótulo ao passar o mouse, o terminal ganha a largura liberada sem reconectar, e o estado é lembrado entre execuções.
+7. **Given** o app aberto com sessões, **When** o usuário abre as configurações, **Then** elas ocupam a área principal como uma página com navegação por seções (Geral, Aparência, Terminal, Cofre e segurança, Atalhos, Sobre), as sessões continuam ativas e voltar ao terminal (botão, Esc ou clique numa aba) restaura a aba anterior.
+8. **Given** botões, menus, campos e abas, **When** o usuário passa o mouse, foca pelo teclado, pressiona ou seleciona um item, **Then** cada estado (repouso, hover, foco, pressionado, selecionado, desabilitado) tem aparência distinta em vidro, com indicador de seleção que desliza entre itens.
+9. **Given** menus, diálogos, abas, página de configurações e o recolhimento da barra lateral, **When** abrem, fecham ou mudam, **Then** a transição é animada em até 250 ms; com "reduzir movimento" ligado no Windows, as mudanças são instantâneas.
+10. **Given** a página de Aparência, **When** o usuário escolhe uma cor de destaque (entre as da marca ou "seguir o Windows"), **Then** botões primários, seleção, foco e indicadores mudam em todas as telas de imediato, mantendo o contraste mínimo.
+11. **Given** uma sessão ativa, **When** o usuário olha o rodapé, **Then** a barra de status mostra o host/shell da aba ativa, estado da conexão, latência (SSH), encaminhamentos ativos e estado do cofre, e cada item leva à ação correspondente ao ser clicado.
 
 ---
 
@@ -252,6 +258,13 @@ port forwarding) na versão nova, com o mesmo servidor de teste, e obter os mesm
 - **FR-163**: As abas MUST mostrar o estado da sessão (conectando, conectado, desconectado, erro) por cor e ícone.
 - **FR-164**: Grupos da barra lateral MUST ser recolhíveis, com o estado lembrado entre execuções.
 - **FR-165**: O app MUST ter ícone próprio (barra de tarefas, atalho, instalador e janela) derivado do logo da marca.
+- **FR-166**: Botões, menus, campos, abas e itens de lista MUST usar superfícies de vidro com estados visuais distintos para repouso, hover, foco visível pelo teclado, pressionado, selecionado e desabilitado; a seleção em listas, abas e navegação MUST ter um indicador que se move até o item escolhido.
+- **FR-167**: A barra lateral MUST poder ser minimizada para um trilho de ícones e expandida de novo (botão na própria barra e Ctrl+B), com rótulo ao passar o mouse em cada ícone e o estado lembrado entre execuções; minimizar ou expandir MUST reajustar o terminal sem reconectar.
+- **FR-168**: As configurações MUST ser uma página na área principal, com navegação por seções (Geral, Aparência, Terminal, Cofre e segurança, Atalhos, Sobre), substituindo o diálogo atual; sessões continuam ativas enquanto a página está aberta.
+- **FR-169**: Toda a interface MUST usar um único conjunto de ícones em traço, com tamanhos padronizados pelos tokens (16, 20 e 24 px); ícones avulsos de outras origens não são permitidos.
+- **FR-170**: Menus, diálogos, abas, troca de seção, toasts e o recolhimento da barra lateral MUST ter transições de no máximo 250 ms usando as curvas de movimento da marca; com a preferência "reduzir movimento" do sistema, MUST ficar sem animação.
+- **FR-171**: O usuário MUST poder escolher a cor de destaque da interface entre as opções da marca ou seguir a cor de destaque do Windows; a troca vale de imediato em todas as telas, e opções que não atinjam o contraste mínimo no tema atual MUST ser ajustadas automaticamente.
+- **FR-172**: A janela MUST ter uma barra de status no rodapé com host ou shell da aba ativa, estado da conexão, latência das sessões SSH, número de encaminhamentos ativos e estado do cofre; cada item abre a ação correspondente (reconectar, lista de encaminhamentos, bloquear/desbloquear).
 
 ### Key Entities
 
@@ -280,6 +293,7 @@ port forwarding) na versão nova, com o mesmo servidor de teste, e obter os mesm
 - **SC-112**: Com 20 sessões abertas e uma delas despejando saída contínua, a troca de aba continua abaixo de 100 ms (mantém SC-007 da 001).
 - **SC-113**: 100% das telas e estados revisados usam apenas tokens da marca e mantêm contraste mínimo de 4,5:1 nos temas escuro e claro, com e sem vidro.
 - **SC-114**: Um usuário da versão anterior abre a versão nova e encontra 100% dos seus hosts, grupos, credenciais e regras sem recadastrar nada.
+- **SC-115**: Em revisão das capturas, 100% dos componentes interativos mostram os seis estados de FR-166, e nenhuma transição passa de 250 ms nem ocorre com "reduzir movimento" ligado.
 
 ## Assumptions
 

@@ -164,7 +164,9 @@ executável até a validação de paridade e é removida numa tarefa final.
 5. **NOC** (US3): keepalive, legados, agente, atalhos, paleta, busca, colagem, links.
 6. **Paridade restante** (US6 + 001): grupos, credenciais, shell local, SFTP, forwarding,
    fechar, aparência.
-7. **Marca** (US5): `brand-kit` estágios 1–5 → tokens, ícone, aplicação em todas as telas.
+7. **Marca** (US5): `brand-kit` estágios 1–5 → tokens, ícone, aplicação em todas as telas;
+   ícones Lucide, vidro e estados nos componentes, movimento, barra lateral recolhível em trilho,
+   página de configurações, cor de destaque e barra de status (research R16a).
 8. **Personalização** (US4): perfis, esquemas, importadores, preview, override por host.
 9. **Polimento**: varredura de segredos, tamanho/memória, revisão de segurança, licenças,
    validação do quickstart, instalador, remoção da base Electron.

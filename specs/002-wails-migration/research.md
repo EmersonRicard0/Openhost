@@ -229,6 +229,33 @@ reconfirmadas na tarefa que adota a dependência (Princípio I).
 - **Ícone**: `make_kit.py` gera o `.ico` e o PNG usados em `build/windows/icon.ico` e
   `build/appicon.png` do Wails.
 
+## R16a. Ícones, movimento, destaque e barra de status (FR-166–FR-172)
+
+- **Ícones**: `lucide-react` (ISC, ícones em traço, *tree-shaking* por ícone). Um wrapper
+  `frontend/src/ui/Icon.tsx` fixa `strokeWidth` e os tamanhos dos tokens (`--icon-sm` 16,
+  `--icon-md` 20, `--icon-lg` 24); `frontend/src/ui/icons.tsx` atual passa a reexportar só
+  ícones do Lucide. Alternativas rejeitadas: Phosphor (pacote maior), ícones desenhados à mão
+  (inconsistência que motivou o pedido).
+- **Movimento**: só CSS (transições e `@keyframes`) com durações e curvas dos tokens
+  (`--motion-fast` 120 ms, `--motion-base` 180 ms, `--motion-slow` 250 ms); entrada/saída de
+  menus e diálogos com estado `data-state="open|closing"` e `animationend`; indicador de seleção
+  deslizante por FLIP (mede o item, anima `transform`). `@media (prefers-reduced-motion: reduce)`
+  zera os tokens de duração. Rejeitado `framer-motion`/`motion` (~40 KB) por não ser necessário.
+- **Vidro em componentes**: classes utilitárias `.glass-surface`, `.glass-control` sobre
+  `backdrop-filter` com tokens de opacidade/desfoque; estados por `:hover`, `:focus-visible`,
+  `:active`, `[aria-selected=true]`, `:disabled`. Sem vidro (FR-162), os mesmos tokens viram
+  superfícies opacas.
+- **Cor de destaque**: preferência `accent` (`"system"` ou id de uma cor da marca). Com
+  `"system"`, o Go lê `HKCU\Software\Microsoft\Windows\DWM\AccentColor` (ABGR) e emite em
+  `app:appearance`; o frontend define `--accent*` e ajusta luminosidade em OKLCH até 4,5:1 contra
+  a superfície do tema.
+- **Barra lateral**: preferência `sidebarCollapsed` (bool); trilho de 56 px; transição de
+  largura no grid com o `ResizeObserver` do terminal fazendo o `fit` ao fim (T047).
+- **Configurações**: rota interna `view: "terminal" | "settings"` no store de UI, sem roteador;
+  seção ativa em `preferences.settingsSection` não é necessária (abre sempre em Geral).
+- **Latência**: RTT do último `keepalive@openssh.com` (T057) exposto em `term:state`
+  (`latencyMs`); sem keepalive, a barra de status mostra "—".
+
 ## R17. Offline e ausência de logs (FR-027, FR-030)
 
 - **Decisão**: frontend sem nenhuma chamada de rede (CSP `connect-src 'self'`); o Wails só
