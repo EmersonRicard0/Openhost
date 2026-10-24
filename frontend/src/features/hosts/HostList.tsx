@@ -8,7 +8,7 @@ import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import type { PopoverAnchor } from '../../ui/Popover';
 import { Avatar } from '../../ui/Avatar';
-import { ChevronIcon, FolderIcon, FolderOpenIcon } from '../../ui/icons';
+import { ChevronIcon, FolderIcon, FolderOpenIcon, WarningIcon } from '../../ui/icons';
 import { toastError } from '../../ui/Toast';
 import { ForwardRulesPanel } from '../forwarding/ForwardRulesPanel';
 import { openSftp } from '../sftp/openSftp';
@@ -325,7 +325,19 @@ export function HostList({ query, listRef, onEdit }: HostListProps) {
         {!searching && <span className={s.chevronSpace} />}
         <Avatar text={host.label} />
         <span className={s.itemText}>
-          <span className={s.itemLabel}>{host.label}</span>
+          <span className={s.itemLabelRow}>
+            <span className={s.itemLabel}>{host.label}</span>
+            {host.legacyAlgorithms && (
+              <span
+                className={s.legacyBadge}
+                title={t.hosts.legacyBadgeTitle}
+                aria-label={t.hosts.legacyBadgeTitle}
+              >
+                <WarningIcon width={11} height={11} />
+                {t.hosts.legacyBadge}
+              </span>
+            )}
+          </span>
           {/* Endereço diferencia hosts com o mesmo nome; na busca, o caminho do grupo. */}
           <span className={s.itemSub}>
             {path ? `${path} · ` : ''}

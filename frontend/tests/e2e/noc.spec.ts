@@ -1,6 +1,6 @@
 // US3 — operação só pelo teclado: atalhos, paleta, busca e colagem (T064; FR-140 a FR-144).
 import { expect, test, type Page } from '@playwright/test';
-import { SSHD, up } from '../../../scripts/sshd.mjs';
+import { SSHD, SSHD_LEGACY, up } from '../../../scripts/sshd.mjs';
 import { launchApp } from './helpers/launch';
 import { writeClipboard } from './helpers/system';
 import {
@@ -8,6 +8,7 @@ import {
   addHost,
   createVault,
   expectTerminalLine,
+  hostItem,
   sessionIdOf,
   tab,
   terminalSize,
@@ -183,6 +184,48 @@ test('paleta conecta num host só pelo teclado; Ctrl+W pede confirmação (FR-14
     await page.keyboard.press('Control+W');
     await page.keyboard.press('Enter');
     await expect(tab(page, 'pw-host')).toBeHidden();
+  } finally {
+    await app.close();
+  }
+});
+
+test('equipamento legado: falha sugerindo a opção e conecta com ela ligada (US3-1, US3-2)', async () => {
+  await up();
+  const app = await launchApp();
+  const { page } = app;
+  try {
+    await createVault(page);
+    await addHost(page, {
+      label: 'olt-legada',
+      address: SSHD_LEGACY.host,
+      port: SSHD_LEGACY.port,
+      username: 'legacyuser',
+      password: 'legacy-test-123',
+    });
+    const row = hostItem(page, 'olt-legada');
+    await expect(row.getByLabel('Usa algoritmos legados (inseguros)')).toHaveCount(0);
+
+    await row.dblclick();
+    await expect(page.getByText(/Algoritmos legados \(inseguros\)/).first()).toBeVisible({
+      timeout: 30_000,
+    });
+
+    // Liga a opção na edição: aviso no formulário e selo na lista.
+    await row.click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Editar' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Editar host' });
+    await dialog.getByLabel('Algoritmos legados (inseguros)').check();
+    await expect(dialog.getByRole('note')).toContainText('Esses algoritmos são fracos');
+    await dialog.getByRole('button', { name: 'Salvar' }).click();
+    await expect(dialog).toBeHidden();
+    await expect(row.getByLabel('Usa algoritmos legados (inseguros)')).toBeVisible();
+
+    await row.dblclick();
+    await acceptHostKey(page);
+    const tabs = page.getByRole('tab', { name: 'olt-legada' });
+    await expect(tabs.last().locator('[data-state]')).toHaveAttribute('data-state', 'connected', {
+      timeout: 30_000,
+    });
   } finally {
     await app.close();
   }

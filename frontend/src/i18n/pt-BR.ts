@@ -98,6 +98,14 @@ export const t = {
     authPassword: 'Senha',
     authKey: 'Chave privada',
     authAsk: 'Perguntar ao conectar',
+    authAgent: 'Agente SSH do Windows',
+    authAgentHint:
+      'Usa as chaves carregadas no agente do OpenSSH (serviço ssh-agent). Nenhuma chave fica no cofre.',
+    legacy: 'Algoritmos legados (inseguros)',
+    legacyHint:
+      'Para OLTs, roteadores e servidores antigos que só aceitam SHA-1, CBC ou ssh-rsa. Esses algoritmos são fracos: ligue só para equipamentos que não oferecem outra opção.',
+    legacyBadge: 'Legado',
+    legacyBadgeTitle: 'Usa algoritmos legados (inseguros)',
     credential: 'Credencial',
     newPasswordCredential: 'Nova senha…',
     noCredential: 'Selecione…',

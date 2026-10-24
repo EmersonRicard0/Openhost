@@ -16,6 +16,7 @@ const host = (id: string, groupId: string | null): HostView => ({
   port: 22,
   username: 'u',
   authMethod: 'ask',
+  legacyAlgorithms: false,
   credentialId: null,
   groupId,
   createdAt: '',

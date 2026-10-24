@@ -257,3 +257,55 @@
     transition: none;
   }
 }
+
+.itemLabelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Selo de host com algoritmos legados (FR-121, US3-2): cor e texto, não só cor. */
+.legacyBadge {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 3px;
+  padding: 0 5px;
+  border: 1px solid color-mix(in srgb, var(--warning) 55%, transparent);
+  border-radius: 5px;
+  background: color-mix(in srgb, var(--warning) 12%, transparent);
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 15px;
+}
+
+.hint {
+  margin: -4px 0 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.legacyWarning {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warning) 60%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--warning) 9%, transparent);
+  color: var(--warning);
+}
+
+.legacyWarning p {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 12.5px;
+}

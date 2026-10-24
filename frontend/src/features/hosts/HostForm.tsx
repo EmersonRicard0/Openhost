@@ -7,6 +7,7 @@ import { Button } from '../../ui/Button';
 import { Dialog } from '../../ui/Dialog';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
+import { WarningIcon } from '../../ui/icons';
 import { toastError } from '../../ui/Toast';
 import s from './hosts.module.css';
 
@@ -17,6 +18,7 @@ const METHODS: { value: AuthMethod; label: string }[] = [
   { value: 'password', label: t.hosts.authPassword },
   { value: 'key', label: t.hosts.authKey },
   { value: 'ask', label: t.hosts.authAsk },
+  { value: 'agent', label: t.hosts.authAgent },
 ];
 
 export interface HostFormProps {
@@ -36,6 +38,7 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
     host?.credentialId ?? (host ? NONE : NEW_PASSWORD),
   );
   const [newPassword, setNewPassword] = useState('');
+  const [legacy, setLegacy] = useState(host?.legacyAlgorithms ?? false);
   const [busy, setBusy] = useState(false);
 
   const kind = method === 'key' ? 'key' : 'password';
@@ -49,7 +52,7 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
   const selected = options.some((o) => o.value === credentialId) ? credentialId : NONE;
   const portNumber = Number(port);
   const portValid = Number.isInteger(portNumber) && portNumber >= 1 && portNumber <= 65535;
-  const needsCredential = method !== 'ask';
+  const needsCredential = method === 'password' || method === 'key';
   const valid =
     label.trim() !== '' &&
     address.trim() !== '' &&
@@ -78,6 +81,7 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
       authMethod: method,
       credentialId: credId,
       groupId: host?.groupId ?? null,
+      legacyAlgorithms: legacy,
     };
     const res = host
       ? await window.shellvault.hosts.update(host.id, input)
@@ -160,6 +164,7 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             onChange={setCredentialId}
           />
         )}
+        {method === 'agent' && <p className={s.hint}>{t.hosts.authAgentHint}</p>}
         {needsCredential && selected === NEW_PASSWORD && (
           <TextField
             label={t.credentials.password}
@@ -169,6 +174,22 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
               setNewPassword(e.target.value);
             }}
           />
+        )}
+        <label className={s.check}>
+          <input
+            type="checkbox"
+            checked={legacy}
+            onChange={(e) => {
+              setLegacy(e.target.checked);
+            }}
+          />
+          {t.hosts.legacy}
+        </label>
+        {legacy && (
+          <div className={s.legacyWarning} role="note">
+            <WarningIcon style={{ flex: 'none' }} />
+            <p>{t.hosts.legacyHint}</p>
+          </div>
         )}
         <Button variant="ghost" style={{ alignSelf: 'flex-start' }} onClick={onManageCredentials}>
           {t.hosts.manageCredentials}

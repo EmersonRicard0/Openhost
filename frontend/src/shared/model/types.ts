@@ -29,7 +29,7 @@ export interface Group {
   sortOrder: number;
 }
 
-export type AuthMethod = 'password' | 'key' | 'ask';
+export type AuthMethod = 'password' | 'key' | 'ask' | 'agent';
 
 export interface Host {
   id: string;
@@ -40,6 +40,8 @@ export interface Host {
   authMethod: AuthMethod;
   credentialId: string | null;
   groupId: string | null;
+  /** Aceita algoritmos fracos (equipamentos antigos, FR-121); mostrado com aviso. */
+  legacyAlgorithms: boolean;
   createdAt: string;
   updatedAt: string;
 }

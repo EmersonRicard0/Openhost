@@ -27,7 +27,8 @@ export interface HostFields {
   password?: string;
   /** Nome de credencial já salva. */
   credential?: string;
-  method?: 'Senha' | 'Chave privada' | 'Perguntar ao conectar';
+  method?: 'Senha' | 'Chave privada' | 'Perguntar ao conectar' | 'Agente SSH do Windows';
+  legacy?: boolean;
 }
 
 export async function addHost(page: Page, host: HostFields): Promise<void> {
@@ -43,6 +44,7 @@ export async function addHost(page: Page, host: HostFields): Promise<void> {
   } else if (host.password !== undefined) {
     await dialog.getByLabel('Senha', { exact: true }).fill(host.password);
   }
+  if (host.legacy) await dialog.getByLabel('Algoritmos legados (inseguros)').check();
   await dialog.getByRole('button', { name: 'Salvar' }).click();
   await expect(dialog).toBeHidden();
 }
