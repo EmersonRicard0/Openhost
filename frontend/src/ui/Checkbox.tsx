@@ -7,7 +7,7 @@ import s from './ui.module.css';
 export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> {
   label: ReactNode;
   /** Texto de apoio abaixo do rótulo. */
-  hint?: string;
+  hint?: string | undefined;
 }
 
 export function Checkbox({ label, hint, className, ...rest }: CheckboxProps) {

@@ -60,6 +60,7 @@ export const EVENT_NAMES = [
   'forwards:status',
   'profiles:changed',
   'app:appearance',
+  'profiles:changed',
   'app:close-requested',
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
@@ -97,6 +98,7 @@ function createApi(): ShellVaultApi {
   const F = 'SftpService';
   const W = 'ForwardService';
   const A = 'AppService';
+  const P = 'ProfileService';
   return {
     vault: {
       getStatus: () => call(V, 'GetStatus'),
@@ -176,6 +178,21 @@ function createApi(): ShellVaultApi {
       activate: (id) => call(W, 'Activate', id),
       deactivate: (id) => call(W, 'Deactivate', id),
       onStatus: ev('forwards:status'),
+    },
+    profiles: {
+      getGlobal: () => call(P, 'GetGlobal'),
+      updateGlobal: (patch) => call(P, 'UpdateGlobal', patch),
+      getForHost: (hostId) => call(P, 'GetForHost', hostId),
+      setHostOverride: (hostId, profile) => call(P, 'SetHostOverride', hostId, profile),
+      effective: (sessionId) => call(P, 'Effective', sessionId),
+      listSchemes: () => call(P, 'ListSchemes'),
+      saveScheme: (scheme) => call(P, 'SaveScheme', scheme),
+      duplicateScheme: (id, name) => call(P, 'DuplicateScheme', id, name),
+      removeScheme: (id) => call(P, 'RemoveScheme', id),
+      importScheme: () => call(P, 'ImportScheme'),
+      exportScheme: (id) => call(P, 'ExportScheme', id),
+      listFonts: () => call(P, 'ListFonts'),
+      onChanged: ev('profiles:changed'),
     },
     app: {
       getAppearance: () => call(A, 'GetAppearance'),

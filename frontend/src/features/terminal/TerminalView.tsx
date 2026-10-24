@@ -4,29 +4,19 @@ import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
 import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
-import { Terminal, type ITheme } from '@xterm/xterm';
+import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import type { Tab } from '../../stores/sessions';
-import { useUi } from '../../stores/ui';
+import { effectiveProfile, useProfiles } from '../../stores/profiles';
+import { useVault } from '../../stores/vault';
 import { fontSizeOf, useWorkspace } from '../../stores/workspace';
-import { ANSI, type ThemeTokens } from '../../theme/tokens';
 import { attach } from './dataBus';
 import { needsConfirm } from './paste';
+import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from './profile';
 import { SearchBar } from './SearchBar';
 import { registerTerminal } from './terminalRegistry';
 import { countResize, registerProbe } from './testProbe';
 import s from './terminal.module.css';
-
-function xtermTheme(tokens: ThemeTokens, dark: boolean): ITheme {
-  return {
-    background: tokens.terminalBackground,
-    foreground: tokens.terminalForeground,
-    cursor: tokens.terminalCursor,
-    cursorAccent: tokens.terminalBackground,
-    selectionBackground: tokens.terminalSelection,
-    ...(dark ? ANSI.dark : ANSI.light),
-  };
-}
 
 async function copySelection(term: Terminal): Promise<boolean> {
   const text = term.getSelection();
@@ -56,9 +46,9 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
   const fitRef = useRef<FitAddon | null>(null);
   const fitNowRef = useRef<() => void>(() => undefined);
   const activeRef = useRef(active);
-  const settings = useUi((u) => u.settings);
-  const tokens = useUi((u) => u.tokens);
-  const dark = useUi((u) => u.dark);
+  const profile = useProfiles((p) => effectiveProfile(tab.hostId, p.global, p.overrides));
+  const scheme = useProfiles((p) => schemeOf(p.schemes, profile.colorSchemeId));
+  const unlocked = useVault((v) => v.status?.state === 'unlocked');
   const zoom = useWorkspace((w) => w.zoom);
   const searching = useWorkspace((w) => w.searchFor === tab.id);
   useEffect(() => {
@@ -69,18 +59,19 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const ui = useUi.getState();
+    // Valores iniciais do perfil; o efeito abaixo reaplica tudo quando a fonte carregar.
+    const profiles = useProfiles.getState();
+    const initial = effectiveProfile(tab.hostId, profiles.global, profiles.overrides);
     const term = new Terminal({
-      scrollback: 10_000,
       allowProposedApi: true,
-      cursorBlink: true,
-      fontFamily: ui.settings?.terminalFontFamily ?? 'Cascadia Mono, Consolas, monospace',
-      fontSize: fontSizeOf(
-        tab.id,
-        ui.settings?.terminalFontSize ?? 14,
-        useWorkspace.getState().zoom,
-      ),
-      theme: xtermTheme(ui.tokens, ui.dark),
+      scrollback: initial.scrollback,
+      cursorBlink: initial.cursorBlink,
+      cursorStyle: initial.cursorStyle,
+      fontFamily: cssFontFamily(initial.fontFamily),
+      fontSize: fontSizeOf(tab.id, initial.fontSize, useWorkspace.getState().zoom),
+      lineHeight: initial.lineHeight,
+      allowTransparency: initial.backgroundOpacity < 1,
+      theme: schemeTheme(schemeOf(profiles.schemes, initial.colorSchemeId), initial),
       rightClickSelectsWord: false,
     });
     const fit = new FitAddon();
@@ -203,7 +194,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       termRef.current = null;
       fitNowRef.current = () => undefined;
     };
-  }, [tab.id]);
+  }, [tab.id, tab.hostId]);
 
   // WebGL só na aba visível (limite de contextos do Chromium; research R4).
   useEffect(() => {
@@ -229,19 +220,30 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     };
   }, [active]);
 
-  // Preferências e tema aplicados ao vivo (FR-018).
+  // Override do host (FR-156): consultado com o cofre aberto.
   useEffect(() => {
-    const term = termRef.current;
-    if (!term || !settings) return;
-    term.options.fontFamily = settings.terminalFontFamily;
-    term.options.fontSize = fontSizeOf(tab.id, settings.terminalFontSize, zoom);
-    if (active) fitNowRef.current();
-  }, [settings, zoom, tab.id, active]);
+    if (tab.hostId && unlocked) void useProfiles.getState().loadOverride(tab.hostId);
+  }, [tab.hostId, unlocked]);
 
+  // Perfil aplicado ao vivo, sem reconectar (FR-157); o zoom da aba soma ao tamanho do perfil.
   useEffect(() => {
     const term = termRef.current;
-    if (term) term.options.theme = xtermTheme(tokens, dark);
-  }, [tokens, dark]);
+    if (!term) return;
+    let alive = true;
+    void applyProfile(term, profile, scheme, fontSizeOf(tab.id, profile.fontSize, zoom)).then(
+      () => {
+        if (alive && activeRef.current) fitNowRef.current();
+      },
+    );
+    return () => {
+      alive = false;
+    };
+  }, [profile, scheme, zoom, tab.id]);
+
+  const background =
+    profile.backgroundOpacity < 1
+      ? withAlpha(scheme.background, profile.backgroundOpacity)
+      : scheme.background;
 
   return (
     <div
@@ -252,7 +254,21 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     >
       {banner}
       {searching && <SearchBar sessionId={tab.id} />}
-      <div ref={containerRef} className={`${s.xterm} solid`} />
+      {/* Espaçamento no quadro, não no contêiner do xterm: o FitAddon mede a altura do pai
+          sem descontar o padding e cortaria a última linha. */}
+      <div
+        className={`${s.frame} solid`}
+        style={{
+          padding: profile.padding,
+          background,
+          backdropFilter:
+            profile.backgroundOpacity < 1 && profile.blur > 0
+              ? `blur(${String(profile.blur)}px)`
+              : undefined,
+        }}
+      >
+        <div ref={containerRef} className={s.xterm} />
+      </div>
     </div>
   );
 }

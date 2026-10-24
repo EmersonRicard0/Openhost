@@ -21,11 +21,11 @@ import {
 import { useSlidingIndicator } from '../../ui/motion';
 import { NumberField } from '../../ui/NumberField';
 import { Select } from '../../ui/Select';
-import { TextField } from '../../ui/TextField';
 import { toastError } from '../../ui/Toast';
 import { focusTerminal } from '../terminal/terminalRegistry';
 import { ChangePasswordDialog } from '../vault/ChangePasswordDialog';
 import { EraseVaultDialog } from '../vault/EraseVaultDialog';
+import { GlobalTerminalSettings } from './TerminalSettings';
 import s from './settings.module.css';
 
 type Section = keyof typeof t.settings.sections;
@@ -129,42 +129,6 @@ function AppearanceSection({ settings }: { settings: Settings }) {
         hint={t.settings.glassHint}
         checked={settings.glassEnabled}
         onChange={(e) => void saveUi({ glassEnabled: e.target.checked })}
-      />
-    </Group>
-  );
-}
-
-function TerminalSection({ settings }: { settings: Settings }) {
-  const [font, setFont] = useField(settings.terminalFontFamily);
-  const [size, setSize] = useField(String(settings.terminalFontSize));
-  const sizeValue = intIn(size, 8, 32);
-  const fontValue = font.trim();
-
-  useAutosave(fontValue || null, settings.terminalFontFamily, (terminalFontFamily) => {
-    void saveUi({ terminalFontFamily });
-  });
-  useAutosave(sizeValue, settings.terminalFontSize, (terminalFontSize) => {
-    void saveUi({ terminalFontSize });
-  });
-
-  return (
-    <Group>
-      <TextField
-        label={t.settings.font}
-        value={font}
-        error={fontValue ? null : t.common.required}
-        onChange={(e) => {
-          setFont(e.target.value);
-        }}
-      />
-      <NumberField
-        label={t.settings.fontSize}
-        min={8}
-        max={32}
-        unit="px"
-        value={size}
-        error={sizeValue === null ? '8–32' : null}
-        onChange={setSize}
       />
     </Group>
   );
@@ -455,11 +419,11 @@ export function SettingsPage() {
             </button>
           ))}
         </nav>
-        <div className={s.content} key={section}>
+        <div className={`${s.content} ${section === 'terminal' ? s.wide : ''}`} key={section}>
           <h2 className={s.sectionTitle}>{t.settings.sections[section]}</h2>
           {settings && section === 'general' && <GeneralSection settings={settings} />}
           {settings && section === 'appearance' && <AppearanceSection settings={settings} />}
-          {settings && section === 'terminal' && <TerminalSection settings={settings} />}
+          {section === 'terminal' && <GlobalTerminalSettings />}
           {section === 'vault' && <VaultSection />}
           {section === 'shortcuts' && <ShortcutsSection />}
           {section === 'about' && <AboutSection />}

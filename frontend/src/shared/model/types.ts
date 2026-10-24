@@ -143,6 +143,71 @@ export interface Appearance {
   systemAccent: string | null;
 }
 
+// --- Perfis de terminal e esquemas de cores (US4, data-model) -------------------
+
+export type CursorStyle = 'block' | 'bar' | 'underline';
+export type SchemeOrigin = 'builtin' | 'imported' | 'custom';
+
+export interface TerminalProfile {
+  id: string;
+  name: string;
+  isGlobal: boolean;
+  fontFamily: string;
+  /** 8–32, padrão 14. */
+  fontSize: number;
+  /** 100–900. */
+  fontWeight: number;
+  fontWeightBold: number;
+  /** 1.0–2.0, padrão 1.2. */
+  lineHeight: number;
+  /** -2–10 px. */
+  letterSpacing: number;
+  ligatures: boolean;
+  cursorStyle: CursorStyle;
+  cursorBlink: boolean;
+  /** `#rrggbb` ou null para usar a do esquema. */
+  cursorColor: string | null;
+  /** 100–100.000, padrão 10.000. */
+  scrollback: number;
+  /** 0.5–1.0, padrão 1.0. */
+  backgroundOpacity: number;
+  /** 0–40 px. */
+  blur: number;
+  /** 0–32 px, padrão 12. */
+  padding: number;
+  colorSchemeId: string;
+}
+
+export interface ColorScheme {
+  id: string;
+  name: string;
+  origin: SchemeOrigin;
+  foreground: string;
+  background: string;
+  cursor: string;
+  /** `#rrggbb` ou `#rrggbbaa`. */
+  selection: string;
+  /** 16 cores ANSI: 0–7 normais, 8–15 brilhantes. */
+  ansi: string[];
+}
+
+export interface FontInfo {
+  family: string;
+  source: 'system' | 'bundled';
+  ligatures: boolean;
+}
+
+export interface SchemeImportResult {
+  imported: ColorScheme[];
+  /** Cores ausentes no arquivo, preenchidas com as do esquema padrão. */
+  completed: string[];
+}
+
+export interface ProfilesChangedEvent {
+  scope: 'global' | 'host';
+  hostId?: string;
+}
+
 // --- Sessões (só em memória) ------------------------------------------------
 
 export type SessionKind = 'ssh' | 'local' | 'sftp';

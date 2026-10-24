@@ -112,6 +112,10 @@
   animation: section-in var(--motion-base) var(--ease-standard);
 }
 
+.content.wide {
+  max-width: 920px;
+}
+
 .sectionTitle {
   margin: 0;
   font-size: 15px;

@@ -115,10 +115,17 @@
   display: none;
 }
 
+/* Espaçamento e fundo vêm do perfil (FR-152). */
+.frame {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .xterm {
   flex: 1;
   min-height: 0;
-  padding: 12px 4px 4px 14px;
 }
 
 .banner {

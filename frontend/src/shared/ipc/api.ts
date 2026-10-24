@@ -3,11 +3,13 @@ import type {
   ActiveForward,
   ActiveSummary,
   Appearance,
+  ColorScheme,
   ConflictChoice,
   ConflictEvent,
   CredentialSummary,
   ForwardRule,
   ForwardRuleInput,
+  FontInfo,
   ForwardRuleStatus,
   Group,
   HostInput,
@@ -15,12 +17,15 @@ import type {
   HostView,
   LocalShell,
   SendKeysCombo,
+  ProfilesChangedEvent,
   PromptEvent,
   RemoteEntry,
+  SchemeImportResult,
   SessionDataEvent,
   SessionClosedEvent,
   SessionStateEvent,
   Settings,
+  TerminalProfile,
   TermSize,
   Transfer,
   VaultSettings,
@@ -115,6 +120,23 @@ export interface ShellVaultApi {
     deactivate: (id: string) => R<void>;
     onStatus: On<{ ruleId: string } & ForwardRuleStatus>;
   };
+  /** Perfis de terminal e esquemas de cores (contracts/bridge.md, ProfileService). */
+  profiles: {
+    getGlobal: () => R<TerminalProfile>;
+    updateGlobal: (patch: Partial<TerminalProfile>) => R<TerminalProfile>;
+    getForHost: (hostId: string) => R<TerminalProfile | null>;
+    setHostOverride: (hostId: string, profile: TerminalProfile | null) => R<TerminalProfile | null>;
+    effective: (sessionId: string) => R<TerminalProfile>;
+    listSchemes: () => R<ColorScheme[]>;
+    saveScheme: (scheme: ColorScheme) => R<ColorScheme>;
+    duplicateScheme: (id: string, name: string) => R<ColorScheme>;
+    removeScheme: (id: string) => R<void>;
+    /** Diálogo nativo; null quando cancelado. */
+    importScheme: () => R<SchemeImportResult | null>;
+    exportScheme: (id: string) => R<void>;
+    listFonts: () => R<FontInfo[]>;
+    onChanged: On<ProfilesChangedEvent>;
+  };
   app: {
     getAppearance: () => R<Appearance>;
     getUiSettings: () => R<Settings>;
@@ -200,6 +222,23 @@ export const API_SHAPE = {
   forwards: {
     invoke: ['list', 'listActive', 'create', 'update', 'remove', 'activate', 'deactivate'],
     events: ['onStatus'],
+  },
+  profiles: {
+    invoke: [
+      'getGlobal',
+      'updateGlobal',
+      'getForHost',
+      'setHostOverride',
+      'effective',
+      'listSchemes',
+      'saveScheme',
+      'duplicateScheme',
+      'removeScheme',
+      'importScheme',
+      'exportScheme',
+      'listFonts',
+    ],
+    events: ['onChanged'],
   },
   app: {
     invoke: [

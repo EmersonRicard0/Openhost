@@ -302,3 +302,30 @@
   color: var(--text-primary);
   font-size: 12.5px;
 }
+
+/* Editor do perfil próprio dentro do diálogo: a amostra gruda no topo do diálogo. */
+.terminalEditor {
+  --ts-pad-x: 24px;
+  --ts-pad-top: 22px;
+  --ts-pull-top: 8px;
+  --ts-sticky-bg: var(--surface-raised);
+  /* O fundo do diálogo é translúcido: o que rola por trás vira borrão em vez de vazar. */
+  --ts-sticky-filter: blur(24px) saturate(140%);
+}
+
+.terminalProfile {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.terminalProfile > p {
+  flex: 1 1 200px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}

@@ -5,6 +5,7 @@ import { installBridge } from './bridge';
 import { subscribeData } from './features/terminal/dataBus';
 import { subscribeForwards } from './stores/forwards';
 import { subscribeInteractions } from './stores/interactions';
+import { subscribeProfiles } from './stores/profiles';
 import { subscribeSessions } from './stores/sessions';
 import { subscribeTransfers } from './stores/transfers';
 import { loadUi } from './stores/ui';
@@ -18,7 +19,8 @@ async function start(): Promise<void> {
   subscribeInteractions();
   subscribeTransfers();
   subscribeForwards();
-  await loadUi();
+  // Perfil antes da primeira aba, para o terminal já nascer com a fonte e as cores certas.
+  await Promise.all([loadUi(), subscribeProfiles()]);
   const root = document.getElementById('root');
   if (!root) return;
   createRoot(root).render(

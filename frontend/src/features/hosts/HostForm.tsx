@@ -1,8 +1,9 @@
 // Criar/editar host (FR-007).
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { AuthMethod, HostInput, HostView } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
+import { useProfiles } from '../../stores/profiles';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import { Dialog } from '../../ui/Dialog';
@@ -11,6 +12,7 @@ import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { WarningIcon } from '../../ui/icons';
 import { toastError } from '../../ui/Toast';
+import { HostTerminalDialog } from './HostTerminalDialog';
 import s from './hosts.module.css';
 
 const NEW_PASSWORD = '__new__';
@@ -42,6 +44,15 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
   const [newPassword, setNewPassword] = useState('');
   const [legacy, setLegacy] = useState(host?.legacyAlgorithms ?? false);
   const [busy, setBusy] = useState(false);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const hasOwnProfile = useProfiles((p) => (host ? Boolean(p.overrides[host.id]) : false));
+  const loadOverride = useProfiles((p) => p.loadOverride);
+  const setOverride = useProfiles((p) => p.setOverride);
+  const hostId = host?.id;
+
+  useEffect(() => {
+    if (hostId) void loadOverride(hostId);
+  }, [hostId, loadOverride]);
 
   const kind = method === 'key' ? 'key' : 'password';
   const options = [
@@ -187,10 +198,36 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             <p>{t.hosts.legacyHint}</p>
           </div>
         )}
+        {host && (
+          <div className={s.terminalProfile} role="group" aria-label={t.hosts.terminalProfile}>
+            <p>{hasOwnProfile ? t.hosts.terminalProfileOwn : t.hosts.terminalProfileGlobal}</p>
+            <Button
+              onClick={() => {
+                setEditingProfile(true);
+              }}
+            >
+              {hasOwnProfile ? t.hosts.terminalProfileEdit : t.hosts.terminalProfileCustomize}
+            </Button>
+            {hasOwnProfile && (
+              <Button variant="ghost" onClick={() => void setOverride(host.id, null)}>
+                {t.hosts.terminalProfileReset}
+              </Button>
+            )}
+          </div>
+        )}
         <Button variant="ghost" style={{ alignSelf: 'flex-start' }} onClick={onManageCredentials}>
           {t.hosts.manageCredentials}
         </Button>
       </div>
+      {host && editingProfile && (
+        <HostTerminalDialog
+          hostId={host.id}
+          hostLabel={host.label}
+          onClose={() => {
+            setEditingProfile(false);
+          }}
+        />
+      )}
     </Dialog>
   );
 }
