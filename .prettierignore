@@ -11,3 +11,5 @@ package-lock.json
 specs/
 docs/
 tests/fixtures/keys/generated/
+third_party/
+frontend/wailsjs/

@@ -18,8 +18,7 @@ import s from './app.module.css';
 function FullscreenFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className={`${s.fullscreen} ${s.backdrop} glass`}>
-      <div className={`${s.fullscreenBar} drag`}>
-      </div>
+      <div className={`${s.fullscreenBar} drag`}></div>
       {children}
     </div>
   );

@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
+import { installBridge } from './bridge';
 import { subscribeData } from './features/terminal/dataBus';
 import { subscribeForwards } from './stores/forwards';
 import { subscribeInteractions } from './stores/interactions';
@@ -10,6 +11,7 @@ import { loadUi } from './stores/ui';
 import './styles/global.css';
 
 async function start(): Promise<void> {
+  installBridge();
   subscribeData();
   subscribeSessions();
   subscribeInteractions();

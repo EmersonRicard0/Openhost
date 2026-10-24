@@ -1,0 +1,43 @@
+// Package appwin reúne o que é da janela e do processo: diretório de dados, argumentos do
+// WebView2, aparência e confirmação de fechamento.
+package appwin
+
+import (
+	"errors"
+	"os"
+	"path/filepath"
+)
+
+// DataDir devolve o diretório de dados do app, criando-o se preciso.
+// SHELLVAULT_DATA_DIR sobrescreve o padrão %APPDATA%\ShellVault (usado pelos testes).
+func DataDir() (string, error) {
+	dir := os.Getenv("SHELLVAULT_DATA_DIR")
+	if dir == "" {
+		base, err := os.UserConfigDir()
+		if err != nil {
+			return "", err
+		}
+		dir = filepath.Join(base, "ShellVault")
+	}
+	if !filepath.IsAbs(dir) {
+		return "", errors.New("diretório de dados precisa ser absoluto")
+	}
+	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	return dir, nil
+}
+
+// WebViewDir é onde o WebView2 guarda o perfil (cache, storage), dentro do diretório de dados.
+func WebViewDir(dataDir string) string {
+	return filepath.Join(dataDir, "webview")
+}
+
+// baseWebViewArgs desliga o envio e a gravação de crash dumps do WebView2 (FR-030, R17).
+var baseWebViewArgs = []string{"--disable-breakpad", "--disable-crash-reporter"}
+
+// WebViewArgs são os argumentos do processo do navegador: os fixos mais os extras do build de
+// testes (tag e2e).
+func WebViewArgs(extra []string) []string {
+	return append(append([]string{}, baseWebViewArgs...), extra...)
+}

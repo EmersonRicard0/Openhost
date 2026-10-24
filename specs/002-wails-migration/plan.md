@@ -179,6 +179,7 @@ executável até a validação de paridade e é removida numa tarefa final.
 | `x/image/font/sfnt` | Listar fontes monoespaçadas instaladas (FR-152) | API de fontes locais do navegador exige permissão não exposta pelo Wails v2 |
 | Build `e2e` com `TestService` e CDP | E2E de layout e vazamento exigem controlar a janela e ler contadores | Testes só manuais não cobrem 20 ciclos × 3 escalas de forma repetível |
 | Contêineres `sshd-legacy` e `idle-killer` | SC-110 e SC-111 precisam de servidor real com algoritmos antigos e de queda por ociosidade | Mock do protocolo não prova interoperabilidade |
+| Patch local do `go-webview2` v1.0.22 (`third_party/go-webview2`, `replace` no `go.mod`) | O loader zera `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` e o Wails v2.17 não expõe argumentos do navegador; sem eles não há `--disable-breakpad` (FR-030) nem porta CDP para os E2E. Patch de 1 variável, documentado em `PATCH.md` | Variável de ambiente e registro são ignorados pelo loader (verificado na T017); Wails v3 é beta |
 | Base Electron mantida até a paridade | Referência executável para comparar comportamento | Remover antes perde a comparação lado a lado |
 
 ### Riscos

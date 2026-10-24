@@ -231,8 +231,9 @@ reconfirmadas na tarefa que adota a dependência (Princípio I).
 
 - **Decisão**: frontend sem nenhuma chamada de rede (CSP `connect-src 'self'`); o Wails só
   serve assets embutidos. Logger do Wails com nível `ERROR` para stdout (nada em arquivo).
-  WebView2 recebe `--disable-breakpad --disable-crash-reporter` via
-  `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS` antes de `wails.Run`, e `WebviewUserDataPath` dentro
+  WebView2 recebe `--disable-breakpad --disable-crash-reporter` via patch local do
+  `go-webview2` (`edge.ExtraBrowserArgs`; o loader zera `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`,
+  ver `third_party/go-webview2/PATCH.md`) antes de `wails.Run`, e `WebviewUserDataPath` dentro
   do diretório de dados; teste varre o diretório por `Crashpad/reports` e `*.dmp`.
 
 ## R18. Testes

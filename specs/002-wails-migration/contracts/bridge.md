@@ -13,9 +13,13 @@ Operações sem marcação mantêm assinatura e semântica da 001.
   `ForwardService`, `ProfileService` **novo**, `AppService`. Nenhuma outra struct é ligada.
   Métodos exportados que não fazem parte deste contrato MUST NOT existir nessas structs (teste
   de reflexão compara a lista de métodos com este documento).
-- Todo método devolve `Result[T]` serializado como
+- A interface recebe sempre `Result<T>` =
   `{ ok: true, value: T } | { ok: false, error: { code: ErrorCode, message: string } }`.
-  Erros Go nunca são devolvidos como exceção ao JS. `message` em pt-BR, sem segredos.
+  Em Go, cada método devolve `(T, error)` (o gerador de bindings do Wails v2 não tipa
+  genéricos) e todo erro passa por `apperr.Sanitize`: vira `*apperr.Error`, cujo texto é o JSON
+  `{code, message}` com mensagem fixa em pt-BR, sem nada do erro original. O adaptador
+  `frontend/src/bridge` converte a promessa rejeitada em `{ ok: false, error }`; nenhuma
+  exceção chega aos componentes.
 - Toda entrada é validada no Go (tipos + regras do data-model); falha → `INVALID_INPUT`.
 - Métodos 🔒 exigem cofre desbloqueado (`VAULT_LOCKED`).
 - Segredos só trafegam interface → Go. Nenhum método devolve senha, passphrase ou chave privada.
@@ -40,6 +44,8 @@ Como `vault.*` da 001, com:
 | `GetStatus()` | **alterado**: `state` ganha `"migratable"` — existe `vault.svlt` da 001 e ainda não há `shellvault.db` |
 | `Unlock(password)` | **alterado**: no estado `migratable`, desbloqueia e migra (R5); falha da migração → `VAULT_MIGRATION_FAILED` e estado volta a `migratable` |
 | `GetSettings()` / `UpdateSettings(patch)` 🔒 | **alterado**: `VaultSettings` ganha `keepaliveSeconds` |
+
+Evento `vault:state`: `VaultStatus` a cada mudança de estado (equivale ao `onStateChanged` da 001).
 
 ## HostService 🔒
 

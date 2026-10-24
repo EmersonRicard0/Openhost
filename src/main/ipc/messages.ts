@@ -10,6 +10,8 @@ export const MESSAGES: Record<ErrorCode, string> = {
   VAULT_UNREADABLE: 'O arquivo do cofre está corrompido e não pode ser aberto.',
   VAULT_UNSUPPORTED_VERSION:
     'O cofre foi criado por uma versão mais nova do ShellVault e não pode ser aberto.',
+  VAULT_MIGRATION_FAILED:
+    'Não foi possível atualizar o cofre da versão anterior. O arquivo original foi mantido intacto.',
   WEAK_PASSWORD: 'A senha mestra precisa ter pelo menos 8 caracteres.',
   NOT_FOUND: 'Item não encontrado.',
   GROUP_CYCLE: 'Um grupo não pode ser movido para dentro de si mesmo.',
@@ -20,10 +22,15 @@ export const MESSAGES: Record<ErrorCode, string> = {
   HOST_UNREACHABLE: 'Não foi possível encontrar o servidor. Verifique o endereço e a rede.',
   AUTH_FAILED: 'A autenticação falhou.',
   HOST_KEY_REJECTED: 'A chave do servidor não foi aceita. Conexão cancelada.',
+  NO_COMMON_ALGORITHM:
+    'O servidor só aceita algoritmos antigos. Ative "Algoritmos legados (inseguros)" no host para conectar.',
+  AGENT_UNAVAILABLE: 'O agente SSH do Windows não está em execução.',
   SESSION_CLOSED: 'A sessão foi encerrada.',
   SFTP_ERROR: 'A operação de arquivo falhou no servidor.',
   PERMISSION_DENIED: 'Permissão negada.',
   PORT_IN_USE: 'A porta local já está em uso.',
+  SCHEME_INVALID: 'O arquivo de esquema de cores é inválido.',
+  IN_USE: 'O item está em uso e não pode ser excluído.',
   CANCELLED: 'Operação cancelada.',
   INTERNAL: 'Ocorreu um erro inesperado.',
 };
