@@ -1,7 +1,12 @@
-// Leitura do terminal pelos testes E2E. Só existe com a página carregada com ?e2e=1.
+// Leitura do terminal pelos testes E2E. Só existe no build com a tag e2e, que liga o TestService.
 import type { Terminal } from '@xterm/xterm';
 
-const enabled = new URLSearchParams(window.location.search).has('e2e');
+/** Os bindings do Wails já estão em `window.go` quando a primeira aba monta. */
+function enabled(): boolean {
+  return (window as { go?: { testsvc?: unknown } }).go?.testsvc !== undefined;
+}
+
+let installed = false;
 const terminals = new Map<string, Terminal>();
 
 export interface ProbeCell {
@@ -62,14 +67,14 @@ function select(sessionId: string, needle: string): boolean {
   return true;
 }
 
-if (enabled) {
-  Object.defineProperty(window, '__shellvaultProbe', {
-    value: Object.freeze({ text: textOf, cells: cellsOf, select }),
-  });
-}
-
 export function registerProbe(sessionId: string, term: Terminal): () => void {
-  if (!enabled) return () => undefined;
+  if (!enabled()) return () => undefined;
+  if (!installed) {
+    installed = true;
+    Object.defineProperty(window, '__shellvaultProbe', {
+      value: Object.freeze({ text: textOf, cells: cellsOf, select }),
+    });
+  }
   terminals.set(sessionId, term);
   return () => {
     terminals.delete(sessionId);
