@@ -10,7 +10,7 @@ import {
   type Placement,
   type VirtualElement,
 } from '@floating-ui/react-dom';
-import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode, type Ref } from 'react';
+import { useEffect, useMemo, useRef, type CSSProperties, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 
 /** Elemento que originou a camada, ou um ponto (menu de contexto). */
@@ -25,7 +25,7 @@ function toReference(anchor: PopoverAnchor): Element | VirtualElement {
 }
 
 export interface PopoverRenderProps {
-  ref: Ref<HTMLDivElement>;
+  ref: (node: HTMLElement | null) => void;
   style: CSSProperties;
 }
 

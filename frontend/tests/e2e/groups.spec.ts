@@ -1,7 +1,7 @@
 // US3 — grupos, mover, buscar e duplicar (T041; da 001 T071).
 import { expect, test, type Page } from '@playwright/test';
 import { launchApp } from './helpers/launch';
-import { addHost, createVault, groupItem, hostItem, unlock } from './helpers/ui';
+import { addHost, chooseOption, createVault, groupItem, hostItem, unlock } from './helpers/ui';
 
 async function nameGroup(page: Page, title: string, name: string) {
   const dialog = page.getByRole('dialog', { name: title });
@@ -36,7 +36,7 @@ test('organizar hosts em grupos, buscar e duplicar', async () => {
     await expect(hostItem(page, 'acme-web')).toHaveAttribute('aria-level', '3');
     await menu(page, hostItem(page, 'db-01'), 'Mover para…');
     const move = page.getByRole('dialog', { name: 'Mover para grupo' });
-    await move.getByLabel('Destino').selectOption({ label: 'Clientes' });
+    await chooseOption(move, 'Destino', 'Clientes');
     await move.getByRole('button', { name: 'Confirmar' }).click();
     await expect(hostItem(page, 'db-01')).toHaveAttribute('aria-level', '2');
 

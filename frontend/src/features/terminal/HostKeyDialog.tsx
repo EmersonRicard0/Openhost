@@ -4,6 +4,7 @@ import { t } from '../../i18n/pt-BR';
 import { useInteractions } from '../../stores/interactions';
 import { useSessions } from '../../stores/sessions';
 import { Button } from '../../ui/Button';
+import { Checkbox } from '../../ui/Checkbox';
 import { Dialog } from '../../ui/Dialog';
 import { focusTerminal } from './terminalRegistry';
 import { WarningIcon } from '../../ui/icons';
@@ -85,16 +86,13 @@ export function HostKeyDialog() {
         </div>
       </div>
       {changed && (
-        <label className={s.check}>
-          <input
-            type="checkbox"
-            checked={understood}
-            onChange={(e) => {
-              setUnderstood(e.target.checked);
-            }}
-          />
-          {t.terminal.understandRisk}
-        </label>
+        <Checkbox
+          label={t.terminal.understandRisk}
+          checked={understood}
+          onChange={(e) => {
+            setUnderstood(e.target.checked);
+          }}
+        />
       )}
     </Dialog>
   );

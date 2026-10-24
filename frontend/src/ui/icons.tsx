@@ -1,6 +1,7 @@
 // Ícones do ShellVault: todos do Lucide, pelo wrapper `icon` (FR-169).
 import {
   CaseSensitive,
+  Check,
   ChevronDown,
   ChevronRight,
   ChevronUp,
@@ -73,3 +74,5 @@ export const PasteIcon = icon(ClipboardPaste);
 export const KeyboardIcon = icon(Keyboard);
 export const ThemeIcon = icon(Moon);
 export const RenameIcon = icon(Pencil);
+export const CheckIcon = icon(Check);
+export const MinusIcon = icon(Minus);

@@ -134,12 +134,203 @@ textarea.input {
   resize: vertical;
 }
 
-.select {
-  height: 34px;
-  padding: 0 8px;
+.selectButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px 0 11px;
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--input-background);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.selectButton:hover:not(:disabled) {
+  border-color: var(--text-secondary);
+}
+
+.selectButton:focus-visible,
+.selectButton[aria-expanded='true'] {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  outline: none;
+}
+
+.selectButton:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.selectValue {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.selectChevron {
+  flex: none;
+  color: var(--text-secondary);
+  transition: transform var(--motion-fast) var(--ease-standard);
+}
+
+.selectButton[aria-expanded='true'] .selectChevron {
+  transform: rotate(180deg);
+}
+
+.selectList {
+  margin: 0;
+  list-style: none;
+}
+
+.selectOption {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px 0 6px;
+  border-radius: 7px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.selectOption[data-active] {
+  background: var(--hover);
+}
+
+.selectOption[aria-selected='true'] {
+  color: var(--accent);
+}
+
+.selectCheck {
+  display: inline-flex;
+  flex: none;
+  width: 16px;
+  justify-content: center;
+}
+
+.checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.checkboxControl {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+}
+
+/* O input nativo cobre a caixa: recebe clique, teclado e leitor de tela. */
+.checkboxInput {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: inherit;
+}
+
+.checkboxBox {
+  display: inline-flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  background: var(--input-background);
+  pointer-events: none;
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    border-color var(--motion-fast) var(--ease-standard);
+}
+
+.checkboxMark {
+  width: 12px;
+  height: 12px;
+  color: var(--accent-text);
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+
+.checkboxInput:checked + .checkboxBox {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.checkboxInput:checked + .checkboxBox .checkboxMark {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.checkboxInput:focus-visible + .checkboxBox {
+  border-color: var(--focus);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.checkboxInput:disabled + .checkboxBox {
+  opacity: 0.55;
+}
+
+.checkboxText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.numberWrap {
+  padding: 0 3px;
+}
+
+.numberInput {
+  padding: 0 4px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.unit {
+  padding-right: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.stepper {
+  display: inline-flex;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.stepper:hover:not(:disabled) {
+  background: var(--hover);
+  color: var(--text-primary);
+}
+
+.stepper:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .backdrop {

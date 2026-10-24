@@ -4,7 +4,9 @@ import { t } from '../../i18n/pt-BR';
 import { useUi } from '../../stores/ui';
 import { useVault } from '../../stores/vault';
 import { Button } from '../../ui/Button';
+import { Checkbox } from '../../ui/Checkbox';
 import { Dialog } from '../../ui/Dialog';
+import { NumberField } from '../../ui/NumberField';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { toastError, toastInfo } from '../../ui/Toast';
@@ -125,55 +127,46 @@ export function SettingsDialog({ onClose }: { onClose: () => void }) {
             setFont(e.target.value);
           }}
         />
-        <TextField
+        <NumberField
           label={t.settings.fontSize}
-          type="number"
           min={8}
           max={32}
+          unit="px"
           value={fontSize}
           error={fontSizeValue === null ? '8–32' : null}
-          onChange={(e) => {
-            setFontSize(e.target.value);
-          }}
+          onChange={setFontSize}
         />
       </section>
 
       {unlocked && (
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <h3 style={{ margin: 0, fontSize: 13 }}>{t.settings.vaultSection}</h3>
-          <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <input
-              type="checkbox"
-              checked={autoLockOn}
-              onChange={(e) => {
-                setAutoLockOn(e.target.checked);
-              }}
-            />
-            {t.settings.autoLock}
-          </label>
+          <Checkbox
+            label={t.settings.autoLock}
+            checked={autoLockOn}
+            onChange={(e) => {
+              setAutoLockOn(e.target.checked);
+            }}
+          />
           {autoLockOn && (
-            <TextField
+            <NumberField
               label={t.settings.autoLockMinutes}
-              type="number"
               min={1}
               max={120}
+              unit="min"
               value={autoLock}
               error={autoLockValue === null ? '1–120' : null}
-              onChange={(e) => {
-                setAutoLock(e.target.value);
-              }}
+              onChange={setAutoLock}
             />
           )}
-          <TextField
+          <NumberField
             label={t.settings.connectTimeout}
-            type="number"
             min={5}
             max={120}
+            unit="s"
             value={timeout}
             error={timeoutValue === null ? '5–120' : null}
-            onChange={(e) => {
-              setTimeoutText(e.target.value);
-            }}
+            onChange={setTimeoutText}
           />
           <div style={{ display: 'flex', gap: 8 }}>
             <Button

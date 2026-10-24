@@ -4,7 +4,9 @@ import type { AuthMethod, HostInput, HostView } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
 import { Button } from '../../ui/Button';
+import { Checkbox } from '../../ui/Checkbox';
 import { Dialog } from '../../ui/Dialog';
+import { NumberField } from '../../ui/NumberField';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { WarningIcon } from '../../ui/icons';
@@ -129,16 +131,13 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
               setAddress(e.target.value);
             }}
           />
-          <TextField
+          <NumberField
             label={t.hosts.port}
-            type="number"
             min={1}
             max={65535}
             value={port}
             error={portValid ? null : '1–65535'}
-            onChange={(e) => {
-              setPort(e.target.value);
-            }}
+            onChange={setPort}
           />
         </div>
         <TextField
@@ -175,16 +174,13 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             }}
           />
         )}
-        <label className={s.check}>
-          <input
-            type="checkbox"
-            checked={legacy}
-            onChange={(e) => {
-              setLegacy(e.target.checked);
-            }}
-          />
-          {t.hosts.legacy}
-        </label>
+        <Checkbox
+          label={t.hosts.legacy}
+          checked={legacy}
+          onChange={(e) => {
+            setLegacy(e.target.checked);
+          }}
+        />
         {legacy && (
           <div className={s.legacyWarning} role="note">
             <WarningIcon style={{ flex: 'none' }} />

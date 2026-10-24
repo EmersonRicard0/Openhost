@@ -11,6 +11,7 @@ import { useForwards } from '../../stores/forwards';
 import { Button } from '../../ui/Button';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Dialog } from '../../ui/Dialog';
+import { NumberField } from '../../ui/NumberField';
 import { TextField } from '../../ui/TextField';
 import { toastError } from '../../ui/Toast';
 import { describeRule, isLoopback, statusText } from './format';
@@ -138,6 +139,13 @@ export function ForwardRulesPanel({ host, onClose }: { host: HostView; onClose: 
     },
   });
 
+  const numberField = (key: 'bindPort' | 'destPort') => ({
+    value: draft?.[key] ?? '',
+    onChange: (value: string) => {
+      setDraft((d) => (d ? { ...d, [key]: value } : d));
+    },
+  });
+
   if (exposing) {
     return (
       <ConfirmDialog
@@ -249,13 +257,12 @@ export function ForwardRulesPanel({ host, onClose }: { host: HostView; onClose: 
               hint={t.forwarding.bindAddressHint}
               {...field('bindAddress')}
             />
-            <TextField
+            <NumberField
               label={t.forwarding.bindPort}
-              type="number"
               min={1}
               max={65535}
               error={duplicate ? t.forwarding.duplicate : null}
-              {...field('bindPort')}
+              {...numberField('bindPort')}
             />
           </div>
           <div className={s.row}>
@@ -264,12 +271,11 @@ export function ForwardRulesPanel({ host, onClose }: { host: HostView; onClose: 
               hint={t.forwarding.destHostHint}
               {...field('destHost')}
             />
-            <TextField
+            <NumberField
               label={t.forwarding.destPort}
-              type="number"
               min={1}
               max={65535}
-              {...field('destPort')}
+              {...numberField('destPort')}
             />
           </div>
           <div className={s.formActions}>

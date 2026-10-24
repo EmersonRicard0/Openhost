@@ -31,6 +31,17 @@ export interface HostFields {
   legacy?: boolean;
 }
 
+/** Escolhe uma opção do Select próprio (a lista abre num portal, fora do diálogo). */
+export async function chooseOption(scope: Locator, label: string, option: string): Promise<void> {
+  await scope.getByRole('combobox', { name: label, exact: true }).click();
+  await scope
+    .page()
+    .getByRole('listbox', { name: label, exact: true })
+    .getByRole('option', { name: option, exact: true })
+    .click();
+  await expect(scope.getByRole('combobox', { name: label, exact: true })).toHaveText(option);
+}
+
 export async function addHost(page: Page, host: HostFields): Promise<void> {
   await page.getByRole('button', { name: 'Novo host' }).click();
   const dialog = page.getByRole('dialog', { name: 'Novo host' });
@@ -38,9 +49,9 @@ export async function addHost(page: Page, host: HostFields): Promise<void> {
   await dialog.getByLabel('Endereço', { exact: true }).fill(host.address);
   await dialog.getByLabel('Porta', { exact: true }).fill(String(host.port));
   await dialog.getByLabel('Usuário', { exact: true }).fill(host.username);
-  if (host.method) await dialog.getByLabel('Autenticação').selectOption({ label: host.method });
+  if (host.method) await chooseOption(dialog, 'Autenticação', host.method);
   if (host.credential) {
-    await dialog.getByLabel('Credencial').selectOption({ label: host.credential });
+    await chooseOption(dialog, 'Credencial', host.credential);
   } else if (host.password !== undefined) {
     await dialog.getByLabel('Senha', { exact: true }).fill(host.password);
   }

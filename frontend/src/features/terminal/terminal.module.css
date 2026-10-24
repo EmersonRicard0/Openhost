@@ -160,12 +160,6 @@
   color: var(--text-primary);
 }
 
-.check {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-}
-
 /* Busca no terminal (FR-142): flutua no canto superior direito, sobre o terminal. */
 .searchBar {
   position: absolute;

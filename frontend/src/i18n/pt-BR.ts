@@ -23,6 +23,8 @@ export const t = {
     loading: 'Carregando…',
     optional: 'opcional',
     more: 'Mais opções',
+    decrease: 'Diminuir',
+    increase: 'Aumentar',
   },
   vault: {
     createTitle: 'Crie sua senha mestra',
@@ -72,7 +74,7 @@ export const t = {
     autoLock: 'Bloquear automaticamente após inatividade',
     autoLockMinutes: 'Minutos sem interação',
     autoLockDisabled: 'Desativado',
-    connectTimeout: 'Tempo limite de conexão (segundos)',
+    connectTimeout: 'Tempo limite de conexão',
     changePassword: 'Trocar senha mestra…',
     eraseVault: 'Apagar cofre…',
     appearanceSection: 'Aparência',
