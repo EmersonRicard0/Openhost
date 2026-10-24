@@ -1,5 +1,13 @@
 <!--
 Sync Impact Report
+- Versão: 1.0.0 → 1.0.1 (PATCH, feature 002-wails-migration)
+- Mudanças: exemplos de bibliotecas (Princípio V) passam de `ssh2`/`node-pty` para
+  `golang.org/x/crypto/ssh`/`pkg/sftp`/`go-pty`; exemplo de linguagem tipada passa a citar Go
+  e TypeScript `strict`. Nenhum princípio muda de sentido.
+- Templates dependentes: nenhum alterado
+- TODOs adiados: nenhum
+
+Histórico
 - Versão: (template não preenchido) → 1.0.0
 - Princípios definidos (todos novos):
   I. Clean Room (INEGOCIÁVEL)
@@ -79,7 +87,8 @@ testes são a única rede de proteção confiável.
 - O escopo segue o MVP definido em `docs/reference/termius-analysis.md`; itens marcados
   como "fora" (nuvem, equipes, FIDO2, Mosh, serial, Azure, autocomplete, planos pagos)
   MUST NOT ser implementados sem nova spec aprovada.
-- Preferir bibliotecas abertas consolidadas (ex.: `ssh2`, `node-pty`) a implementações
+- Preferir bibliotecas abertas consolidadas (ex.: `golang.org/x/crypto/ssh`, `pkg/sftp`,
+  `go-pty`) a implementações
   próprias de protocolo.
 - Toda abstração, processo extra ou dependência nova MUST ser justificada no plano
   (seção de complexidade); YAGNI é o padrão.
@@ -93,7 +102,7 @@ testes são a única rede de proteção confiável.
 - Arquitetura desktop com separação de processos: principal (SO, janelas, SSH, cofre),
   interface (renderização, sem privilégios) e ponte tipada entre eles. A stack concreta é
   definida em `/speckit-plan` e MUST respeitar o Princípio II.
-- Linguagem com tipagem estática em todo o código (ex.: TypeScript em modo `strict`).
+- Linguagem com tipagem estática em todo o código (ex.: Go e TypeScript em modo `strict`).
 - Idioma: documentação e specs em português; identificadores de código em inglês.
 
 ## Fluxo de Desenvolvimento
@@ -118,4 +127,4 @@ testes são a única rede de proteção confiável.
   qualquer violação MUST ser justificada por escrito na seção de complexidade do plano ou
   corrigida.
 
-**Version**: 1.0.0 | **Ratified**: 2026-10-23 | **Last Amended**: 2026-10-23
+**Version**: 1.0.1 | **Ratified**: 2026-10-23 | **Last Amended**: 2026-10-23
