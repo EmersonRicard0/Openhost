@@ -30,20 +30,26 @@ avisa o Claude Code em `.agente-queue/messages/to-claude.md`.
 - US2: T043–T051
 - US3 (frontend): T055, T059–T064
 - US4 (frontend): T072–T076
-- US5: T077–T087, T107–T114 (T077–T080 dependem do usuário)
+- US5: T077–T085, T087, T107–T114 (T077–T080 dependem do usuário; de T110 e T112 só a parte de frontend)
+- US6 (frontend): T095, T097
+- Polish: T098, T099, T101, T103–T106; T102 (npm e fontes)
 
 **Codex — backend Go**
 - US3: T052, T053, T054, T056, T057 (só a parte Go: `keepalive.go`, dial, `vault_settings`;
   o campo no diálogo fica com o Claude Code), T058
 - US4: T065, T066, T067, T068, T069, T070, T071
 - T113 (só a parte Go: `latencyMs` no `term:state` a partir do RTT do keepalive)
+- US5 (Go): T086; partes Go de T110 (`sidebarCollapsed`) e T112 (`accent`, `systemAccent`)
+- US6: T088–T094, T096
+- Polish: T100; T102 (dependências Go)
 
 ## Arquivos
 
 - Codex não altera `frontend/` (exceto `frontend/src/shared/ipc/*` e `shared/model/types.ts`
   quando um método ou evento novo da ponte exigir; avisar no commit).
 - Claude Code não altera `internal/sshx/`, `internal/schemes/`, `internal/fonts/`,
-  `internal/domain/profiles*` enquanto as tarefas do Codex estiverem abertas.
+  `internal/domain/`, `internal/sftpx/`, `internal/forwarding/`, `internal/appwin/appearance*`
+  enquanto as tarefas do Codex estiverem abertas.
 - Arquivos compartilhados (`main.go`, `internal/bridge/services.go`, `go.mod`, `go.sum`,
   `specs/002-wails-migration/tasks.md`): mudanças mínimas; em `tasks.md` cada agente marca
   apenas as próprias linhas.
