@@ -100,6 +100,10 @@ func Open(dir string, kdf func(salt []byte) KDFParams) (*Store, error) {
 		s.status = Status{State: StateUnreadable, Reason: &reason}
 		return s, nil
 	}
+	if err := seedProfiles(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
 	s.db = db
 	s.status = s.probe()
 	return s, nil

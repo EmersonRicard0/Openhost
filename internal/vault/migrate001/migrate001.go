@@ -233,6 +233,7 @@ func migrateSettings(store *vault.Store, dir string) {
 	}
 	if s.TerminalFontFamily != "" && s.TerminalFontSize >= 8 && s.TerminalFontSize <= 32 {
 		_ = store.SetPreference(PrefLegacyTerminalFont, TerminalFont{Family: s.TerminalFontFamily, Size: s.TerminalFontSize})
+		_ = store.ApplyLegacyTerminalFont(s.TerminalFontFamily, s.TerminalFontSize)
 	}
 	_ = os.Rename(filepath.Join(dir, settingsFile), filepath.Join(dir, settingsFile+migratedSuffix))
 }

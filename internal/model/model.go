@@ -86,6 +86,54 @@ type VaultSettings struct {
 	KeepaliveSeconds int `json:"keepaliveSeconds"`
 }
 
+type CursorStyle string
+
+const (
+	CursorBlock     CursorStyle = "block"
+	CursorBar       CursorStyle = "bar"
+	CursorUnderline CursorStyle = "underline"
+)
+
+type SchemeOrigin string
+
+const (
+	SchemeBuiltin  SchemeOrigin = "builtin"
+	SchemeImported SchemeOrigin = "imported"
+	SchemeCustom   SchemeOrigin = "custom"
+)
+
+type TerminalProfile struct {
+	ID                string      `json:"id"`
+	Name              string      `json:"name"`
+	IsGlobal          bool        `json:"isGlobal"`
+	FontFamily        string      `json:"fontFamily"`
+	FontSize          float64     `json:"fontSize"`
+	FontWeight        int         `json:"fontWeight"`
+	FontWeightBold    int         `json:"fontWeightBold"`
+	LineHeight        float64     `json:"lineHeight"`
+	LetterSpacing     float64     `json:"letterSpacing"`
+	Ligatures         bool        `json:"ligatures"`
+	CursorStyle       CursorStyle `json:"cursorStyle"`
+	CursorBlink       bool        `json:"cursorBlink"`
+	CursorColor       *string     `json:"cursorColor"`
+	Scrollback        int         `json:"scrollback"`
+	BackgroundOpacity float64     `json:"backgroundOpacity"`
+	Blur              int         `json:"blur"`
+	Padding           int         `json:"padding"`
+	ColorSchemeID     string      `json:"colorSchemeId"`
+}
+
+type ColorScheme struct {
+	ID         string       `json:"id"`
+	Name       string       `json:"name"`
+	Origin     SchemeOrigin `json:"origin"`
+	Foreground string       `json:"foreground"`
+	Background string       `json:"background"`
+	Cursor     string       `json:"cursor"`
+	Selection  string       `json:"selection"`
+	ANSI       []string     `json:"ansi"`
+}
+
 func DefaultVaultSettings() VaultSettings {
 	autoLock := 15
 	return VaultSettings{AutoLockMinutes: &autoLock, ConnectTimeoutSeconds: 15, KeepaliveSeconds: 30}
