@@ -127,9 +127,25 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     });
     observer.observe(container);
 
+    // Troca de monitor com outra escala: o tamanho em CSS pode não mudar, mas a célula muda.
+    let stopDpr: () => void = () => undefined;
+    const watchDpr = () => {
+      const query = matchMedia(`(resolution: ${String(window.devicePixelRatio)}dppx)`);
+      const onChange = () => {
+        fitAndResize();
+        watchDpr();
+      };
+      query.addEventListener('change', onChange, { once: true });
+      stopDpr = () => {
+        query.removeEventListener('change', onChange);
+      };
+    };
+    watchDpr();
+
     return () => {
       if (timer) clearTimeout(timer);
       observer.disconnect();
+      stopDpr();
       container.removeEventListener('contextmenu', onContextMenu);
       onData.dispose();
       detach();

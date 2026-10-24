@@ -13,13 +13,14 @@ import { LockIcon, SettingsIcon } from '../ui/icons';
 import { Toasts } from '../ui/Toast';
 import { trackActivity } from './activity';
 import { CloseConfirmDialog } from './CloseConfirmDialog';
+import { TitleBar } from './TitleBar';
 import s from './app.module.css';
 
 function FullscreenFrame({ children }: { children: React.ReactNode }) {
   return (
     <div className={`${s.fullscreen} ${s.backdrop} glass`}>
-      <div className={`${s.fullscreenBar} drag`}></div>
-      {children}
+      <TitleBar />
+      <div className={s.fullscreenBody}>{children}</div>
     </div>
   );
 }
@@ -56,34 +57,35 @@ export function App() {
   const unlocked = status.state === 'unlocked';
   return (
     <div className={`${s.root} ${s.backdrop} glass`}>
-      <header className={`${s.titleBar} drag`}>
-        <span className={s.spacer} />
-        <ForwardsIndicator />
-        {unlocked && (
-          <Button
-            variant="ghost"
-            iconOnly
-            className="no-drag"
-            aria-label={t.vault.lock}
-            title={t.vault.lock}
-            onClick={() => void lock()}
-          >
-            <LockIcon />
-          </Button>
-        )}
-        <Button
-          variant="ghost"
-          iconOnly
-          className="no-drag"
-          aria-label={t.settings.title}
-          title={t.settings.title}
-          onClick={() => {
-            setSettingsOpen(true);
-          }}
-        >
-          <SettingsIcon />
-        </Button>
-      </header>
+      <TitleBar
+        actions={
+          <>
+            <ForwardsIndicator />
+            {unlocked && (
+              <Button
+                variant="ghost"
+                iconOnly
+                aria-label={t.vault.lock}
+                title={t.vault.lock}
+                onClick={() => void lock()}
+              >
+                <LockIcon />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              iconOnly
+              aria-label={t.settings.title}
+              title={t.settings.title}
+              onClick={() => {
+                setSettingsOpen(true);
+              }}
+            >
+              <SettingsIcon />
+            </Button>
+          </>
+        }
+      />
       {/* Bloqueado: o painel de desbloqueio ocupa só a barra lateral; abas seguem ativas. */}
       <aside className={s.sidebar}>{unlocked ? <HostSidebar /> : <UnlockPanel />}</aside>
       <main className={s.main}>

@@ -1,6 +1,12 @@
 // Todos os textos da interface (FR-029). Identificadores em inglês, conteúdo em pt-BR.
 
 export const t = {
+  window: {
+    minimise: 'Minimizar',
+    maximise: 'Maximizar',
+    restore: 'Restaurar',
+    close: 'Fechar',
+  },
   common: {
     appName: 'ShellVault',
     cancel: 'Cancelar',

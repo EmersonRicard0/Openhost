@@ -4,7 +4,7 @@
 import type { ShellVaultApi, Unsubscribe } from '@shared/ipc/api';
 import { ERROR_CODES, type AppError, type ErrorCode } from '@shared/ipc/errors';
 import type { Result } from '@shared/ipc/result';
-import { EventsOn } from '../../wailsjs/runtime/runtime';
+import { EventsOn, WindowIsMaximised } from '../../wailsjs/runtime/runtime';
 
 type GoMethod = (...args: unknown[]) => Promise<unknown>;
 type GoServices = Record<string, Record<string, GoMethod | undefined> | undefined>;
@@ -181,6 +181,16 @@ function createApi(): ShellVaultApi {
       getUiSettings: () => call(A, 'GetPreferences'),
       updateUiSettings: (patch) => call(A, 'UpdatePreferences', patch),
       confirmClose: (confirmed) => call(A, 'ConfirmClose', confirmed),
+      windowMinimise: () => call(A, 'WindowMinimise'),
+      windowToggleMaximise: () => call(A, 'WindowToggleMaximise'),
+      windowClose: () => call(A, 'WindowClose'),
+      windowIsMaximised: async () => {
+        try {
+          return { ok: true, value: await WindowIsMaximised() };
+        } catch {
+          return { ok: false, error: INTERNAL };
+        }
+      },
       onAppearanceChanged: ev('app:appearance'),
       onCloseRequested: ev('app:close-requested'),
     },

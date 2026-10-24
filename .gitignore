@@ -22,3 +22,6 @@ tests/fixtures/keys/generated/
 
 # Skill de terceiros sem licença declarada: reinstalar via skills-lock.json (npx skills add)
 .claude/skills/brand-kit/
+
+# Bindings gerados pelo wails dev (a ponte usa window.go diretamente)
+frontend/wailsjs/go/

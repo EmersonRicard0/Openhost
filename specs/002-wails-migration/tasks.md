@@ -114,10 +114,10 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 ### Implementation for User Story 2
 
-- [ ] T046 [US2] Reescrever `frontend/src/app/app.module.css` e `frontend/src/styles/global.css`: raiz `height: 100vh` com grid `sidebar | main`, `min-height: 0`/`min-width: 0` em todos os filhos flex/grid; `.glass-edge` deixa de definir `position` (borda via `::before` em elemento já posicionado pelo próprio componente)
-- [ ] T047 [US2] `frontend/src/features/terminal/TerminalView.tsx`: `ResizeObserver` no contêiner → `fit()` com debounce de 50 ms → `Resize` só com dimensões > 0 e diferentes das últimas; ouvinte de `matchMedia('(resolution: …dppx)')` refaz o fit ao trocar de monitor
+- [X] T046 [US2] Reescrever `frontend/src/app/app.module.css` e `frontend/src/styles/global.css`: raiz `height: 100vh` com grid `sidebar | main`, `min-height: 0`/`min-width: 0` em todos os filhos flex/grid; `.glass-edge` deixa de definir `position` (borda via `::before` em elemento já posicionado pelo próprio componente)
+- [X] T047 [US2] `frontend/src/features/terminal/TerminalView.tsx`: `ResizeObserver` no contêiner → `fit()` com debounce de 50 ms → `Resize` só com dimensões > 0 e diferentes das últimas; ouvinte de `matchMedia('(resolution: …dppx)')` refaz o fit ao trocar de monitor
 - [ ] T048 [US2] Criar `frontend/src/ui/Popover.tsx` sobre `@floating-ui/react-dom` (`flip`, `shift`, `size`, portal no `body`, `z-index` do token de camada de menu) e reescrever `frontend/src/ui/Menu.tsx` ancorado a um elemento ou a um ponto; atualizar usos em `TabBar.tsx`, `HostList.tsx`, `SftpView.tsx`
-- [ ] T049 [US2] Criar `frontend/src/app/TitleBar.tsx`: área de arrasto (`--wails-draggable: drag`), botões minimizar, maximizar/restaurar (ícone conforme estado) e fechar chamando `AppService`, duplo clique alterna maximizar; substituir o cabeçalho de `App.tsx`
+- [X] T049 [US2] Criar `frontend/src/app/TitleBar.tsx`: área de arrasto (`--wails-draggable: drag`), botões minimizar, maximizar/restaurar (ícone conforme estado) e fechar chamando `AppService`, duplo clique alterna maximizar; substituir o cabeçalho de `App.tsx`
 - [ ] T050 [US2] `frontend/src/ui/Dialog.tsx`: pilha de diálogos com Esc tratado no `document` para o diálogo do topo (corrige B2) e alvo de foco ao fechar configurável; `HostKeyDialog`/`PromptDialog` devolvem o foco ao terminal da sessão (corrige B3)
 - [X] T051 [US2] Corrigir o recuo em `frontend/src/features/hosts/HostList.tsx` e `tree.ts` (corrige B4) para passar a T045
 

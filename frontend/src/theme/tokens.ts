@@ -29,6 +29,10 @@ export interface ThemeTokens {
   warning: string;
   success: string;
   focus: string;
+  /** Botão fechar da barra de título: vermelho do Windows 11 (FR-133). */
+  windowCloseHover: string;
+  windowCloseActive: string;
+  windowCloseText: string;
   shadow: string;
   /** Brilho de fundo das telas cheias (cofre). */
   backdropGlow: string;
@@ -66,6 +70,9 @@ const dark = {
   warning: '#f0b955',
   success: '#4fd18b',
   focus: '#a99bff',
+  windowCloseHover: '#c42b1c',
+  windowCloseActive: '#b22a1d',
+  windowCloseText: '#ffffff',
   shadow: '0 18px 48px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.30)',
   backdropGlow:
     'radial-gradient(1200px 600px at 15% -10%, rgba(110, 79, 245, 0.30), transparent 60%), radial-gradient(900px 500px at 110% 110%, rgba(47, 111, 224, 0.25), transparent 60%)',
@@ -88,6 +95,9 @@ const light = {
   warning: '#9a6400',
   success: '#1f7a46',
   focus: '#5b3df0',
+  windowCloseHover: '#c42b1c',
+  windowCloseActive: '#b22a1d',
+  windowCloseText: '#ffffff',
   shadow: '0 18px 48px rgba(21, 24, 33, 0.16), 0 2px 6px rgba(21, 24, 33, 0.08)',
   backdropGlow:
     'radial-gradient(1200px 600px at 15% -10%, rgba(91, 61, 240, 0.16), transparent 60%), radial-gradient(900px 500px at 110% 110%, rgba(37, 99, 217, 0.14), transparent 60%)',
@@ -143,6 +153,9 @@ export const THEMES: Record<ThemeMode, ThemeTokens> = {
     warning: 'CanvasText',
     success: 'CanvasText',
     focus: 'Highlight',
+    windowCloseHover: 'Highlight',
+    windowCloseActive: 'Highlight',
+    windowCloseText: 'HighlightText',
     shadow: 'none',
     backdropGlow: 'none',
     terminalBackground: 'Canvas',

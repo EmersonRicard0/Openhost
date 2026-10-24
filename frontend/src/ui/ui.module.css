@@ -155,6 +155,7 @@ textarea.input {
 }
 
 .dialog {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -223,6 +224,7 @@ textarea.input {
 }
 
 .toast {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 10px;

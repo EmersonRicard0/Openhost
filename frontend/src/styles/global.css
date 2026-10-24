@@ -75,14 +75,11 @@ textarea {
 
 /* Superfície de vidro: fundo translúcido + borda de 1 px com gradiente (brilho). */
 .glass {
-  position: relative;
   background: var(--surface-glass);
 }
 
-.glass-edge {
-  position: relative;
-}
-
+/* Só desenha a borda: quem usa a classe já é posicionado (fixed/absolute/relative) pelo próprio
+   componente. Definir `position` aqui quebrava menus `position: fixed` (bug 4). */
 .glass-edge::before {
   content: '';
   position: absolute;
@@ -121,13 +118,13 @@ textarea {
   white-space: nowrap;
 }
 
-/* Área arrastável da barra de título própria. */
+/* Área arrastável da barra de título própria (propriedade CSS lida pelo runtime do Wails). */
 .drag {
-  -webkit-app-region: drag;
+  --wails-draggable: drag;
 }
 
 .no-drag {
-  -webkit-app-region: no-drag;
+  --wails-draggable: no-drag;
 }
 
 @media (prefers-reduced-motion: reduce) {

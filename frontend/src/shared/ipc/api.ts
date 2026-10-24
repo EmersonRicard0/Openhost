@@ -117,6 +117,11 @@ export interface ShellVaultApi {
     getUiSettings: () => R<Settings>;
     updateUiSettings: (patch: Patch<Omit<Settings, 'window'>>) => R<Settings>;
     confirmClose: (confirmed: boolean) => R<void>;
+    /** Botões da barra de título própria (FR-133); fechar passa pela confirmação de FR-028. */
+    windowMinimise: () => R<void>;
+    windowToggleMaximise: () => R<void>;
+    windowClose: () => R<void>;
+    windowIsMaximised: () => R<boolean>;
     onAppearanceChanged: On<Appearance>;
     onCloseRequested: On<ActiveSummary>;
   };
@@ -191,7 +196,16 @@ export const API_SHAPE = {
     events: ['onStatus'],
   },
   app: {
-    invoke: ['getAppearance', 'getUiSettings', 'updateUiSettings', 'confirmClose'],
+    invoke: [
+      'getAppearance',
+      'getUiSettings',
+      'updateUiSettings',
+      'confirmClose',
+      'windowMinimise',
+      'windowToggleMaximise',
+      'windowClose',
+      'windowIsMaximised',
+    ],
     events: ['onAppearanceChanged', 'onCloseRequested'],
   },
 } as const satisfies {
