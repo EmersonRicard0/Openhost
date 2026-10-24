@@ -92,7 +92,7 @@ const vite = await createServer({
   configFile: false,
   logLevel: 'error',
   server: { middlewareMode: true, hmr: false, ws: false },
-  resolve: { alias: { '@shared': resolve(ROOT, 'src/shared') } },
+  resolve: { alias: { '@shared': resolve(ROOT, 'frontend/src/shared') } },
   optimizeDeps: { noDiscovery: true, include: [] },
 });
 

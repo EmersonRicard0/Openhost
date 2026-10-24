@@ -1,7 +1,7 @@
 import { createConnection, createServer, type Server } from 'node:net';
 import type { Client } from 'ssh2';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { ForwardRule, ForwardRuleStatus } from '../../src/shared/model/types';
+import type { ForwardRule, ForwardRuleStatus } from '../../frontend/src/shared/model/types';
 import { ForwardingManager } from '../../src/main/forwarding/manager';
 import { start, stop } from '../../scripts/sshd.mjs';
 import { connect } from './helpers';

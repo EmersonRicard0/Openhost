@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { contrast, over, parseColor } from '../../../src/renderer/theme/color';
-import { GLASS_MODES, SOLID_MODES, THEMES } from '../../../src/renderer/theme/tokens';
+import { contrast, over, parseColor } from '../../../frontend/src/theme/color';
+import { GLASS_MODES, SOLID_MODES, THEMES } from '../../../frontend/src/theme/tokens';
 
 const WHITE = parseColor('#ffffff');
 const BLACK = parseColor('#000000');

@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Client, SFTPWrapper } from 'ssh2';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import type { ConflictEvent, Transfer } from '../../src/shared/model/types';
+import type { ConflictEvent, Transfer } from '../../frontend/src/shared/model/types';
 import { listDir, makeDir, realPath, removePath, renamePath } from '../../src/main/sftp/browser';
 import { TransferManager, type SftpEndpoint } from '../../src/main/sftp/transfers';
 import { connect } from './helpers';

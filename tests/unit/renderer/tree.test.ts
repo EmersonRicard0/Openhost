@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { Group, HostView } from '../../../src/shared/model/types';
+import type { Group, HostView } from '../../../frontend/src/shared/model/types';
 import {
   buildRows,
   groupPaths,
   selfAndDescendants,
-} from '../../../src/renderer/features/hosts/tree';
+} from '../../../frontend/src/features/hosts/tree';
 
 const g = (id: string, name: string, parentId: string | null, sortOrder = 0): Group => ({
   id,

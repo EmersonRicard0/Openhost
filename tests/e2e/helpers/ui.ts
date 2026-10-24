@@ -88,7 +88,7 @@ export interface ProbeCell {
   fgColor: number;
 }
 
-/** Probe exposto pelo renderer em E2E (src/renderer/features/terminal/testProbe.ts). */
+/** Probe exposto pelo renderer em E2E (frontend/src/features/terminal/testProbe.ts). */
 interface Probe {
   text: (id: string) => string | null;
   cells: (id: string, needle: string) => ProbeCell[] | null;

@@ -1,6 +1,6 @@
 import { homedir } from 'node:os';
 import { describe, expect, it } from 'vitest';
-import type { LocalShell, SessionStateEvent } from '../../src/shared/model/types';
+import type { LocalShell, SessionStateEvent } from '../../frontend/src/shared/model/types';
 import { LocalPtySession } from '../../src/main/local/ptySession';
 import { SessionRegistry } from '../../src/main/sessions/registry';
 

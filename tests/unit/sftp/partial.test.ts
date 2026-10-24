@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TransferState } from '../../../src/shared/model/types';
+import type { TransferState } from '../../../frontend/src/shared/model/types';
 import {
   canTransition,
   isPartialName,

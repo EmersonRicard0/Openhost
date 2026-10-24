@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ERROR_CODES } from '../../../src/shared/ipc/errors';
+import { ERROR_CODES } from '../../../frontend/src/shared/ipc/errors';
 import { AppFailure, MESSAGES, fail, toAppError } from '../../../src/main/ipc/messages';
 
 function sysError(code: string): Error {

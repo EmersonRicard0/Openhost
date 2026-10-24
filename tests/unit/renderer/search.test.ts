@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { HostView } from '../../../src/shared/model/types';
-import { buildIndex, filterHosts } from '../../../src/renderer/features/hosts/search';
+import type { HostView } from '../../../frontend/src/shared/model/types';
+import { buildIndex, filterHosts } from '../../../frontend/src/features/hosts/search';
 
 function host(i: number, overrides: Partial<HostView> = {}): HostView {
   return {

@@ -18,6 +18,7 @@ export default tseslint.config(
       '.specify/',
       '.claude/',
       'tests/fixtures/keys/generated/',
+      'frontend/',
       '**/*.min.js',
     ],
   },
@@ -33,7 +34,7 @@ export default tseslint.config(
     },
   },
   {
-    files: ['src/renderer/**/*.{ts,tsx}'],
+    files: ['frontend/src/**/*.{ts,tsx}'],
     plugins: { 'react-hooks': reactHooks },
     languageOptions: { globals: globals.browser },
     rules: {
@@ -42,7 +43,7 @@ export default tseslint.config(
   },
   {
     // Interface e código compartilhado não podem tocar em APIs privilegiadas (Princípio II).
-    files: ['src/renderer/**/*.{ts,tsx}', 'src/shared/**/*.ts'],
+    files: ['frontend/src/**/*.{ts,tsx}', 'frontend/src/shared/**/*.ts'],
     rules: {
       'no-restricted-imports': [
         'error',

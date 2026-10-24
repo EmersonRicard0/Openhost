@@ -1,0 +1,138 @@
+{
+  "password": "senha-teste-1",
+  "content": {
+    "schemaVersion": 1,
+    "settings": {
+      "autoLockMinutes": 30,
+      "connectTimeoutSeconds": 20
+    },
+    "groups": [
+      {
+        "id": "4ce66518-3068-4bef-ad0b-eb3f0141443d",
+        "name": "NOC",
+        "parentId": null,
+        "sortOrder": 0
+      },
+      {
+        "id": "0b0195ab-f3d5-4823-b800-7a500929825a",
+        "name": "OLTs Datacom",
+        "parentId": "4ce66518-3068-4bef-ad0b-eb3f0141443d",
+        "sortOrder": 0
+      }
+    ],
+    "hosts": [
+      {
+        "label": "OLT Centro",
+        "address": "10.10.0.1",
+        "port": 22,
+        "username": "admin",
+        "authMethod": "password",
+        "credentialId": "4ca1ae04-5a49-48c6-9012-4507c4b16aa3",
+        "groupId": "0b0195ab-f3d5-4823-b800-7a500929825a",
+        "id": "bebd1b32-c12b-4247-aa11-e6d8357066a1",
+        "createdAt": "2026-10-23T12:00:00.000Z",
+        "updatedAt": "2026-10-23T12:00:00.000Z"
+      },
+      {
+        "label": "Servidor Linux",
+        "address": "srv.exemplo.local",
+        "port": 2222,
+        "username": "ops",
+        "authMethod": "key",
+        "credentialId": "b1c62962-7911-48dc-9753-0ee4c90193ae",
+        "groupId": "4ce66518-3068-4bef-ad0b-eb3f0141443d",
+        "id": "ab6b3bcd-7e97-463a-8ab6-040f93d73f0e",
+        "createdAt": "2026-10-23T12:00:00.000Z",
+        "updatedAt": "2026-10-23T12:00:00.000Z"
+      },
+      {
+        "label": "Mikrotik Borda",
+        "address": "2001:db8::1",
+        "port": 22,
+        "username": "noc",
+        "authMethod": "ask",
+        "credentialId": null,
+        "groupId": null,
+        "id": "c32ce8fe-c733-46e0-a4ae-6ff226ad53bd",
+        "createdAt": "2026-10-23T12:00:00.000Z",
+        "updatedAt": "2026-10-23T12:00:00.000Z"
+      }
+    ],
+    "credentials": [
+      {
+        "kind": "password",
+        "id": "4ca1ae04-5a49-48c6-9012-4507c4b16aa3",
+        "name": "Senha padrão NOC",
+        "password": "pw-test-123",
+        "createdAt": "2026-10-23T12:00:00.000Z"
+      },
+      {
+        "kind": "key",
+        "id": "b1c62962-7911-48dc-9753-0ee4c90193ae",
+        "name": "Chave Ed25519 com passphrase",
+        "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\nb3BlbnNzaC1rZXktdjEAAAAACmFlczI1Ni1jdHIAAAAGYmNyeXB0AAAAGAAAABCN\nyAgmgvhHuoPTC3Wi6DJjAAAAEAAAAAEAAAAzAAAAC3NzaC1lZDI1NTE5AAAAIL2+\nImOXSUC4uGQT027fHVbu9wZof9GqgsicC/9fi993AAAAkDKGhUMEM8reRS/qsqcw\nzlhmIguJV7oHsdjDehGHUUNvP7yhcytMKMBjgj3/6EpjhQ6hTDSs5ECDYyos4kTy\nk1+1Ybk7Ve4OMuElQx67wTkXy7VUMjvNP2XS4hRKXyHMOnaKLhKuVaDLQ68XS8rR\n9xL4Y/duyC5LjScn/X8GO8RuW9miCaCI5hqTN2ksI6cXAQ==\n-----END OPENSSH PRIVATE KEY-----\n",
+        "passphrase": "frase-secreta-9",
+        "keyType": "ssh-ed25519",
+        "publicKey": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIL2+ImOXSUC4uGQT027fHVbu9wZof9GqgsicC/9fi993",
+        "fingerprint": "SHA256:Ll5uSA8J9ooJls10avK+aRhGY+A6nBnssHoaykgwM4I",
+        "origin": "generated",
+        "createdAt": "2026-10-23T12:00:00.000Z"
+      },
+      {
+        "kind": "key",
+        "id": "b9cfca89-16f4-418a-b4d4-e161cf3fffcd",
+        "name": "Chave RSA importada",
+        "privateKey": "-----BEGIN RSA PRIVATE KEY-----\n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\n-----END RSA PRIVATE KEY-----\n",
+        "passphrase": null,
+        "keyType": "ssh-rsa",
+        "publicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCjiLPYWtcDgsN078SfTBXeUU3/iwD9Ma2vR2Eo5gh2exq099AogD27xqKwPGkd89CuKCwmVlN7rIDd2X7zqqY32Aw9mlY76uR9ELDpuiNp7DGpVQ8SPgg3+iF4fsuN/laY3EtbBrSJ3Ay8pHd2A9ohNQAM3qbo0fYTY1mbwz4Y9oOVH96G1rdHIjOCbWcTHPR7xDS8v+ZEiataf0WLWNtWpd+usyR9MDl2sQYS9fOFGUzNuyuOxJwNgEbOuPMsKkOfE5oXh3cQ++oHKoCa28HM6cRbMKioYtHhQTyqkj0E1/ymlgZyvK3Sd1ifPMC5w9CxOR3qmca8liR804xoC5w3Il37RCXIGLatl5OfRXRXWI626y+d1mKJAUzVSiozBY1N9JXcC13W5EAwMJnBJzMHLRKRThi/kmUloodhtJnKbdcaf+6yOJrz4q9070d60TCl44lveWO9XaAow7qZW/oA5gnJk4i+QwLUII6QQZmWWaY7NraA5qHqOdRsAagYnlk=",
+        "fingerprint": "SHA256:0jn7N3oeDh6l+yc7zXTGBTYawEhBrZwPBuEdt43GRZg",
+        "origin": "imported",
+        "createdAt": "2026-10-23T12:00:00.000Z"
+      }
+    ],
+    "knownHostKeys": [
+      {
+        "endpoint": "10.10.0.1:22",
+        "keyType": "ssh-ed25519",
+        "fingerprint": "SHA256:AAAAexemploDeFingerprintDaOltCentro000000000",
+        "acceptedAt": "2026-10-23T12:00:00.000Z"
+      },
+      {
+        "endpoint": "[srv.exemplo.local]:2222",
+        "keyType": "ssh-rsa",
+        "fingerprint": "SHA256:BBBBexemploDeFingerprintDoServidorLinux0000",
+        "acceptedAt": "2026-10-23T12:00:00.000Z"
+      }
+    ],
+    "forwardRules": [
+      {
+        "hostId": "bebd1b32-c12b-4247-aa11-e6d8357066a1",
+        "label": "Web da OLT",
+        "bindAddress": "127.0.0.1",
+        "allowNonLoopback": false,
+        "bindPort": 8080,
+        "destHost": "127.0.0.1",
+        "destPort": 80,
+        "id": "01a2d068-ade7-463e-a653-50cbb0b9bad3"
+      },
+      {
+        "hostId": "bebd1b32-c12b-4247-aa11-e6d8357066a1",
+        "label": null,
+        "bindAddress": "0.0.0.0",
+        "allowNonLoopback": true,
+        "bindPort": 2323,
+        "destHost": "192.168.1.1",
+        "destPort": 23,
+        "id": "3f7b546e-48c7-47de-b8bb-7d1d9b0b62a7"
+      }
+    ]
+  },
+  "kdfVector": {
+    "password": "senha-teste-1",
+    "saltHex": "000102030405060708090a0b0c0d0e0f",
+    "opsLimit": 1,
+    "memLimit": 8192,
+    "kekHex": "c632f6059a013a23053b70adab6db6d7f569557d3b4726067adf000fe2fd1a9c"
+  }
+}

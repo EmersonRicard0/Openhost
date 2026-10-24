@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'electron-vite';
 import type { Plugin } from 'vite';
 
-const shared = { '@shared': resolve(import.meta.dirname, 'src/shared') };
+const shared = { '@shared': resolve(import.meta.dirname, 'frontend/src/shared') };
 
 // Só no `npm run dev`: o React Refresh injeta um script inline no HTML, que a CSP estrita barra.
 // O build de produção mantém `script-src 'self'`.
@@ -35,12 +35,12 @@ export default defineConfig({
     },
   },
   renderer: {
-    root: resolve(import.meta.dirname, 'src/renderer'),
+    root: resolve(import.meta.dirname, 'frontend'),
     resolve: { alias: shared },
     plugins: [react(), devCsp],
     build: {
       rolldownOptions: {
-        input: { index: resolve(import.meta.dirname, 'src/renderer/index.html') },
+        input: { index: resolve(import.meta.dirname, 'frontend/index.html') },
       },
     },
   },

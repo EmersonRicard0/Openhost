@@ -1,7 +1,7 @@
 import { resolve } from 'node:path';
 import { defineConfig } from 'vitest/config';
 
-const alias = { '@shared': resolve(import.meta.dirname, 'src/shared') };
+const alias = { '@shared': resolve(import.meta.dirname, 'frontend/src/shared') };
 
 export default defineConfig({
   test: {

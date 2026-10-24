@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ForwardRuleInput } from '../../../src/shared/model/types';
+import type { ForwardRuleInput } from '../../../frontend/src/shared/model/types';
 import {
   createRule,
   listForHost,

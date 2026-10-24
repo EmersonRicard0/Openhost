@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "target": "ES2023",
     "module": "ESNext",
@@ -14,6 +14,10 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "forceConsistentCasingInFileNames": true,
-    "paths": { "@shared/*": ["./src/shared/*"] }
+    "paths": {
+      "@shared/*": ["./frontend/src/shared/*"],
+      "react": ["./frontend/node_modules/@types/react"],
+      "react/*": ["./frontend/node_modules/@types/react/*"]
+    }
   }
 }

@@ -1,7 +1,10 @@
-node_modules/
+﻿node_modules/
 out/
 dist/
-build/
+/build/bin/
+*.exe
+*.test
+*.out
 coverage/
 test-results/
 playwright-report/

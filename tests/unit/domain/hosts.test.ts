@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { HostInput } from '../../../src/shared/model/types';
+import type { HostInput } from '../../../frontend/src/shared/model/types';
 import {
   createHost,
   listHostViews,

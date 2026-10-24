@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "shellvault",
   "version": "0.1.0",
   "description": "Cliente SSH desktop local-first com cofre criptografado",
@@ -23,6 +23,7 @@
     "seed:hosts": "node scripts/seed-hosts.mjs",
     "bench:sftp": "node scripts/bench-sftp.mjs",
     "check:licenses": "node scripts/check-licenses.mjs",
+    "check:wails": "node scripts/check.mjs",
     "dist": "electron-vite build && electron-builder --win --x64",
     "postinstall": "electron-builder install-app-deps"
   },

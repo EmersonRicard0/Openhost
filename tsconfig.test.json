@@ -13,6 +13,7 @@
     "tests/**/*",
     "scripts/**/*",
     "src/**/*",
+    "frontend/src/**/*",
     "vitest.config.ts",
     "playwright.config.ts"
   ]

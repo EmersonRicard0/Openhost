@@ -6,6 +6,10 @@ import { generateTestKeys } from './gen-test-keys.mjs';
 
 const COMPOSE_DIR = join(import.meta.dirname, '..', 'tests', 'fixtures', 'sshd');
 export const SSHD = { host: '127.0.0.1', port: 2222 };
+/** Só algoritmos legados (tests/fixtures/sshd-legacy). */
+export const SSHD_LEGACY = { host: '127.0.0.1', port: 2223 };
+/** Proxy que derruba conexões ociosas por 60 s na frente do `sshd` (tests/fixtures/idle-killer). */
+export const IDLE_KILLER = { host: '127.0.0.1', port: 2224 };
 
 function compose(...args) {
   return execFileSync('docker', ['compose', ...args], {
@@ -24,12 +28,12 @@ export function dockerAvailable() {
   }
 }
 
-/** Espera o sshd responder com o banner SSH. */
-export function waitForSshd(timeoutMs = 30_000) {
+/** Espera um servidor de teste responder com o banner SSH. */
+export function waitForSshd(timeoutMs = 30_000, target = SSHD) {
   const deadline = Date.now() + timeoutMs;
   return new Promise((resolve, reject) => {
     const attempt = () => {
-      const socket = createConnection(SSHD.port, SSHD.host);
+      const socket = createConnection(target.port, target.host);
       socket.setTimeout(2000);
       socket.once('data', (buf) => {
         socket.destroy();
@@ -40,7 +44,8 @@ export function waitForSshd(timeoutMs = 30_000) {
       socket.once('timeout', retry);
       function retry() {
         socket.destroy();
-        if (Date.now() > deadline) reject(new Error('sshd de teste não respondeu'));
+        if (Date.now() > deadline)
+          reject(new Error(`sshd de teste não respondeu (${target.host}:${target.port})`));
         else setTimeout(attempt, 500);
       }
     };
@@ -54,7 +59,7 @@ export async function up() {
   }
   generateTestKeys();
   compose('up', '-d', '--build', '--wait');
-  await waitForSshd();
+  await Promise.all([SSHD, SSHD_LEGACY, IDLE_KILLER].map((t) => waitForSshd(30_000, t)));
 }
 
 export function down() {
