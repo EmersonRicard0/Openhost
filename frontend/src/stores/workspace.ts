@@ -18,6 +18,8 @@ interface WorkspaceState {
   /** Aba com a barra de busca aberta. */
   searchFor: string | null;
   paletteOpen: boolean;
+  /** Diálogo de encaminhamentos ativos (barra de status). */
+  forwardsOpen: boolean;
   view: MainView;
   pendingPaste: PendingPaste | null;
   /** Aba esperando confirmação para fechar (Ctrl+W com conexão ativa). */
@@ -26,6 +28,7 @@ interface WorkspaceState {
   zoomReset: (sessionId: string) => void;
   setSearchFor: (sessionId: string | null) => void;
   setPaletteOpen: (open: boolean) => void;
+  setForwardsOpen: (open: boolean) => void;
   setView: (view: MainView) => void;
   setPendingPaste: (paste: PendingPaste | null) => void;
   setConfirmClose: (sessionId: string | null) => void;
@@ -35,6 +38,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   zoom: {},
   searchFor: null,
   paletteOpen: false,
+  forwardsOpen: false,
   view: 'terminal',
   pendingPaste: null,
   confirmClose: null,
@@ -53,6 +57,9 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   },
   setPaletteOpen(paletteOpen) {
     set({ paletteOpen });
+  },
+  setForwardsOpen(forwardsOpen) {
+    set({ forwardsOpen });
   },
   setView(view) {
     set({ view });

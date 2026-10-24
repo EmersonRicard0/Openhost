@@ -2,9 +2,10 @@
   display: grid;
   grid-template-areas:
     'title title'
-    'sidebar main';
+    'sidebar main'
+    'status status';
   grid-template-columns: 272px minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
@@ -27,7 +28,7 @@
   grid-area: main;
   display: flex;
   flex-direction: column;
-  padding: 0 10px 10px 0;
+  padding: 0 10px 0 0;
 }
 
 .main > * {

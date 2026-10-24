@@ -2,36 +2,23 @@ import { useEffect } from 'react';
 import { installShortcuts } from '../../app/shortcuts';
 import { t } from '../../i18n/pt-BR';
 import { closeTab, useSessions, type Tab } from '../../stores/sessions';
-import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Button } from '../../ui/Button';
 import { RefreshIcon, TerminalIcon } from '../../ui/icons';
-import { toastError } from '../../ui/Toast';
-import { focusUnlock } from '../vault/UnlockScreen';
 import { ConflictDialog } from '../sftp/ConflictDialog';
 import { SettingsPage } from '../settings/SettingsPage';
 import { SftpView } from '../sftp/SftpView';
 import { runShortcut } from './commands';
 import { HostKeyDialog } from './HostKeyDialog';
 import { openLocal } from './openLocal';
+import { reconnect } from './reconnect';
 import { PasteConfirmDialog } from './PasteConfirmDialog';
 import { PromptDialog } from './PromptDialog';
 import { TabBar } from './TabBar';
 import { TerminalView } from './TerminalView';
 import s from './terminal.module.css';
 import app from '../../app/app.module.css';
-
-async function reconnect(tab: Tab): Promise<void> {
-  if (useVault.getState().status?.state !== 'unlocked') {
-    toastError(t.terminal.unlockToReconnect);
-    focusUnlock();
-    return;
-  }
-  useSessions.getState().setState(tab.id, 'connecting', null, null);
-  const res = await window.shellvault.sessions.reconnect(tab.id);
-  if (!res.ok) toastError(res.error);
-}
 
 function Banner({ tab }: { tab: Tab }) {
   if (tab.state === 'disconnected' || tab.state === 'error') {

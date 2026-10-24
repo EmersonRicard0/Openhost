@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { CommandPalette } from '../features/palette/CommandPalette';
-import { ForwardsIndicator } from '../features/forwarding/ForwardsIndicator';
+import { ActiveForwardsDialog } from '../features/forwarding/ActiveForwardsDialog';
 import { Workspace } from '../features/terminal/Workspace';
 import { CreateVaultScreen } from '../features/vault/CreateVaultScreen';
 import { UnlockPanel } from '../features/vault/UnlockScreen';
@@ -15,6 +15,7 @@ import { LockIcon, SettingsIcon } from '../ui/icons';
 import { Toasts } from '../ui/Toast';
 import { trackActivity } from './activity';
 import { CloseConfirmDialog } from './CloseConfirmDialog';
+import { StatusBar } from './StatusBar';
 import { TitleBar } from './TitleBar';
 import s from './app.module.css';
 
@@ -79,7 +80,6 @@ export function App() {
       <TitleBar
         actions={
           <>
-            <ForwardsIndicator />
             {unlocked && (
               <Button
                 variant="ghost"
@@ -111,6 +111,8 @@ export function App() {
       <main className={s.main}>
         <Workspace />
       </main>
+      <StatusBar />
+      <ActiveForwardsDialog />
       <CommandPalette />
       <CloseConfirmDialog />
       <Toasts />

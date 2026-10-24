@@ -62,6 +62,12 @@ test('conectar por senha e chave em abas, bloquear o cofre e perder a conexão',
     await typeInTerminal(page, 'key-host', 'whoami\n');
     await expectTerminalLine(page, keySession, 'keyuser');
 
+    // Barra de status mostra a aba ativa e o estado (FR-172).
+    const status = page.getByRole('contentinfo', { name: 'Barra de status' });
+    await expect(status.getByTestId('status-tab')).toContainText('key-host');
+    await expect(status.getByTestId('status-tab')).toContainText(`keyuser@${SSHD.host}`);
+    await expect(status.getByTestId('status-state')).toHaveText('Conectado');
+
     // Alternar abas mantém o conteúdo (US2-5).
     await tab(page, 'pw-host').click();
     await expect(terminalPanel(page, 'pw-host')).toBeVisible();

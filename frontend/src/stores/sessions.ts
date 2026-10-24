@@ -13,17 +13,20 @@ export interface Tab {
   state: SessionState;
   reason: string | null;
   exitCode: number | null;
+  /** RTT do keepalive SSH (FR-172); null antes da primeira medição e em shells locais. */
+  latencyMs: number | null;
 }
 
 interface SessionsState {
   tabs: Tab[];
   activeId: string | null;
-  add: (tab: Omit<Tab, 'reason' | 'exitCode'>) => void;
+  add: (tab: Omit<Tab, 'reason' | 'exitCode' | 'latencyMs'>) => void;
   setState: (
     id: string,
     state: SessionState,
     reason: string | null,
     exitCode: number | null,
+    latencyMs?: number | null,
   ) => void;
   rename: (id: string, title: string) => void;
   /** Move a aba `id` para a posição de `beforeId` (ou para o fim). */
@@ -36,10 +39,15 @@ export const useSessions = create<SessionsState>((set, get) => ({
   tabs: [],
   activeId: null,
   add(tab) {
-    set({ tabs: [...get().tabs, { ...tab, reason: null, exitCode: null }], activeId: tab.id });
+    set({
+      tabs: [...get().tabs, { ...tab, reason: null, exitCode: null, latencyMs: null }],
+      activeId: tab.id,
+    });
   },
-  setState(id, state, reason, exitCode) {
-    set({ tabs: get().tabs.map((t) => (t.id === id ? { ...t, state, reason, exitCode } : t)) });
+  setState(id, state, reason, exitCode, latencyMs = null) {
+    set({
+      tabs: get().tabs.map((t) => (t.id === id ? { ...t, state, reason, exitCode, latencyMs } : t)),
+    });
   },
   rename(id, title) {
     const clean = title.trim();
@@ -73,7 +81,9 @@ export function subscribeSessions(): void {
   if (subscribed) return;
   subscribed = true;
   window.shellvault.sessions.onState((e) => {
-    useSessions.getState().setState(e.sessionId, e.state, e.reason, e.exitCode);
+    useSessions
+      .getState()
+      .setState(e.sessionId, e.state, e.reason, e.exitCode, e.latencyMs ?? null);
   });
 }
 
