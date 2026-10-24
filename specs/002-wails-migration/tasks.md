@@ -164,14 +164,14 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 - [X] T065 [P] [US4] `internal/schemes/import_test.go` com `tests/fixtures/schemes/` (esquema WT avulso, `settings.json` do WT com lista `schemes`, `.itermcolors` sRGB e P3, arquivo com cores faltando, arquivos inválidos): cores corretas, `completed` lista as preenchidas, `SCHEME_INVALID` com motivo, exportar e reimportar dá resultado idêntico
 - [X] T066 [P] [US4] `internal/domain/profiles_test.go`: faixas do data-model ("8–32, padrão 14", "1.0–2.0, padrão 1.2", "100–100.000, padrão 10.000", "0.5–1.0, padrão 1.0", "0–40 px", "0–32 px, padrão 12", pesos "100–900"); exatamente um perfil global; override cria cópia completa e remover zera `profileId`; esquema `builtin` não editável; excluir esquema em uso → `IN_USE`
-- [ ] T067 [P] [US4] `internal/fonts/fonts_test.go`: Consolas aparece como monoespaçada e Arial não; resultado inclui as embutidas com `source: "bundled"`
+- [X] T067 [P] [US4] `internal/fonts/fonts_test.go`: Consolas aparece como monoespaçada e Arial não; resultado inclui as embutidas com `source: "bundled"`
 
 ### Implementation for User Story 4
 
 - [X] T068 [US4] Implementar `internal/schemes/presets.go` (Dracula, Nord, Solarized Dark, Solarized Light, One Dark, Tokyo Night, Catppuccin + padrão da marca), `import_wt.go`, `import_iterm.go`, `export.go` para passar a T065; origem e licença de cada preset em `docs/licenses.md`
 - [X] T069 [US4] Implementar `internal/domain/profiles.go` e as tabelas `terminal_profiles`/`color_schemes` no store, semeando perfil global e presets na primeira execução, para passar a T066
-- [ ] T070 [P] [US4] Implementar `internal/fonts/fonts.go` (`%WINDIR%\Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, `sfnt`, cache) para passar a T067
-- [ ] T071 [US4] Implementar `ProfileService` em `internal/bridge/profiles.go` (métodos de contracts/bridge.md, diálogos nativos de importar/exportar, evento `profiles:changed`); T013 passa para ele
+- [X] T070 [P] [US4] Implementar `internal/fonts/fonts.go` (`%WINDIR%\Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, `sfnt`, cache) para passar a T067
+- [X] T071 [US4] Implementar `ProfileService` em `internal/bridge/profiles.go` (métodos de contracts/bridge.md, diálogos nativos de importar/exportar, evento `profiles:changed`); T013 passa para ele
 - [X] T072 [P] [US4] Adicionar JetBrains Mono e Cascadia Code (`woff2`, OFL-1.1) em `frontend/src/assets/fonts/` com `@font-face` em `frontend/src/styles/fonts.css`
 - [X] T073 [US4] Criar `frontend/src/features/settings/TerminalSettings.tsx` (terminal de amostra ao vivo, controles de FR-152 só por seleção (FR-158a: galeria de esquemas com prévia, lista de fontes desenhadas na própria fonte, controles deslizantes/opções, cursor ilustrado), editor de esquema com seletores de cor, importar/exportar/duplicar, aviso ao reduzir opacidade) acessível pelas configurações e pela paleta
 - [X] T074 [US4] Criar `frontend/src/features/terminal/profile.ts`: perfil efetivo aplicado a `term.options` + `fit()`, reação a `profiles:changed` em todas as abas, zoom Ctrl+=/−/0 só no `fontSize` efetivo da aba, `allowTransparency` só com opacidade < 1
@@ -193,7 +193,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 - [ ] T079 [US5] ⏸ usuário — Estágio 2: logo final e kit (`make_kit.py`) em `brand/kit/` incluindo `favicon.ico` e PNGs; o usuário aprova
 - [ ] T080 [US5] ⏸ usuário — Estágio 4: `brand/brand.json` (paleta, tipografia OFL, raios, sombras, movimento, modos glass-dark/glass-light/solid-dark/solid-light/high-contrast) e brand book `brand/book.html`; o usuário revisa
 - [ ] T081 [US5] Estágio 5: `export_tokens.py` → `frontend/src/theme/tokens.css`; `frontend/src/theme/tokens.ts` passa a ler os mesmos valores; `frontend/src/theme/contrast.test.ts` (portado de `tests/unit/theme/contrast.test.ts`) passa com os valores novos
-- [ ] T082 [US5] Criar `scripts/check-tokens.mjs` (e no `check.mjs`): falha com cor literal (`#`, `rgb(`, `hsl(`), `font-family` ou `box-shadow` literais em `frontend/src/**/*.css` e em `style={{…}}` fora de `frontend/src/theme/`, e `<svg>` inline fora de `frontend/src/ui/` (FR-169, vindo da T107)
+- [X] T082 [US5] Criar `scripts/check-tokens.mjs` (e no `check.mjs`): falha com cor literal (`#`, `rgb(`, `hsl(`), `font-family` ou `box-shadow` literais em `frontend/src/**/*.css` e em `style={{…}}` fora de `frontend/src/theme/`, e `<svg>` inline fora de `frontend/src/ui/` (FR-169, vindo da T107)
 - [X] T083 [US5] Criar componentes próprios `frontend/src/ui/Select.tsx`, `Checkbox.tsx`, `NumberField.tsx` e substituir os 9 controles nativos (configurações, host, encaminhamento)
 - [ ] T084 [US5] Aplicar a marca em `TitleBar`, barra lateral (grupos recolhíveis com estado em `preferences.collapsedGroups`), abas com estado por cor **e** ícone (FR-163), diálogos com cabeçalho e um único rodapé, estados vazios com ação, SFTP (ícones de arquivo/pasta), encaminhamento, toasts e faixas de erro com ícone
 - [ ] T085 [US5] Ícone do app: `build/appicon.png` e `build/windows/icon.ico` a partir de `brand/kit/`; `wails.json` (`info.productName`, `companyName` vazio, `copyright`)
@@ -220,16 +220,16 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 ### Tests for User Story 6 ⚠️
 
-- [ ] T088 [P] [US6] Portar `tests/unit/sftp/partial.test.ts` para `internal/sftpx/partial_test.go` (`<nome>.svpart-<id8>`, transições, conflitos)
-- [ ] T089 [P] [US6] Portar `tests/unit/domain/forwardRules.test.ts` para `internal/domain/forwardrules_test.go` ("padrão `127.0.0.1`; outro valor exige `allowNonLoopback: true`", "`bindPort` 1–65535; único entre regras com mesmo `bindAddress`")
-- [ ] T090 [US6] Portar `tests/integration/sftp.test.ts` para `internal/sftpx/sftp_integration_test.go` (listar, mkdir, renomear, excluir recursivo, ida e volta de 100 MB, cancelamento no meio sem deixar parcial, conflito)
-- [ ] T091 [US6] Portar `tests/integration/forwarding.test.ts` para `internal/forwarding/forwarding_integration_test.go` (eco via `echo:7000`, porta em uso → `PORT_IN_USE`, desativar libera a porta, queda da conexão → `inactive`, duas regras do mesmo host compartilham uma conexão)
+- [X] T088 [P] [US6] Portar `tests/unit/sftp/partial.test.ts` para `internal/sftpx/partial_test.go` (`<nome>.svpart-<id8>`, transições, conflitos)
+- [X] T089 [P] [US6] Portar `tests/unit/domain/forwardRules.test.ts` para `internal/domain/forwardrules_test.go` ("padrão `127.0.0.1`; outro valor exige `allowNonLoopback: true`", "`bindPort` 1–65535; único entre regras com mesmo `bindAddress`")
+- [X] T090 [US6] Portar `tests/integration/sftp.test.ts` para `internal/sftpx/sftp_integration_test.go` (listar, mkdir, renomear, excluir recursivo, ida e volta de 100 MB, cancelamento no meio sem deixar parcial, conflito)
+- [X] T091 [US6] Portar `tests/integration/forwarding.test.ts` para `internal/forwarding/forwarding_integration_test.go` (eco via `echo:7000`, porta em uso → `PORT_IN_USE`, desativar libera a porta, queda da conexão → `inactive`, duas regras do mesmo host compartilham uma conexão)
 
 ### Implementation for User Story 6
 
 - [ ] T092 [US6] Implementar `internal/sftpx/browser.go` e `transfers.go` (`pkg/sftp` com escritas concorrentes, 3 transferências simultâneas, parciais, conflito substituir/pular/cancelar tudo, progresso a 10/s) para passar a T088 e T090
 - [ ] T093 [US6] Implementar `SftpService` (diálogos nativos para caminhos locais, eventos `sftp:transfer`/`sftp:conflict`)
-- [ ] T094 [US6] Implementar `internal/domain/forwardrules.go`, `internal/forwarding/manager.go` e `ForwardService` (`ListActive`/`Deactivate` sem cofre) para passar a T089 e T091; T013 passa para todos os 8 serviços
+- [X] T094 [US6] Implementar `internal/domain/forwardrules.go`, `internal/forwarding/manager.go` e `ForwardService` (`ListActive`/`Deactivate` sem cofre) para passar a T089 e T091; T013 passa para todos os 8 serviços
 - [ ] T095 [US6] Adaptar `frontend/src/features/sftp/*` e `frontend/src/features/forwarding/*` ao adaptador
 - [ ] T096 [US6] Portar `scripts/bench-sftp.mjs` para `scripts/bench-sftp/main.go` e medir 1 GB (≥ resultado da 001 no mesmo ambiente)
 - [ ] T097 [US6] Portar `tests/e2e/sftp.spec.ts` e `tests/e2e/forwarding.spec.ts` para `frontend/tests/e2e/`

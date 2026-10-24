@@ -9,6 +9,7 @@ require (
 	github.com/wailsapp/wails/v2 v2.17.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/crypto v0.58.0
+	golang.org/x/image v0.41.0
 	golang.org/x/sys v0.49.0
 	modernc.org/sqlite v1.61.0
 )
@@ -24,6 +25,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
+	github.com/kr/fs v0.1.0 // indirect
 	github.com/labstack/echo/v4 v4.15.3 // indirect
 	github.com/labstack/gommon v0.5.0 // indirect
 	github.com/leaanthony/go-ansi-parser v1.6.1 // indirect
@@ -35,6 +37,7 @@ require (
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pkg/sftp v1.13.9 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/samber/lo v1.49.1 // indirect
