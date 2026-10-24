@@ -9,6 +9,7 @@ require (
 	github.com/wailsapp/wails/v2 v2.17.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/crypto v0.58.0
+	golang.org/x/image v0.41.0
 	golang.org/x/sys v0.49.0
 	modernc.org/sqlite v1.61.0
 )

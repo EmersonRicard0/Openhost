@@ -164,13 +164,13 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 - [X] T065 [P] [US4] `internal/schemes/import_test.go` com `tests/fixtures/schemes/` (esquema WT avulso, `settings.json` do WT com lista `schemes`, `.itermcolors` sRGB e P3, arquivo com cores faltando, arquivos inválidos): cores corretas, `completed` lista as preenchidas, `SCHEME_INVALID` com motivo, exportar e reimportar dá resultado idêntico
 - [X] T066 [P] [US4] `internal/domain/profiles_test.go`: faixas do data-model ("8–32, padrão 14", "1.0–2.0, padrão 1.2", "100–100.000, padrão 10.000", "0.5–1.0, padrão 1.0", "0–40 px", "0–32 px, padrão 12", pesos "100–900"); exatamente um perfil global; override cria cópia completa e remover zera `profileId`; esquema `builtin` não editável; excluir esquema em uso → `IN_USE`
-- [ ] T067 [P] [US4] `internal/fonts/fonts_test.go`: Consolas aparece como monoespaçada e Arial não; resultado inclui as embutidas com `source: "bundled"`
+- [X] T067 [P] [US4] `internal/fonts/fonts_test.go`: Consolas aparece como monoespaçada e Arial não; resultado inclui as embutidas com `source: "bundled"`
 
 ### Implementation for User Story 4
 
 - [X] T068 [US4] Implementar `internal/schemes/presets.go` (Dracula, Nord, Solarized Dark, Solarized Light, One Dark, Tokyo Night, Catppuccin + padrão da marca), `import_wt.go`, `import_iterm.go`, `export.go` para passar a T065; origem e licença de cada preset em `docs/licenses.md`
 - [X] T069 [US4] Implementar `internal/domain/profiles.go` e as tabelas `terminal_profiles`/`color_schemes` no store, semeando perfil global e presets na primeira execução, para passar a T066
-- [ ] T070 [P] [US4] Implementar `internal/fonts/fonts.go` (`%WINDIR%\Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, `sfnt`, cache) para passar a T067
+- [X] T070 [P] [US4] Implementar `internal/fonts/fonts.go` (`%WINDIR%\Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, `sfnt`, cache) para passar a T067
 - [ ] T071 [US4] Implementar `ProfileService` em `internal/bridge/profiles.go` (métodos de contracts/bridge.md, diálogos nativos de importar/exportar, evento `profiles:changed`); T013 passa para ele
 - [ ] T072 [P] [US4] Adicionar JetBrains Mono e Cascadia Code (`woff2`, OFL-1.1) em `frontend/src/assets/fonts/` com `@font-face` em `frontend/src/styles/fonts.css`
 - [ ] T073 [US4] Criar `frontend/src/features/settings/TerminalSettings.tsx` (terminal de amostra ao vivo, controles de FR-152, editor de esquema com seletores de cor, importar/exportar/duplicar, aviso ao reduzir opacidade) acessível pelas configurações e pela paleta

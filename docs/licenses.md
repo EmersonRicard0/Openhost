@@ -55,6 +55,7 @@ Versões e licenças conferidas no `go.mod` e nos arquivos de licença dos módu
 | `github.com/wailsapp/wails/v2` 2.17.0 | https://github.com/wailsapp/wails | MIT | framework desktop |
 | `go.uber.org/goleak` 1.3.0 | https://github.com/uber-go/goleak | MIT | detecção de goroutines vazadas em testes |
 | `golang.org/x/crypto` 0.58.0 | https://cs.opensource.google/go/x/crypto | BSD-3-Clause | criptografia e SSH |
+| `golang.org/x/image` 0.41.0 | https://cs.opensource.google/go/x/image | BSD-3-Clause | leitura de metadados de fontes |
 | `golang.org/x/net` 0.60.0 | https://cs.opensource.google/go/x/net | BSD-3-Clause | protocolos de rede |
 | `golang.org/x/sys` 0.49.0 | https://cs.opensource.google/go/x/sys | BSD-3-Clause | chamadas de sistema |
 | `golang.org/x/text` 0.43.0 | https://cs.opensource.google/go/x/text | BSD-3-Clause | suporte Unicode |
