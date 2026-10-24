@@ -51,8 +51,8 @@ o vazio "Nenhuma aba aberta") com três modos:
 - Painel de tema dentro da sessão: trocar esquema e fonte com a aba aberta.
 - Confirmação de colagem multilinha com número de linhas e prévia.
 
-## Em aberto
+## Decidido
 
-- **Nome**: "OpenConnect" já é o cliente VPN open source (compatível com AnyConnect, par do
-  ocserv) — confunde busca e marca no público de redes. Decidir entre manter "ShellVault" ou outro
-  nome antes do estágio de identidade visual (T077–T080).
+- **Nome**: o app passa a se chamar **OpenHosts** (24/10/2026). "OpenConnect" foi descartado por
+  ser o cliente VPN open source (compatível com AnyConnect, par do ocserv), o que confundia busca e
+  marca no público de redes.

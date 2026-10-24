@@ -311,6 +311,8 @@ port forwarding) na versão nova, com o mesmo servidor de teste, e obter os mesm
 - **Identidade visual**: o logo, a paleta, a tipografia e os tokens vêm da execução do
   skill `brand-kit` (estágios 0 a 5) dentro desta feature; o briefing já foi levantado
   (terminal + cofre, clima moderno vibrante, pt-BR).
+- **Nome visível**: o app aparece como **OpenHosts** (janela, instalador, textos); "ShellVault"
+  continua só como nome interno do repositório e do executável.
 - **Atalhos**: o app usa Ctrl+Shift por padrão (FR-173); Ctrl+letra sem Shift chega ao servidor.
   O menu da aba "Enviar combinação de teclas" continua para casos raros.
 - **Limites da base técnica** (levantados no planejamento): a cifra `aes256-cbc` não é suportada

@@ -1,4 +1,4 @@
-// Marca do OpenConnect: tecla preta laqueada com prompt `>_` (desenho próprio, Princípio I).
+// Marca do OpenHosts: tecla preta laqueada com prompt `>_` (desenho próprio, Princípio I).
 import { useId } from 'react';
 
 export function Logo({ size = 20 }: { size?: number }) {

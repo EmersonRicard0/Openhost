@@ -13,7 +13,7 @@ test('fechar com sessão local aberta pede confirmação; cancelar mantém, conf
     await waitPowerShellPrompt(page, id);
 
     await requestClose(page);
-    const dialog = page.getByRole('dialog', { name: 'Fechar o OpenConnect?' });
+    const dialog = page.getByRole('dialog', { name: 'Fechar o OpenHosts?' });
     await expect(dialog).toContainText('1 sessão aberta');
     await dialog.getByRole('button', { name: 'Cancelar' }).click();
     await expect(dialog).toBeHidden();
