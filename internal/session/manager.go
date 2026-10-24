@@ -1,0 +1,485 @@
+// Package session guarda as sessões de terminal abertas (research R11): uma goroutine por sessão
+// lê a saída, os eventos saem na ordem e term:closed é sempre o último.
+package session
+
+import (
+	"context"
+	"errors"
+	"io"
+	"sync"
+
+	"shellvault/internal/apperr"
+	"shellvault/internal/domain"
+)
+
+type Kind string
+
+const (
+	KindSSH   Kind = "ssh"
+	KindLocal Kind = "local"
+)
+
+type State string
+
+const (
+	StateConnecting      State = "connecting"
+	StateAuthenticating  State = "authenticating"
+	StateAwaitingHostKey State = "awaitingHostKey"
+	StateAwaitingPrompt  State = "awaitingPrompt"
+	StateConnected       State = "connected"
+	StateDisconnected    State = "disconnected"
+	StateError           State = "error"
+	StateClosed          State = "closed"
+)
+
+const (
+	EventData    = "term:data"
+	EventState   = "term:state"
+	EventHostKey = "term:hostkey"
+	EventPrompt  = "term:prompt"
+	EventClosed  = "term:closed"
+)
+
+type DataEvent struct {
+	SessionID string `json:"sessionId"`
+	Data      string `json:"data"`
+}
+
+type StateEvent struct {
+	SessionID string  `json:"sessionId"`
+	State     State   `json:"state"`
+	Code      *string `json:"code"`
+	// Mensagem pt-BR para disconnected/error.
+	Reason *string `json:"reason"`
+	// Código de saída do shell local, em closed.
+	ExitCode *int `json:"exitCode"`
+}
+
+type HostKeyQuestion struct {
+	Kind                string  `json:"kind"`
+	KeyType             string  `json:"keyType"`
+	Fingerprint         string  `json:"fingerprint"`
+	PreviousFingerprint *string `json:"previousFingerprint"`
+}
+
+type HostKeyEvent struct {
+	SessionID string `json:"sessionId"`
+	HostKeyQuestion
+}
+
+type PromptItem struct {
+	Text string `json:"text"`
+	Echo bool   `json:"echo"`
+}
+
+type PromptQuestion struct {
+	Name         string       `json:"name"`
+	Instructions string       `json:"instructions"`
+	Prompts      []PromptItem `json:"prompts"`
+}
+
+type PromptEvent struct {
+	SessionID string `json:"sessionId"`
+	PromptQuestion
+}
+
+type ClosedEvent struct {
+	SessionID string `json:"sessionId"`
+}
+
+// Emitter entrega eventos à interface (runtime.EventsEmit no app).
+type Emitter func(event string, payload any)
+
+// Interactor é o que o transporte usa durante a conexão: estado e perguntas ao usuário. As
+// perguntas esperam a resposta ou o cancelamento da sessão.
+type Interactor interface {
+	SetState(State)
+	AskHostKey(HostKeyQuestion) (bool, error)
+	AskPrompt(PromptQuestion) ([]string, error)
+}
+
+// Conn é uma conexão já autenticada (SSH) ou um processo preparado (shell local).
+type Conn interface {
+	// Start pede o PTY com o primeiro tamanho válido e devolve a saída.
+	Start(cols, rows int) (io.Reader, error)
+	Write(p []byte) error
+	Resize(cols, rows int) error
+	// Close é idempotente e destrava a leitura.
+	Close() error
+}
+
+// ExitCoder é implementado por shells locais.
+type ExitCoder interface {
+	ExitCode() *int
+}
+
+// Dialer conecta e autentica; deve desistir quando ctx é cancelado.
+type Dialer func(ctx context.Context, ix Interactor) (Conn, error)
+
+type size struct{ cols, rows int }
+
+type Session struct {
+	ID     string
+	Kind   Kind
+	HostID *string
+
+	m      *Manager
+	ctx    context.Context
+	cancel context.CancelFunc
+	wg     sync.WaitGroup
+	out    *Batcher
+
+	mu      sync.Mutex
+	state   State
+	conn    Conn
+	started bool
+	size    size
+	sized   chan struct{}
+
+	reconnect chan Dialer
+	hostKey   chan bool
+	prompt    chan []string
+
+	emitMu sync.Mutex
+	closed bool
+}
+
+type Manager struct {
+	emit Emitter
+
+	mu       sync.Mutex
+	sessions map[string]*Session
+}
+
+func NewManager(emit Emitter) *Manager {
+	return &Manager{emit: emit, sessions: map[string]*Session{}}
+}
+
+// Open cria a sessão e começa a conectar. O PTY só é pedido no primeiro Resize válido.
+func (m *Manager) Open(kind Kind, hostID *string, dial Dialer) string {
+	ctx, cancel := context.WithCancel(context.Background())
+	s := &Session{ID: domain.NewID(), Kind: kind, HostID: hostID, m: m, ctx: ctx, cancel: cancel,
+		state: StateConnecting, sized: make(chan struct{}), reconnect: make(chan Dialer, 1),
+		hostKey: make(chan bool, 1), prompt: make(chan []string, 1)}
+	s.out = NewBatcher(func(data string) { s.emit(EventData, DataEvent{SessionID: s.ID, Data: data}) })
+	m.mu.Lock()
+	m.sessions[s.ID] = s
+	m.mu.Unlock()
+	s.wg.Add(1)
+	go s.run(dial)
+	return s.ID
+}
+
+func (m *Manager) get(id string) (*Session, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s, ok := m.sessions[id]
+	if !ok {
+		return nil, apperr.New(apperr.NotFound)
+	}
+	return s, nil
+}
+
+func (m *Manager) Get(id string) (*Session, error) { return m.get(id) }
+
+func (m *Manager) Write(id, data string) error {
+	s, err := m.get(id)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	conn := s.conn
+	ok := s.started
+	s.mu.Unlock()
+	if !ok {
+		return nil
+	}
+	return conn.Write([]byte(data))
+}
+
+// Resize guarda o tamanho; o primeiro válido libera o pedido do PTY. Repetir o último tamanho
+// não faz nada.
+func (m *Manager) Resize(id string, cols, rows int) error {
+	if cols < 1 || cols > 1000 || rows < 1 || rows > 1000 {
+		return apperr.New(apperr.InvalidInput)
+	}
+	s, err := m.get(id)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	next := size{cols, rows}
+	if next == s.size {
+		return nil
+	}
+	first := s.size == size{}
+	s.size = next
+	if first {
+		close(s.sized)
+	}
+	if s.started {
+		return s.conn.Resize(cols, rows)
+	}
+	return nil
+}
+
+// Reconnect refaz a conexão de uma sessão desconectada.
+func (m *Manager) Reconnect(id string, dial Dialer) error {
+	s, err := m.get(id)
+	if err != nil {
+		return err
+	}
+	s.mu.Lock()
+	st := s.state
+	s.mu.Unlock()
+	if st != StateDisconnected && st != StateError {
+		return apperr.New(apperr.InvalidInput)
+	}
+	select {
+	case s.reconnect <- dial:
+	default:
+	}
+	return nil
+}
+
+func (m *Manager) AnswerHostKey(id string, accept bool) error {
+	s, err := m.get(id)
+	if err != nil {
+		return err
+	}
+	return s.answer(StateAwaitingHostKey, func() bool {
+		select {
+		case s.hostKey <- accept:
+			return true
+		default:
+			return false
+		}
+	})
+}
+
+// AnswerPrompt entrega as respostas; nil cancela a autenticação.
+func (m *Manager) AnswerPrompt(id string, answers []string) error {
+	s, err := m.get(id)
+	if err != nil {
+		return err
+	}
+	return s.answer(StateAwaitingPrompt, func() bool {
+		select {
+		case s.prompt <- answers:
+			return true
+		default:
+			return false
+		}
+	})
+}
+
+// Close cancela a sessão, espera a goroutine terminar e emite term:closed, o último evento.
+func (m *Manager) Close(id string) error {
+	m.mu.Lock()
+	s, ok := m.sessions[id]
+	delete(m.sessions, id)
+	m.mu.Unlock()
+	if !ok {
+		return apperr.New(apperr.NotFound)
+	}
+	s.shutdown()
+	return nil
+}
+
+// CloseAll encerra todas as sessões (saída do app).
+func (m *Manager) CloseAll() {
+	m.mu.Lock()
+	all := make([]*Session, 0, len(m.sessions))
+	for id, s := range m.sessions {
+		all = append(all, s)
+		delete(m.sessions, id)
+	}
+	m.mu.Unlock()
+	var wg sync.WaitGroup
+	for _, s := range all {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			s.shutdown()
+		}()
+	}
+	wg.Wait()
+}
+
+// ActiveCount conta as sessões em andamento, para a confirmação ao fechar.
+func (m *Manager) ActiveCount() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	n := 0
+	for _, s := range m.sessions {
+		switch s.State() {
+		case StateDisconnected, StateError, StateClosed:
+		default:
+			n++
+		}
+	}
+	return n
+}
+
+func (m *Manager) Count() int {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return len(m.sessions)
+}
+
+func (s *Session) State() State {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.state
+}
+
+func (s *Session) answer(want State, deliver func() bool) error {
+	if s.State() != want || !deliver() {
+		return apperr.New(apperr.InvalidInput)
+	}
+	return nil
+}
+
+func (s *Session) emit(event string, payload any) {
+	s.emitMu.Lock()
+	defer s.emitMu.Unlock()
+	if !s.closed {
+		s.m.emit(event, payload)
+	}
+}
+
+func (s *Session) shutdown() {
+	s.cancel()
+	s.wg.Wait()
+	s.out.Close()
+	s.emitMu.Lock()
+	defer s.emitMu.Unlock()
+	s.closed = true
+	s.m.emit(EventClosed, ClosedEvent{SessionID: s.ID})
+}
+
+// SetState implementa Interactor. A saída pendente sai antes da mudança de estado.
+func (s *Session) SetState(st State) { s.setState(st, nil, nil) }
+
+func (s *Session) setState(st State, cause error, exitCode *int) {
+	s.mu.Lock()
+	s.state = st
+	s.mu.Unlock()
+	s.out.Flush()
+	ev := StateEvent{SessionID: s.ID, State: st, ExitCode: exitCode}
+	if cause != nil {
+		e := apperr.New(apperr.CodeOf(cause))
+		code := string(e.Code)
+		ev.Code, ev.Reason = &code, &e.Message
+	}
+	s.emit(EventState, ev)
+}
+
+func (s *Session) AskHostKey(q HostKeyQuestion) (bool, error) {
+	drain(s.hostKey)
+	s.SetState(StateAwaitingHostKey)
+	s.emit(EventHostKey, HostKeyEvent{SessionID: s.ID, HostKeyQuestion: q})
+	select {
+	case ok := <-s.hostKey:
+		return ok, nil
+	case <-s.ctx.Done():
+		return false, s.ctx.Err()
+	}
+}
+
+func (s *Session) AskPrompt(q PromptQuestion) ([]string, error) {
+	drain(s.prompt)
+	s.SetState(StateAwaitingPrompt)
+	s.emit(EventPrompt, PromptEvent{SessionID: s.ID, PromptQuestion: q})
+	select {
+	case answers := <-s.prompt:
+		return answers, nil
+	case <-s.ctx.Done():
+		return nil, s.ctx.Err()
+	}
+}
+
+func drain[T any](ch chan T) {
+	select {
+	case <-ch:
+	default:
+	}
+}
+
+func (s *Session) run(dial Dialer) {
+	defer s.wg.Done()
+	for {
+		s.connect(dial)
+		select {
+		case <-s.ctx.Done():
+			return
+		case dial = <-s.reconnect:
+		}
+	}
+}
+
+// connect faz um ciclo: conectar, esperar o tamanho, ler até o fim.
+func (s *Session) connect(dial Dialer) {
+	s.SetState(StateConnecting)
+	conn, err := dial(s.ctx, s)
+	if s.ctx.Err() != nil {
+		if conn != nil {
+			_ = conn.Close()
+		}
+		return
+	}
+	if err != nil {
+		s.setState(StateError, err, nil)
+		return
+	}
+	stop := context.AfterFunc(s.ctx, func() { _ = conn.Close() })
+	defer func() {
+		stop()
+		_ = conn.Close()
+		s.mu.Lock()
+		s.conn, s.started = nil, false
+		s.mu.Unlock()
+	}()
+
+	select {
+	case <-s.sized:
+	case <-s.ctx.Done():
+		return
+	}
+	s.mu.Lock()
+	first := s.size
+	s.mu.Unlock()
+	out, err := conn.Start(first.cols, first.rows)
+	if err != nil {
+		if s.ctx.Err() == nil {
+			s.setState(StateError, err, nil)
+		}
+		return
+	}
+	s.mu.Lock()
+	s.conn, s.started = conn, true
+	// Um Resize pode ter chegado enquanto o PTY era pedido.
+	if s.size != first {
+		_ = conn.Resize(s.size.cols, s.size.rows)
+	}
+	s.mu.Unlock()
+	s.SetState(StateConnected)
+
+	_, err = io.Copy(s.out, out)
+	if s.ctx.Err() != nil {
+		return
+	}
+	if s.Kind == KindLocal {
+		var code *int
+		if ec, ok := conn.(ExitCoder); ok {
+			code = ec.ExitCode()
+		}
+		s.setState(StateClosed, nil, code)
+		return
+	}
+	if err == nil || errors.Is(err, io.EOF) {
+		err = apperr.New(apperr.SessionClosed)
+	}
+	s.setState(StateDisconnected, err, nil)
+}
