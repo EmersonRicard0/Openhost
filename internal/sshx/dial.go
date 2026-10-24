@@ -6,6 +6,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -52,13 +53,19 @@ type Options struct {
 // Client é a conexão autenticada; Close também para o keepalive.
 type Client struct {
 	*ssh.Client
-	stop chan struct{}
-	once sync.Once
+	stop         chan struct{}
+	once         sync.Once
+	latencyNanos atomic.Int64
 }
 
 func (c *Client) Close() error {
 	c.once.Do(func() { close(c.stop) })
 	return c.Client.Close()
+}
+
+// Latency devolve o RTT da última resposta de keepalive, ou zero antes da primeira resposta.
+func (c *Client) Latency() time.Duration {
+	return time.Duration(c.latencyNanos.Load())
 }
 
 // deadline limita o tempo de rede da conexão e pausa enquanto o usuário responde.
@@ -128,7 +135,11 @@ func Dial(ctx context.Context, o Options, ix session.Interactor) (*Client, error
 		return nil, ctx.Err()
 	}
 	if o.Keepalive > 0 {
-		go client.keepalive(o.Keepalive)
+		go func() {
+			_ = runKeepalive(client.stop, client.Client, o.Keepalive, func(rtt time.Duration) {
+				client.latencyNanos.Store(int64(rtt))
+			})
+		}()
 	}
 	return client, nil
 }
@@ -169,38 +180,4 @@ func (h *hostKeyCheck) callback(_ string, _ net.Addr, key ssh.PublicKey) error {
 	}
 	h.ix.SetState(session.StateAuthenticating)
 	return nil
-}
-
-// keepalive manda keepalive@openssh.com a cada intervalo; três sem resposta derrubam a conexão.
-func (c *Client) keepalive(interval time.Duration) {
-	t := time.NewTicker(interval)
-	defer t.Stop()
-	replies := make(chan error, 1)
-	inflight, missed := false, 0
-	for {
-		select {
-		case <-c.stop:
-			return
-		case err := <-replies:
-			inflight = false
-			if err != nil {
-				_ = c.Client.Close()
-				return
-			}
-			missed = 0
-		case <-t.C:
-			if inflight {
-				if missed++; missed >= 3 {
-					_ = c.Client.Close()
-					return
-				}
-				continue
-			}
-			inflight = true
-			go func() {
-				_, _, err := c.SendRequest("keepalive@openssh.com", true, nil)
-				replies <- err
-			}()
-		}
-	}
 }
