@@ -4,7 +4,6 @@ package sshx
 import (
 	"context"
 	"net"
-	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -132,45 +131,6 @@ func Dial(ctx context.Context, o Options, ix session.Interactor) (*Client, error
 		go client.keepalive(o.Keepalive)
 	}
 	return client, nil
-}
-
-// transportAlgorithms: só os seguros, a não ser que o host peça os legados
-// (diffie-hellman-group14-sha1, aes128-cbc).
-func transportAlgorithms(legacy bool) (kex, ciphers, macs []string) {
-	a := ssh.SupportedAlgorithms()
-	kex, ciphers, macs = a.KeyExchanges, a.Ciphers, a.MACs
-	if legacy {
-		kex = append(kex, ssh.InsecureKeyExchangeDH14SHA1)
-		ciphers = append(ciphers, ssh.InsecureCipherAES128CBC)
-	}
-	return kex, ciphers, macs
-}
-
-// algorithmsFor: algoritmos de assinatura de um tipo de chave.
-func algorithmsFor(keyType string, legacy bool) []string {
-	if keyType == ssh.KeyAlgoRSA {
-		out := []string{ssh.KeyAlgoRSASHA512, ssh.KeyAlgoRSASHA256}
-		if legacy {
-			out = append(out, ssh.KeyAlgoRSA)
-		}
-		return out
-	}
-	return []string{keyType}
-}
-
-// hostKeyAlgorithms põe primeiro o tipo da chave já aceita, para o servidor não apresentar
-// outra chave e parecer uma chave alterada.
-func hostKeyAlgorithms(legacy bool, known string) []string {
-	all := ssh.SupportedAlgorithms().HostKeys
-	if legacy {
-		all = append(all, ssh.KeyAlgoRSA)
-	}
-	if known == "" {
-		return all
-	}
-	first := algorithmsFor(known, legacy)
-	rest := slices.DeleteFunc(slices.Clone(all), func(a string) bool { return slices.Contains(first, a) })
-	return append(first, rest...)
 }
 
 type hostKeyCheck struct {

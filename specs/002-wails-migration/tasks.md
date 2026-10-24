@@ -133,14 +133,14 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 ### Tests for User Story 3 ⚠️
 
-- [ ] T052 [P] [US3] `internal/sshx/algorithms_test.go`: opção desligada = listas padrão da biblioteca; ligada acrescenta `diffie-hellman-group14-sha1`, `diffie-hellman-group1-sha1`, `aes128-cbc`, `3des-cbc`, `ssh-rsa` **depois** dos modernos; chave RSA do usuário assina também com `ssh-rsa`; erro `no common algorithm` → `NO_COMMON_ALGORITHM`
+- [X] T052 [P] [US3] `internal/sshx/algorithms_test.go`: opção desligada = listas padrão da biblioteca; ligada acrescenta `diffie-hellman-group14-sha1`, `diffie-hellman-group1-sha1`, `aes128-cbc`, `3des-cbc`, `ssh-rsa` **depois** dos modernos; chave RSA do usuário assina também com `ssh-rsa`; erro `no common algorithm` → `NO_COMMON_ALGORITHM`
 - [ ] T053 [P] [US3] `internal/sshx/keepalive_test.go` com conexão falsa: envia `keepalive@openssh.com` a cada `keepaliveSeconds` ("10–300, padrão 30"); 3 falhas seguidas fecham a conexão com `SESSION_CLOSED`; para ao fechar a sessão (goleak)
 - [ ] T054 [US3] `internal/sshx/noc_integration_test.go` (`integration`): `sshd-legacy` falha com a opção desligada (`NO_COMMON_ALGORITHM`) e conecta com ela ligada; via `idle-killer` (60 s), sessão com keepalive de 30 s continua viva após 150 s e sem keepalive cai; agente: keyring de `x/crypto/ssh/agent` servido num named pipe de teste (`SHELLVAULT_AGENT_PIPE`) autentica `keyuser`; pipe inexistente → `AGENT_UNAVAILABLE`
 - [ ] T055 [P] [US3] Testes de frontend: `frontend/src/features/terminal/paste.test.ts` (1 linha com quebra final não pede confirmação; várias linhas pedem, com contagem e caracteres de controle escapados), `frontend/src/features/palette/palette.test.ts` (filtro por substring sem acento sobre hosts e ações), `frontend/src/app/shortcuts.test.ts` (mapa de atalhos de FR-140)
 
 ### Implementation for User Story 3
 
-- [ ] T056 [US3] Implementar `internal/sshx/algorithms.go` e o mapeamento de erro em `internal/bridge/result.go` para passar a T052
+- [X] T056 [US3] Implementar `internal/sshx/algorithms.go` e o mapeamento de erro em `internal/bridge/result.go` para passar a T052
 - [ ] T057 [US3] Implementar `internal/sshx/keepalive.go`, ligar ao dial e acrescentar `keepaliveSeconds` a `vault_settings` e ao diálogo de configurações (`frontend/src/features/settings/SettingsDialog.tsx`) para passar a T053
 - [ ] T058 [US3] Implementar `internal/sshx/agent.go` (`go-winio`, pipe `\\.\pipe\openssh-ssh-agent`, `SHELLVAULT_AGENT_PIPE` só para testes) e o método `agent` na autenticação para passar a T054
 - [ ] T059 [US3] `frontend/src/features/hosts/HostForm.tsx`: opção "Algoritmos legados (inseguros)" com texto de aviso, método "Agente SSH" (esconde credencial); selo de aviso para hosts legados em `HostList.tsx`; textos em `pt-BR.ts`
