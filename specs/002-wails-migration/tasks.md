@@ -172,7 +172,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 - [X] T069 [US4] Implementar `internal/domain/profiles.go` e as tabelas `terminal_profiles`/`color_schemes` no store, semeando perfil global e presets na primeira execução, para passar a T066
 - [ ] T070 [P] [US4] Implementar `internal/fonts/fonts.go` (`%WINDIR%\Fonts`, `%LOCALAPPDATA%\Microsoft\Windows\Fonts`, `sfnt`, cache) para passar a T067
 - [ ] T071 [US4] Implementar `ProfileService` em `internal/bridge/profiles.go` (métodos de contracts/bridge.md, diálogos nativos de importar/exportar, evento `profiles:changed`); T013 passa para ele
-- [ ] T072 [P] [US4] Adicionar JetBrains Mono e Cascadia Code (`woff2`, OFL-1.1) em `frontend/src/assets/fonts/` com `@font-face` em `frontend/src/styles/fonts.css`
+- [X] T072 [P] [US4] Adicionar JetBrains Mono e Cascadia Code (`woff2`, OFL-1.1) em `frontend/src/assets/fonts/` com `@font-face` em `frontend/src/styles/fonts.css`
 - [ ] T073 [US4] Criar `frontend/src/features/settings/TerminalSettings.tsx` (terminal de amostra ao vivo, controles de FR-152 só por seleção (FR-158a: galeria de esquemas com prévia, lista de fontes desenhadas na própria fonte, controles deslizantes/opções, cursor ilustrado), editor de esquema com seletores de cor, importar/exportar/duplicar, aviso ao reduzir opacidade) acessível pelas configurações e pela paleta
 - [ ] T074 [US4] Criar `frontend/src/features/terminal/profile.ts`: perfil efetivo aplicado a `term.options` + `fit()`, reação a `profiles:changed` em todas as abas, zoom Ctrl+=/−/0 só no `fontSize` efetivo da aba, `allowTransparency` só com opacidade < 1
 - [ ] T075 [US4] Override por host em `HostForm.tsx` ("Perfil de terminal próprio" abre `TerminalSettings` no escopo do host)

@@ -6,6 +6,8 @@ o que é embutido como **conteúdo** (ícones, fontes, esquemas de cores), com o
 | Item | Origem | Licença | Uso |
 |---|---|---|---|
 | Lucide (`lucide-react` 1.52.0) | https://lucide.dev | ISC | todos os ícones da interface (FR-169) |
+| JetBrains Mono (Fontsource 5.3.0, `woff2` latim) | https://github.com/JetBrains/JetBrainsMono | OFL-1.1 | fonte embutida do terminal (`frontend/src/assets/fonts/`) |
+| Cascadia Code (Fontsource 5.3.0, `woff2` latim e caixas) | https://github.com/microsoft/cascadia-code | OFL-1.1 | fonte embutida do terminal (`frontend/src/assets/fonts/`) |
 | OpenConnect Dark | tokens próprios em `frontend/src/theme/tokens.ts` | licença do projeto | preset de cores padrão |
 | Dracula | https://github.com/dracula/windows-terminal | MIT | preset de cores embutido |
 | Nord | https://github.com/nordtheme/terminal-app | MIT | preset de cores embutido |
