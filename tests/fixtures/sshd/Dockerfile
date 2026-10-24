@@ -1,8 +1,11 @@
 # Servidor OpenSSH real para testes de integração (Princípio IV). Nunca usar fora de testes.
 FROM alpine:3.22
 
-RUN apk add --no-cache openssh-server-pam openssh-sftp-server socat linux-pam \
- && ssh-keygen -t ed25519 -N '' -f /etc/ssh/ssh_host_ed25519_key \
+RUN apk add --no-cache openssh-server-pam openssh-sftp-server socat linux-pam
+
+# Host key fixa (só de teste): a fixture do cofre da 001 já a conhece (tests/e2e/migration.spec.ts).
+COPY ssh_host_ed25519_key ssh_host_ed25519_key.pub /etc/ssh/
+RUN chmod 600 /etc/ssh/ssh_host_ed25519_key \
  && mkdir -p /etc/ssh/original \
  && cp /etc/ssh/ssh_host_ed25519_key /etc/ssh/ssh_host_ed25519_key.pub /etc/ssh/original/
 
