@@ -3,7 +3,7 @@ import type { ErrorCode } from '../ipc/errors';
 
 // --- Cofre -----------------------------------------------------------------
 
-export type VaultState = 'nonexistent' | 'locked' | 'unlocked' | 'unreadable';
+export type VaultState = 'nonexistent' | 'locked' | 'migratable' | 'unlocked' | 'unreadable';
 
 export interface VaultStatus {
   state: VaultState;

@@ -10,6 +10,21 @@ import s from './vault.module.css';
 
 export function UnlockPanel() {
   const unlock = useVault((v) => v.unlock);
+  // Cofre da 001 ainda não migrado: o mesmo desbloqueio migra (FR-102).
+  const migratable = useVault((v) => v.status?.state === 'migratable');
+  const text = migratable
+    ? {
+        title: t.vault.migrateTitle,
+        intro: t.vault.migrateIntro,
+        action: t.vault.migrateAction,
+        busy: t.vault.migrating,
+      }
+    : {
+        title: t.vault.unlockTitle,
+        intro: t.vault.unlockIntro,
+        action: t.vault.unlockAction,
+        busy: t.vault.unlocking,
+      };
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,15 +43,15 @@ export function UnlockPanel() {
 
   return (
     <>
-      <form className={s.panel} onSubmit={(e) => void submit(e)} aria-label={t.vault.unlockTitle}>
+      <form className={s.panel} onSubmit={(e) => void submit(e)} aria-label={text.title}>
         <h2 className={s.panelTitle}>
           <span className={s.panelIcon}>
             <LockIcon />
           </span>
-          {t.vault.unlockTitle}
+          {text.title}
         </h2>
         <p className="muted" style={{ margin: 0 }}>
-          {t.vault.unlockIntro}
+          {text.intro}
         </p>
         <TextField
           id="unlock-password"
@@ -55,7 +70,7 @@ export function UnlockPanel() {
           </p>
         )}
         <Button type="submit" variant="primary" disabled={busy || !password}>
-          {busy ? t.vault.unlocking : t.vault.unlockAction}
+          {busy ? text.busy : text.action}
         </Button>
         <p className="muted" style={{ margin: 0, fontSize: 12 }}>
           {t.vault.lockedHint}
