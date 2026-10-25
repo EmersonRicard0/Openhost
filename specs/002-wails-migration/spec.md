@@ -271,11 +271,12 @@ port forwarding) na versão nova, com o mesmo servidor de teste, e obter os mesm
 - **FR-175**: As configurações MUST ter a seção "Conexão (SSH)" com: intervalo de keepalive, tempo limite de conexão, algoritmos legados como padrão para hosts novos e o `$TERM` enviado ao servidor (padrão `xterm-256color`; opções `xterm-256color`, `xterm`, `vt100`, `linux`); esses itens saem de "Cofre e segurança".
 - **FR-176**: A lista de shells locais (nova aba e shell padrão) MUST detectar Windows PowerShell, PowerShell 7 (`pwsh`), Prompt de Comando, Git Bash e cada distribuição WSL instalada, mostrando só os presentes na máquina.
 - **FR-177**: As opções do terminal MUST incluir, por seleção: copiar ao selecionar, botão direito cola, sino (desligado, som ou visual), negrito em cores claras e reconexão automática como opção global.
+- **FR-178**: O avatar do host MUST mostrar o logo do sistema do servidor quando ele for conhecido. O sistema é detectado na primeira conexão bem-sucedida e atualizado nas seguintes: pela versão SSH anunciada pelo servidor (ex.: `OpenSSH_9.6p1 Ubuntu`, `ROSSSH` do MikroTik, `Cisco-1.25`, `HUAWEI`, `Comware`) e, só em servidores OpenSSH sem distribuição na versão, por uma leitura de `/etc/os-release` num canal à parte, com tempo limite curto, sem mexer na aba do usuário e sem nada no histórico do shell. Equipamentos de rede nunca recebem comando. No formulário do host, o usuário MUST poder trocar o ícone por outro da lista ou voltar a "Automático"; sem sistema conhecido, o avatar continua com as iniciais. Os logos são embutidos no app (funciona offline) e servem só para identificar o sistema.
 
 ### Key Entities
 
 - **Cofre**: contêiner protegido pela senha mestra; agora com versão de formato nova e registro de migração da versão anterior. Contém hosts, grupos, credenciais, host keys conhecidas, regras de encaminhamento e perfis por host.
-- **Host**: como na 001, mais: opção "algoritmos legados", método de autenticação "agente SSH" e referência opcional a um perfil de terminal próprio.
+- **Host**: como na 001, mais: opção "algoritmos legados", método de autenticação "agente SSH", referência opcional a um perfil de terminal próprio, sistema detectado e ícone escolhido pelo usuário (FR-178).
 - **Perfil de terminal**: conjunto de opções de fonte, cursor, histórico, opacidade, desfoque, espaçamento e esquema de cores; existe um perfil global e zero ou mais perfis associados a hosts.
 - **Esquema de cores**: nome, origem (embutido, importado, personalizado), texto, fundo, cursor, seleção e 16 cores ANSI.
 - **Sessão**: aba ativa (SSH, local ou SFTP), com estado (conectando, conectado, desconectado, erro, encerrado), tamanho do terminal e host de origem.

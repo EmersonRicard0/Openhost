@@ -1,4 +1,6 @@
+import type { OsId } from '@shared/model/types';
 import { avatarFill } from '../theme/avatar';
+import { OsLogo } from './osIcons';
 import s from './ui.module.css';
 
 /** Matiz estável derivado do texto, para cada host ter sempre a mesma cor. */
@@ -16,7 +18,14 @@ export function initialsOf(text: string): string {
   return (words.length > 1 ? (words[0] ?? '') + (words[1] ?? '') : (words[0] ?? '?')).toUpperCase();
 }
 
-export function Avatar({ text, size = 28 }: { text: string; size?: number }) {
+export interface AvatarProps {
+  text: string;
+  size?: number;
+  /** Logo do sistema no lugar das iniciais (FR-178). */
+  os?: OsId | null;
+}
+
+export function Avatar({ text, size = 28, os = null }: AvatarProps) {
   return (
     <span
       className={s.avatar}
@@ -29,7 +38,7 @@ export function Avatar({ text, size = 28 }: { text: string; size?: number }) {
         } as React.CSSProperties
       }
     >
-      {initialsOf(text)}
+      {os ? <OsLogo id={os} size={Math.round(size * 0.57)} /> : initialsOf(text)}
     </span>
   );
 }

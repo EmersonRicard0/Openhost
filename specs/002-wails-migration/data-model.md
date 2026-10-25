@@ -64,9 +64,16 @@ Grupos recolhidos guardam só ids (não revelam nomes).
 | `authMethod` | `"password"` \| `"key"` \| `"ask"` \| `"agent"` **novo** | `agent` não usa `credentialId` (MUST ser null) |
 | `legacyAlgorithms` **novo** | boolean | padrão `false` (FR-121) |
 | `profileId` **novo** | uuid \| null | MUST referenciar `terminal_profiles` com `is_global = false`; null = usa o global |
+| `detectedOs` **novo** | id de sistema \| null | gravado pela detecção (FR-178); null = desconhecido; não editável pela ponte de hosts |
+| `osIcon` **novo** | id de sistema \| `"auto"` | escolha do usuário; padrão `"auto"` = usa `detectedOs` |
+
+Ids de sistema (lista fechada, mesma no Go e no frontend): `ubuntu`, `debian`, `centos`, `rhel`,
+`fedora`, `rocky`, `almalinux`, `alpine`, `arch`, `opensuse`, `oracle`, `amazon`, `linux`
+(Linux sem distribuição reconhecida), `freebsd`, `openbsd`, `windows`, `macos`, `mikrotik`,
+`cisco`, `huawei`, `juniper`, `hpe` (Comware/Aruba), `fortinet`, `openwrt`.
 
 Demais campos e regras como na 001 (label 1–100, endereço RFC 1123/IPv4/IPv6, porta 1–65535,
-usuário 1–255 etc.). Duplicar copia `legacyAlgorithms` e `profileId`.
+usuário 1–255 etc.). Duplicar copia `legacyAlgorithms`, `profileId`, `detectedOs` e `osIcon`.
 
 ### VaultSettings (alterado)
 
