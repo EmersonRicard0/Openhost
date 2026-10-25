@@ -28,11 +28,12 @@ type Services struct {
 	ctxMu sync.RWMutex
 	ctx   context.Context
 
-	store     *vault.Store
-	autoLock  *vault.AutoLock
-	sessions  *session.Manager
-	forwards  *forwarding.Manager
-	transfers *sftpx.TransferManager
+	store       *vault.Store
+	autoLock    *vault.AutoLock
+	sessions    *session.Manager
+	forwards    *forwarding.Manager
+	transfers   *sftpx.TransferManager
+	forwardDial func(context.Context, sshx.Options, session.Interactor) (forwarding.Client, error)
 
 	vaultService      *VaultService
 	hostService       *HostService
@@ -70,17 +71,10 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 		return s.sftpService.dial(sessionID, hostID, nil)
 	}
 	s.sessionService.transferCount = s.transfers.ActiveCount
-	s.forwards = forwarding.NewManager(func(hostID string) (forwarding.Client, error) {
-		options, err := s.sessionService.optionsForHost(hostID)
-		if err != nil {
-			return nil, err
-		}
-		ctx := s.Context()
-		if ctx == nil {
-			ctx = context.Background()
-		}
-		return sshx.Dial(ctx, options, forwardingInteractor{})
-	}, func(event forwarding.StatusEvent) { s.emit("forwards:status", event) })
+	s.forwardDial = func(ctx context.Context, options sshx.Options, interactor session.Interactor) (forwarding.Client, error) {
+		return sshx.Dial(ctx, options, interactor)
+	}
+	s.forwards = forwarding.NewManager(s.connectForward, func(event forwarding.StatusEvent) { s.emit("forwards:status", event) })
 	s.forwardService = newForwardService(store, s.forwards)
 	s.profileService = newProfileService(store, s.sessions, s.Context, s.emit)
 	preferences := appwin.NewPreferenceStore(store)
@@ -100,6 +94,20 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.appService = newAppService(preferences, appearance, s.closeGuard, s.Context)
 	store.OnStatus(func(status vault.Status) { s.emit("vault:state", status) })
 	return s, nil
+}
+
+func (s *Services) connectForward(hostID string) (forwarding.Client, error) {
+	options, err := s.sessionService.optionsForHost(hostID)
+	if err != nil {
+		return nil, err
+	}
+	ctx := s.Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	_, interactor, done := s.sessions.BeginInteraction(ctx)
+	defer done()
+	return s.forwardDial(ctx, options, interactor)
 }
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
@@ -136,18 +144,6 @@ func (s *Services) Shutdown(ctx context.Context) {
 	s.forwards.CloseAll()
 	s.sessions.CloseAll()
 	_ = s.store.Close()
-}
-
-type forwardingInteractor struct{}
-
-func (forwardingInteractor) SetState(session.State) {}
-
-func (forwardingInteractor) AskHostKey(session.HostKeyQuestion) (bool, error) {
-	return false, apperr.New(apperr.HostKeyRejected)
-}
-
-func (forwardingInteractor) AskPrompt(session.PromptQuestion) ([]string, error) {
-	return nil, apperr.New(apperr.AuthFailed)
 }
 
 // SessionStats é o que os testes E2E leem do gerenciador de sessões.
