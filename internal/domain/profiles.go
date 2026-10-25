@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"fmt"
 	"math"
 	"regexp"
 
@@ -162,10 +163,46 @@ func (p *Profiles) SaveScheme(scheme model.ColorScheme) (model.ColorScheme, erro
 	if err := validateScheme(scheme); err != nil {
 		return model.ColorScheme{}, err
 	}
+	if schemeNameTaken(items, scheme.ID, scheme.Name) {
+		if scheme.Origin != model.SchemeImported {
+			return model.ColorScheme{}, schemeAlreadyExists(scheme.Name)
+		}
+		scheme.Name = availableSchemeName(items, scheme.Name)
+	}
 	if err := p.store.SaveColorScheme(scheme); err != nil {
 		return model.ColorScheme{}, err
 	}
 	return scheme, nil
+}
+
+func schemeNameTaken(items []model.ColorScheme, exceptID, name string) bool {
+	for _, item := range items {
+		if item.ID != exceptID && item.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func availableSchemeName(items []model.ColorScheme, base string) string {
+	for number := 2; ; number++ {
+		suffix := fmt.Sprintf(" (%d)", number)
+		runes := []rune(base)
+		if limit := 100 - len([]rune(suffix)); len(runes) > limit {
+			runes = runes[:limit]
+		}
+		candidate := string(runes) + suffix
+		if !schemeNameTaken(items, "", candidate) {
+			return candidate
+		}
+	}
+}
+
+func schemeAlreadyExists(name string) error {
+	return &apperr.Error{
+		Code: apperr.AlreadyExists, Message: apperr.Messages[apperr.AlreadyExists],
+		Detail: fmt.Sprintf("já existe um esquema com o nome %q", name),
+	}
 }
 
 func (p *Profiles) DuplicateScheme(id, name string) (model.ColorScheme, error) {

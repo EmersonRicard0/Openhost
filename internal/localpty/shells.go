@@ -140,19 +140,24 @@ func detectShells(r shellReaders) []LocalShell {
 	}
 
 	wslPath := ""
-	if path, err := r.lookPath("wsl.exe"); err == nil {
+	candidate := filepath.Join(root, `System32\wsl.exe`)
+	if r.exists(candidate) {
+		wslPath = candidate
+	} else if path, err := r.lookPath("wsl.exe"); err == nil {
 		wslPath = absolutePath(path)
-	} else {
-		candidate := filepath.Join(root, `System32\wsl.exe`)
-		if r.exists(candidate) {
-			wslPath = candidate
-		}
 	}
 	if wslPath != "" {
 		if output, err := r.output(wslPath, "-l", "-q"); err == nil {
 			distros := parseWSLDistros(output)
+			versions := map[string]string{}
+			if verbose, verboseErr := r.output(wslPath, "-l", "-v"); verboseErr == nil {
+				versions = parseWSLVersions(verbose)
+			}
 			sort.Slice(distros, func(i, j int) bool { return strings.ToLower(distros[i]) < strings.ToLower(distros[j]) })
 			for _, distro := range distros {
+				if version, known := versions[strings.ToLower(distro)]; known && version != "1" && version != "2" {
+					continue
+				}
 				shells = append(shells, LocalShell{
 					ID: "wsl:" + distro, Label: distro, Kind: KindWSL,
 					path: wslPath, args: []string{"-d", distro},
@@ -186,13 +191,37 @@ func parseWSLDistros(output []byte) []string {
 	var distros []string
 	for _, line := range strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n") {
 		distro := strings.TrimSpace(strings.TrimPrefix(line, "\ufeff"))
-		if distro == "" || seen[distro] {
+		internal := strings.EqualFold(distro, "docker-desktop") || strings.EqualFold(distro, "docker-desktop-data")
+		if distro == "" || internal || seen[distro] {
 			continue
 		}
 		seen[distro] = true
 		distros = append(distros, distro)
 	}
 	return distros
+}
+
+func parseWSLVersions(output []byte) map[string]string {
+	versions := map[string]string{}
+	text := decodeWindowsOutput(output)
+	for _, line := range strings.Split(strings.ReplaceAll(text, "\r\n", "\n"), "\n") {
+		fields := strings.Fields(strings.TrimSpace(strings.TrimPrefix(line, "\ufeff")))
+		if len(fields) < 2 {
+			continue
+		}
+		if fields[0] == "*" {
+			fields = fields[1:]
+		}
+		if len(fields) < 2 {
+			continue
+		}
+		version := fields[len(fields)-1]
+		if version == "VERSION" {
+			continue
+		}
+		versions[strings.ToLower(fields[0])] = version
+	}
+	return versions
 }
 
 func decodeWindowsOutput(output []byte) string {
@@ -252,9 +281,69 @@ func gitRegistryDirs() []string {
 }
 
 func resolveShell(id Shell) (LocalShell, error) {
-	for _, shell := range ListShells() {
-		if shell.ID == string(id) {
-			return shell, nil
+	return resolveShellWithReaders(id, systemShellReaders())
+}
+
+// resolveShellWithReaders procura somente o shell solicitado. Em particular, abrir cmd ou
+// PowerShell não enumera distribuições WSL nem executa processos externos.
+func resolveShellWithReaders(id Shell, r shellReaders) (LocalShell, error) {
+	root := r.getenv("SystemRoot")
+	if root == "" || !filepath.IsAbs(root) {
+		root = `C:\Windows`
+	}
+	programFiles := r.getenv("ProgramFiles")
+	found := func(label string, kind ShellKind, path string, args ...string) (LocalShell, error) {
+		if path == "" || !r.exists(path) {
+			return LocalShell{}, apperr.New(apperr.InvalidInput)
+		}
+		return LocalShell{ID: string(id), Label: label, Kind: kind, path: path, args: args}, nil
+	}
+
+	switch id {
+	case PowerShell:
+		return found("Windows PowerShell", KindPowerShell,
+			filepath.Join(root, `System32\WindowsPowerShell\v1.0\powershell.exe`))
+	case Cmd:
+		return found("Prompt de Comando", KindCmd, filepath.Join(root, `System32\cmd.exe`))
+	case Pwsh:
+		if path, err := r.lookPath("pwsh.exe"); err == nil && r.exists(path) {
+			return found("PowerShell 7", KindPwsh, absolutePath(path))
+		}
+		if programFiles != "" {
+			matches, _ := r.glob(filepath.Join(programFiles, `PowerShell\*\pwsh.exe`))
+			sort.Sort(sort.Reverse(sort.StringSlice(matches)))
+			for _, match := range matches {
+				if r.exists(match) {
+					return found("PowerShell 7", KindPwsh, match)
+				}
+			}
+		}
+	case GitBash:
+		if programFiles != "" {
+			path := filepath.Join(programFiles, `Git\bin\bash.exe`)
+			if r.exists(path) {
+				return found("Git Bash", KindGitBash, path, "--login", "-i")
+			}
+		}
+		for _, dir := range r.registryDirs() {
+			path := filepath.Join(dir, `bin\bash.exe`)
+			if r.exists(path) {
+				return found("Git Bash", KindGitBash, path, "--login", "-i")
+			}
+		}
+	default:
+		if ValidShellID(string(id)) && strings.HasPrefix(string(id), "wsl:") {
+			path := filepath.Join(root, `System32\wsl.exe`)
+			if !r.exists(path) {
+				var err error
+				path, err = r.lookPath("wsl.exe")
+				if err != nil {
+					break
+				}
+				path = absolutePath(path)
+			}
+			distro := strings.TrimPrefix(string(id), "wsl:")
+			return found(distro, KindWSL, path, "-d", distro)
 		}
 	}
 	return LocalShell{}, apperr.New(apperr.InvalidInput)

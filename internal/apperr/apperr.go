@@ -42,6 +42,7 @@ const (
 	PermissionDenied        Code = "PERMISSION_DENIED"
 	PortInUse               Code = "PORT_IN_USE"
 	SchemeInvalid           Code = "SCHEME_INVALID"
+	AlreadyExists           Code = "ALREADY_EXISTS"
 	InUse                   Code = "IN_USE"
 	Cancelled               Code = "CANCELLED"
 	Internal                Code = "INTERNAL"
@@ -53,7 +54,7 @@ var Codes = []Code{
 	VaultUnsupportedVersion, VaultMigrationFailed, WeakPassword, NotFound, GroupCycle,
 	KeyUnsupported, KeyBadPassphrase, ConnectTimeout, ConnectRefused, HostUnreachable,
 	AuthFailed, HostKeyRejected, NoCommonAlgorithm, AgentUnavailable, SessionClosed, SftpError,
-	PermissionDenied, PortInUse, SchemeInvalid, InUse, Cancelled, Internal,
+	PermissionDenied, PortInUse, SchemeInvalid, AlreadyExists, InUse, Cancelled, Internal,
 }
 
 // Messages: texto pt-BR fixo por código (FR-005 da 001). Nunca contém dados do erro original.
@@ -83,6 +84,7 @@ var Messages = map[Code]string{
 	PermissionDenied:        "Permissão negada.",
 	PortInUse:               "A porta local já está em uso.",
 	SchemeInvalid:           "O arquivo de esquema de cores é inválido.",
+	AlreadyExists:           "Já existe um item com esse nome.",
 	InUse:                   "O item está em uso e não pode ser excluído.",
 	Cancelled:               "Operação cancelada.",
 	Internal:                "Ocorreu um erro inesperado.",
@@ -147,8 +149,13 @@ func Recover(op string, target *error) {
 }
 
 var (
-	secretAssignment = regexp.MustCompile(`(?i)(password|passphrase|senha|secret|token|private[_ -]?key|chave privada)(\s*[:=]\s*)("[^"]*"|'[^']*'|[^\s,;\]}]+)`)
-	secretValue      = regexp.MustCompile(`(?i)\b(?:password|passphrase|senha|secret|token|private[_-]?key)[_-][^\s,;\]}]+`)
+	secretNames      = `password|passphrase|senha|secret|token|private[_ -]?key|chave privada|api[_ -]?key|access[_ -]?key|client[_ -]?secret`
+	secretAssignment = regexp.MustCompile(`(?i)(` + secretNames + `)(\s*[:=]\s*)("[^"]*"|'[^']*'|[^\s,;\]}]+)`)
+	secretFlag       = regexp.MustCompile(`(?i)((?:--?)(?:` + secretNames + `)(?:\s+|=))("[^"]*"|'[^']*'|[^\s,;\]}]+)`)
+	secretValue      = regexp.MustCompile(`(?i)\b(?:` + secretNames + `)[_-][^\s,;\]}]+`)
+	authorization    = regexp.MustCompile(`(?i)(authorization\s*:\s*(?:basic|bearer)\s+)[^\s,;]+`)
+	urlUserInfo      = regexp.MustCompile(`(?i)([a-z][a-z0-9+.-]*://[^:/@\s]+:)[^@\s/]+@`)
+	knownToken       = regexp.MustCompile(`\b(?:gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-[A-Za-z0-9_-]{16,}|AKIA[0-9A-Z]{16})\b`)
 	privateKeyBlock  = regexp.MustCompile(`(?is)-----BEGIN[^\r\n]*PRIVATE KEY-----.*?-----END[^\r\n]*PRIVATE KEY-----`)
 )
 
@@ -157,8 +164,12 @@ func redact(detail string) string {
 		return ""
 	}
 	detail = privateKeyBlock.ReplaceAllString(detail, "[REDACTED PRIVATE KEY]")
+	detail = urlUserInfo.ReplaceAllString(detail, "$1[REDACTED]@")
+	detail = authorization.ReplaceAllString(detail, "$1[REDACTED]")
 	detail = secretAssignment.ReplaceAllString(detail, "$1$2[REDACTED]")
+	detail = secretFlag.ReplaceAllString(detail, "$1[REDACTED]")
 	detail = secretValue.ReplaceAllString(detail, "[REDACTED]")
+	detail = knownToken.ReplaceAllString(detail, "[REDACTED]")
 	runes := []rune(strings.TrimSpace(detail))
 	if len(runes) > 2048 {
 		detail = string(runes[:2048]) + "…"

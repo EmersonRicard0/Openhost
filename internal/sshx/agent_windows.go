@@ -5,9 +5,7 @@ package sshx
 import (
 	"flag"
 	"io"
-	"net"
 	"os"
-	"strings"
 
 	"github.com/Microsoft/go-winio"
 )
@@ -17,19 +15,17 @@ const windowsOpenSSHAgentPipe = `\\.\pipe\openssh-ssh-agent`
 // AgentOpener abre a conexão com um ssh-agent.
 type AgentOpener func() (io.ReadWriteCloser, error)
 
-// openSystemAgent usa o override dos testes, SSH_AUTH_SOCK quando configurado e, por padrão,
-// o named pipe do agente OpenSSH do Windows.
-func openSystemAgent() (io.ReadWriteCloser, error) {
+// systemAgentPipe mantém a superfície de produção presa ao agente OpenSSH do Windows. O
+// override só existe dentro de binários de teste, para os testes de integração criarem um pipe.
+func systemAgentPipe() string {
 	if flag.Lookup("test.v") != nil {
 		if pipe := os.Getenv("SHELLVAULT_AGENT_PIPE"); pipe != "" {
-			return winio.DialPipe(pipe, nil)
+			return pipe
 		}
 	}
-	if sock := os.Getenv("SSH_AUTH_SOCK"); sock != "" {
-		if strings.HasPrefix(sock, `\\.\pipe\`) {
-			return winio.DialPipe(sock, nil)
-		}
-		return net.Dial("unix", sock)
-	}
-	return winio.DialPipe(windowsOpenSSHAgentPipe, nil)
+	return windowsOpenSSHAgentPipe
+}
+
+func openSystemAgent() (io.ReadWriteCloser, error) {
+	return winio.DialPipe(systemAgentPipe(), nil)
 }

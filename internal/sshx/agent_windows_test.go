@@ -64,6 +64,14 @@ func TestMissingWindowsAgentPipeMapsToAgentUnavailable(t *testing.T) {
 	wantCode(t, err, "AGENT_UNAVAILABLE")
 }
 
+func TestSystemAgentIgnoresSSHAuthSock(t *testing.T) {
+	t.Setenv("SHELLVAULT_AGENT_PIPE", "")
+	t.Setenv("SSH_AUTH_SOCK", `\\.\pipe\malicious-agent`)
+	if got := systemAgentPipe(); got != windowsOpenSSHAgentPipe {
+		t.Fatalf("pipe de produção = %q", got)
+	}
+}
+
 func serveTestAgent(t *testing.T, privateKey any) (string, <-chan error) {
 	t.Helper()
 	pipe := fmt.Sprintf(`\\.\pipe\shellvault-agent-test-%d-%d`, os.Getpid(), time.Now().UnixNano())

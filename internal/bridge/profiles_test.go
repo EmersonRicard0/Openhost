@@ -110,6 +110,10 @@ func TestProfileServiceLifecycleDialogsAndEvents(t *testing.T) {
 	if err != nil || imported == nil || len(imported.Imported) != 1 {
 		t.Fatalf("importação: %+v %v", imported, err)
 	}
+	importedAgain, err := profileService.ImportScheme()
+	if err != nil || importedAgain == nil || len(importedAgain.Imported) != 1 || importedAgain.Imported[0].Name != imported.Imported[0].Name+" (2)" {
+		t.Fatalf("segunda importação: %+v %v", importedAgain, err)
+	}
 	exportPath := filepath.Join(t.TempDir(), "export.json")
 	profileService.pickExport = func(context.Context, string) (string, error) { return exportPath, nil }
 	if err := profileService.ExportScheme(imported.Imported[0].ID); err != nil {

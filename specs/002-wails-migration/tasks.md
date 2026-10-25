@@ -231,7 +231,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 - [X] T093 [US6] Implementar `SftpService` (diálogos nativos para caminhos locais, eventos `sftp:transfer`/`sftp:conflict`)
 - [X] T094 [US6] Implementar `internal/domain/forwardrules.go`, `internal/forwarding/manager.go` e `ForwardService` (`ListActive`/`Deactivate` sem cofre) para passar a T089 e T091; T013 passa para todos os 8 serviços
 - [X] T095 [US6] Adaptar `frontend/src/features/sftp/*` e `frontend/src/features/forwarding/*` ao adaptador
-- [ ] T096 [US6] Portar `scripts/bench-sftp.mjs` para `scripts/bench-sftp/main.go` e medir 1 GB (≥ resultado da 001 no mesmo ambiente)
+- [X] T096 [US6] Portar `scripts/bench-sftp.mjs` para `scripts/bench-sftp/main.go` e medir 1 GB (≥ resultado da 001 no mesmo ambiente)
 - [X] T097 [US6] Portar `tests/e2e/sftp.spec.ts` e `tests/e2e/forwarding.spec.ts` para `frontend/tests/e2e/`
 
 **Checkpoint**: paridade total
@@ -263,7 +263,7 @@ frontend com o Claude.
 - [ ] T098 E2E `frontend/tests/e2e/secrets-scan.spec.ts` (SC-108): fluxo completo e varredura recursiva do diretório de dados (incluindo `.db`, `-wal`, pasta do WebView2) por senha mestra, senhas, passphrase e trechos da chave em UTF-8, UTF-16LE e base64 → 0 ocorrências; nenhum `*.dmp`, `*.log` nem `Crashpad/reports` com arquivos
 - [X] T099 [P] E2E `frontend/tests/e2e/performance.spec.ts` (SC-112): 20 abas, uma com `yes` contínuo, troca de aba < 100 ms; busca em 1.000 hosts < 200 ms
 - [ ] T100 [P] Criar `scripts/measure.ps1` (SC-109): tamanho do instalador e soma do *private working set* do app + processos WebView2 após 2 min ocioso com 1 aba; registrar em `specs/002-wails-migration/validation.md`; se > 150 MB, aplicar mitigações de research R19 e registrar números
-- [ ] T101 Revisão de segurança em `docs/security-review-002.md` conferindo cada linha da tabela do plan.md contra o código e corrigindo achados
+- [X] T101 Revisão de segurança em `docs/security-review-002.md` conferindo cada linha da tabela do plan.md contra o código e corrigindo achados
 - [X] T102 [P] `docs/licenses.md`: dependências Go (`go-licenses report`), npm do frontend, fontes OFL e origem dos presets de cor
 - [X] T103 [P] Atualizar `README.md`: requisitos (Go, Wails, NSIS, Docker), `wails dev`, `wails build -nsis`, testes, migração do cofre da versão anterior
 - [ ] T104 ⏸ usuário — Validar `quickstart.md` de ponta a ponta (cenários manuais, incluindo SC-102 nos equipamentos reais) e registrar em `specs/002-wails-migration/validation.md`

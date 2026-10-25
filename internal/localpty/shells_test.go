@@ -30,17 +30,30 @@ func TestDetectShellsWithInjectedReaders(t *testing.T) {
 			}
 			return ""
 		},
-		lookPath: func(string) (string, error) { return "", errors.New("ausente") },
-		exists:   func(path string) bool { return existing[path] },
+		lookPath: func(name string) (string, error) {
+			if name == "wsl.exe" {
+				t.Fatal("wsl.exe do PATH consultado apesar do executável do sistema")
+			}
+			return "", errors.New("ausente")
+		},
+		exists: func(path string) bool { return existing[path] },
 		glob: func(pattern string) ([]string, error) {
 			return []string{pwsh}, nil
 		},
 		registryDirs: func() []string { return []string{`D:\Apps\Git`} },
 		output: func(path string, args ...string) ([]byte, error) {
-			if path != wsl || !reflect.DeepEqual(args, []string{"-l", "-q"}) {
-				t.Fatalf("comando WSL = %q %v", path, args)
+			if path != wsl {
+				t.Fatalf("executável WSL = %q", path)
 			}
-			return utf16LE("Ubuntu\r\nDebian\r\n"), nil
+			switch {
+			case reflect.DeepEqual(args, []string{"-l", "-q"}):
+				return utf16LE("Ubuntu\r\ndocker-desktop\r\nDOCKER-DESKTOP-DATA\r\nLegacyUnknown\r\n"), nil
+			case reflect.DeepEqual(args, []string{"-l", "-v"}):
+				return utf16LE("  NAME STATE VERSION\r\n* Ubuntu Running 2\r\n  LegacyUnknown Stopped 0\r\n"), nil
+			default:
+				t.Fatalf("argumentos WSL = %v", args)
+				return nil, nil
+			}
 		},
 	}
 
@@ -54,7 +67,6 @@ func TestDetectShellsWithInjectedReaders(t *testing.T) {
 		{"pwsh", "PowerShell 7", KindPwsh, nil},
 		{"cmd", "Prompt de Comando", KindCmd, nil},
 		{"gitbash", "Git Bash", KindGitBash, []string{"--login", "-i"}},
-		{"wsl:Debian", "Debian", KindWSL, []string{"-d", "Debian"}},
 		{"wsl:Ubuntu", "Ubuntu", KindWSL, []string{"-d", "Ubuntu"}},
 	}
 	if len(got) != len(want) {
@@ -89,7 +101,7 @@ func TestDetectShellsUsesPATHAndOmitsMissing(t *testing.T) {
 }
 
 func TestParseWSLDistrosUTF16AndValidIDs(t *testing.T) {
-	got := parseWSLDistros(utf16LE("\ufeffUbuntu\r\nUbuntu\r\n openSUSE Tumbleweed \r\n"))
+	got := parseWSLDistros(utf16LE("\ufeffUbuntu\r\nUbuntu\r\n openSUSE Tumbleweed \r\ndocker-desktop\r\nDocker-Desktop-Data\r\n"))
 	if !reflect.DeepEqual(got, []string{"Ubuntu", "openSUSE Tumbleweed"}) {
 		t.Fatalf("distros = %v", got)
 	}
@@ -102,6 +114,38 @@ func TestParseWSLDistrosUTF16AndValidIDs(t *testing.T) {
 		if ValidShellID(id) {
 			t.Errorf("id inválido aceito: %q", id)
 		}
+	}
+}
+
+func TestResolveCmdDoesNotEnumerateWSL(t *testing.T) {
+	root := `C:\Windows`
+	cmd := filepath.Join(root, `System32\cmd.exe`)
+	readers := shellReaders{
+		getenv: func(key string) string {
+			if key == "SystemRoot" {
+				return root
+			}
+			return ""
+		},
+		lookPath: func(string) (string, error) { return "", errors.New("não deveria procurar no PATH") },
+		exists:   func(path string) bool { return path == cmd },
+		glob:     func(string) ([]string, error) { return nil, errors.New("não deveria enumerar") },
+		registryDirs: func() []string {
+			t.Fatal("não deveria consultar o registro")
+			return nil
+		},
+		output: func(string, ...string) ([]byte, error) {
+			t.Fatal("não deveria executar wsl")
+			return nil, nil
+		},
+	}
+
+	got, err := resolveShellWithReaders(Cmd, readers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.ID != "cmd" || got.path != cmd {
+		t.Fatalf("shell = %+v", got)
 	}
 }
 

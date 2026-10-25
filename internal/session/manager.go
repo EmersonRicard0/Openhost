@@ -42,6 +42,17 @@ const (
 	EventClosed  = "term:closed"
 )
 
+const pendingInputLimit = 64 * 1024
+
+// opening diz se a sessão está a caminho de conectar (entrada digitada fica guardada).
+func (st State) opening() bool {
+	switch st {
+	case StateConnecting, StateAuthenticating, StateAwaitingHostKey, StateAwaitingPrompt:
+		return true
+	}
+	return false
+}
+
 type DataEvent struct {
 	SessionID string `json:"sessionId"`
 	Data      string `json:"data"`
@@ -143,6 +154,7 @@ type Session struct {
 	state   State
 	conn    Conn
 	started bool
+	pending []byte
 	size    size
 	sized   chan struct{}
 	latency *int
@@ -208,12 +220,26 @@ func (m *Manager) Write(id, data string) error {
 		return err
 	}
 	s.mu.Lock()
-	conn := s.conn
-	ok := s.started
-	s.mu.Unlock()
-	if !ok {
+	if !s.started {
+		// Só guarda enquanto a conexão está sendo aberta; com a aba caída, o que se digita
+		// não pode ir para o shell numa reconexão horas depois.
+		if !s.state.opening() {
+			s.mu.Unlock()
+			return nil
+		}
+		remaining := pendingInputLimit - len(s.pending)
+		if remaining > 0 {
+			input := []byte(data)
+			if len(input) > remaining {
+				input = input[:remaining]
+			}
+			s.pending = append(s.pending, input...)
+		}
+		s.mu.Unlock()
 		return nil
 	}
+	conn := s.conn
+	s.mu.Unlock()
 	return conn.Write([]byte(data))
 }
 
@@ -419,6 +445,9 @@ func (s *Session) SetState(st State) { s.setState(st, nil, nil) }
 func (s *Session) setState(st State, cause error, exitCode *int) {
 	s.mu.Lock()
 	s.state = st
+	if !st.opening() && st != StateConnected {
+		s.pending = nil
+	}
 	if st != StateConnected {
 		s.latency = nil
 	}
@@ -558,11 +587,23 @@ func (s *Session) connect(dial Dialer) {
 		return
 	}
 	s.mu.Lock()
-	s.conn, s.started = conn, true
+	s.conn = conn
 	// Um Resize pode ter chegado enquanto o PTY era pedido.
 	if s.size != first {
 		_ = conn.Resize(s.size.cols, s.size.rows)
 	}
+	if len(s.pending) > 0 {
+		err = conn.Write(s.pending)
+		s.pending = nil
+		if err != nil {
+			s.mu.Unlock()
+			if s.ctx.Err() == nil {
+				s.setState(StateError, err, nil)
+			}
+			return
+		}
+	}
+	s.started = true
 	s.mu.Unlock()
 	s.SetState(StateConnected)
 

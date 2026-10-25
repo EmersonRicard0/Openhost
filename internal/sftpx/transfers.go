@@ -444,7 +444,9 @@ func (m *TransferManager) upload(job *transferJob, client *sftp.Client) error {
 	if err != nil {
 		return err
 	}
-	_, copyErr := io.Copy(target, &progressReader{reader: source, update: func(n int64) { m.progress(job, n) }})
+	_, copyErr := io.Copy(target, &progressReader{
+		reader: source, size: job.transfer.BytesTotal, update: func(n int64) { m.progress(job, n) },
+	})
 	closeErr := target.Close()
 	if copyErr != nil {
 		return copyErr
@@ -599,8 +601,13 @@ func isFinal(state TransferState) bool {
 
 type progressReader struct {
 	reader io.Reader
+	size   int64
 	update func(int64)
 }
+
+// Size permite que pkg/sftp determine o número de requisições paralelas em File.ReadFrom.
+// Sem este método, o wrapper de progresso força o upload para o caminho sequencial.
+func (r *progressReader) Size() int64 { return r.size }
 
 func (r *progressReader) Read(buffer []byte) (int, error) {
 	n, err := r.reader.Read(buffer)

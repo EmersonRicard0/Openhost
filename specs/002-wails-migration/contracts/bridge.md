@@ -35,7 +35,8 @@ Operações sem marcação mantêm assinatura e semântica da 001.
 ## ErrorCode
 
 Os da 001 mais **novos**: `NO_COMMON_ALGORITHM` (FR-122), `AGENT_UNAVAILABLE` (FR-124),
-`SCHEME_INVALID` (importação de esquema), `IN_USE` (excluir esquema/perfil em uso),
+`SCHEME_INVALID` (importação de esquema), `ALREADY_EXISTS` (nome já usado),
+`IN_USE` (excluir esquema/perfil em uso),
 `VAULT_MIGRATION_FAILED` (FR-102/103; o arquivo original permanece intacto).
 
 ## VaultService
