@@ -113,7 +113,8 @@ export const t = {
     themeLight: 'Claro',
     themeDark: 'Escuro',
     accent: 'Cor de destaque',
-    accentHint: 'Botões principais, foco e seleção. A cor do Windows é ajustada para continuar legível.',
+    accentHint:
+      'Botões principais, foco e seleção. A cor do Windows é ajustada para continuar legível.',
     accentSystem: 'Cor do Windows',
     glass: 'Efeito de vidro',
     glassHint:
@@ -171,6 +172,10 @@ export const t = {
   hosts: {
     title: 'Hosts',
     empty: 'Nenhum host cadastrado.',
+    addFirst: 'Cadastrar host',
+    osIcon: 'Ícone',
+    osIconAuto: 'Automático (detecta ao conectar)',
+    osIconAutoDetected: (os: string) => `Automático (${os})`,
     add: 'Novo host',
     edit: 'Editar host',
     label: 'Nome',
@@ -247,6 +252,7 @@ export const t = {
   terminal: {
     newLocal: 'Novo terminal local',
     emptyTitle: 'Nenhuma sessão aberta',
+    emptyAction: 'Abrir terminal',
     emptyHint: (shortcut: string | null) =>
       shortcut
         ? `Dê dois cliques em um host para conectar ou pressione ${shortcut} para abrir um terminal.`

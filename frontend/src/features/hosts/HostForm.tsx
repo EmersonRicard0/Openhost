@@ -1,6 +1,6 @@
 // Criar/editar host (FR-007).
 import { useEffect, useState } from 'react';
-import type { AuthMethod, HostInput, HostView } from '@shared/model/types';
+import type { AuthMethod, HostInput, HostView, OsId } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
 import { useProfiles } from '../../stores/profiles';
@@ -12,6 +12,7 @@ import { NumberField } from '../../ui/NumberField';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { WarningIcon } from '../../ui/icons';
+import { OS_OPTIONS, OsLogo, osLabel } from '../../ui/osIcons';
 import { toastError } from '../../ui/Toast';
 import { HostTerminalDialog } from './HostTerminalDialog';
 import s from './hosts.module.css';
@@ -46,6 +47,7 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
   // Host novo começa com o padrão da seção Conexão até o usuário mexer no campo.
   const legacyDefault = useVault((v) => v.settings?.legacyDefault ?? false);
   const loadVaultSettings = useVault((v) => v.loadSettings);
+  const [osIcon, setOsIcon] = useState<OsId | 'auto'>(host?.osIcon ?? 'auto');
   const [legacyChoice, setLegacy] = useState<boolean | null>(host?.legacyAlgorithms ?? null);
   const legacy = legacyChoice ?? legacyDefault;
   const [busy, setBusy] = useState(false);
@@ -104,6 +106,7 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
       credentialId: credId,
       groupId: host?.groupId ?? null,
       legacyAlgorithms: legacy,
+      osIcon,
     };
     const res = host
       ? await window.shellvault.hosts.update(host.id, input)
@@ -141,6 +144,24 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
           onChange={(e) => {
             setLabel(e.target.value);
           }}
+        />
+        <Select
+          label={t.hosts.osIcon}
+          value={osIcon}
+          options={[
+            {
+              value: 'auto',
+              label: host?.detectedOs
+                ? t.hosts.osIconAutoDetected(osLabel(host.detectedOs))
+                : t.hosts.osIconAuto,
+            },
+            ...OS_OPTIONS.map((os) => ({
+              value: os.id,
+              label: os.label,
+              icon: <OsLogo id={os.id} />,
+            })),
+          ]}
+          onChange={setOsIcon}
         />
         <div className={s.row}>
           <TextField

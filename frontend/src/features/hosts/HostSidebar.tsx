@@ -77,6 +77,9 @@ export function HostSidebar() {
         onEdit={(host) => {
           setOpen({ kind: 'form', host });
         }}
+        onAdd={() => {
+          setOpen({ kind: 'form', host: null });
+        }}
       />
       {open?.kind === 'form' && (
         <HostForm

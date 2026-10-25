@@ -535,6 +535,43 @@ textarea.input {
   }
 }
 
+/* Saída (FR-170): a cópia deixada por leaveGhost faz o caminho inverso da entrada. */
+.backdrop[data-closing] {
+  animation: fade-out var(--motion-fast) var(--ease-exit) forwards;
+}
+
+.backdrop[data-closing] .dialog {
+  animation: pop-out var(--motion-fast) var(--ease-exit) forwards;
+}
+
+.menu[data-closing] {
+  animation: pop-out var(--motion-fast) var(--ease-exit) forwards;
+}
+
+.toast[data-closing] {
+  animation: slide-out var(--motion-fast) var(--ease-exit) forwards;
+}
+
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes pop-out {
+  to {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+}
+
+@keyframes slide-out {
+  to {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
 /* Avatar do host: inicial em uma pastilha com matiz estável (ver Avatar.tsx). */
 .avatar {
   flex: none;

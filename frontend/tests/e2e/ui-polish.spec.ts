@@ -112,3 +112,70 @@ test('configurações abrem como página, Esc volta à aba e a barra de status m
     await app.close();
   }
 });
+
+test('trocar a cor de destaque muda --accent e mantém 4,5:1 (FR-171)', async () => {
+  const app = await launchApp();
+  try {
+    const { page } = app;
+    await createVault(page);
+    const accent = () =>
+      page.evaluate(() =>
+        getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+      );
+    const laranja = await accent();
+    // Laranja da marca: claro no tema escuro, profundo no claro (segue o Windows).
+    expect(['#fd7b17', '#b04e06']).toContain(laranja.toLowerCase());
+
+    await page.getByRole('button', { name: 'Configurações' }).first().click();
+    const settings = page.getByRole('region', { name: 'Configurações' });
+    await settings.getByRole('button', { name: 'Aparência', exact: true }).click();
+    await settings.getByLabel('Cor de destaque').click();
+    await page.getByRole('option', { name: 'Grafite' }).click();
+    await expect.poll(accent).not.toBe(laranja);
+
+    // Texto do botão primário sobre o destaque e o destaque sobre o fundo da página.
+    const ratios = await page.evaluate(() => {
+      const css = getComputedStyle(document.documentElement);
+      const hex = (name: string) => css.getPropertyValue(name).trim();
+      const lum = (h: string) => {
+        const [r, g, b] = [1, 3, 5].map((i) => {
+          const v = parseInt(h.slice(i, i + 2), 16) / 255;
+          return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+        });
+        return 0.2126 * (r ?? 0) + 0.7152 * (g ?? 0) + 0.0722 * (b ?? 0);
+      };
+      const ratio = (a: string, b: string) => {
+        const [x, y] = [lum(a), lum(b)];
+        return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+      };
+      return { text: ratio(hex('--accent-text'), hex('--accent')) };
+    });
+    expect(ratios.text).toBeGreaterThanOrEqual(4.5);
+  } finally {
+    await app.close();
+  }
+});
+
+test('com "reduzir movimento" as durações computadas são 0 (FR-170)', async () => {
+  const app = await launchApp({ motion: true });
+  try {
+    const { page } = app;
+    await createVault(page);
+    await openLocalTab(page, 'PowerShell');
+    const durations = () =>
+      page.evaluate(() =>
+        ['[role="tab"]', '[role="tablist"]'].map((s) => {
+          const el = document.querySelector(s);
+          if (!el) return 'ausente';
+          const st = getComputedStyle(el);
+          const before = getComputedStyle(el, '::before');
+          return `${st.transitionDuration}|${before.transitionDuration}`;
+        }),
+      );
+    expect((await durations()).join()).toMatch(/[1-9]/);
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const d of await durations()) expect(d).toMatch(/^0s(, 0s)*\|0s(, 0s)*$/);
+  } finally {
+    await app.close();
+  }
+});

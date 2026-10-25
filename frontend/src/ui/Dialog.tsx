@@ -1,5 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, type SubmitEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { useExitGhost } from './motion';
 import s from './ui.module.css';
 
 const FOCUSABLE =
@@ -34,6 +35,8 @@ export function Dialog({
 }: DialogProps) {
   const titleId = useId();
   const ref = useRef<HTMLDivElement>(null);
+  const backdropRef = useRef<HTMLDivElement>(null);
+  useExitGhost(backdropRef);
   const latest = useRef({ onClose, modal, returnFocus });
   useLayoutEffect(() => {
     latest.current = { onClose, modal, returnFocus };
@@ -104,6 +107,7 @@ export function Dialog({
 
   return createPortal(
     <div
+      ref={backdropRef}
       className={s.backdrop}
       onMouseDown={(e) => {
         if (e.target === e.currentTarget && !modal) onClose();

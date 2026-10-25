@@ -188,25 +188,25 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 **Independent Test**: capturas de todas as telas nos temas escuro/claro, com e sem vidro, batem com o brand book; contraste ≥ 4,5:1; nenhum valor visual avulso
 
-- [ ] T077 [US5] ⏸ usuário — Estágio 0 do `brand-kit`: confirmar o briefing já levantado e gravar em `brand/brief.md` (`meta.lang: pt-BR`)
-- [ ] T078 [US5] ⏸ usuário — Estágio 1: rodadas de conceitos (símbolo terminal + cofre, clima moderno vibrante, sem o `>_` isolado) em `brand/explore/`; o usuário escolhe a direção
-- [ ] T079 [US5] ⏸ usuário — Estágio 2: logo final e kit (`make_kit.py`) em `brand/kit/` incluindo `favicon.ico` e PNGs; o usuário aprova
-- [ ] T080 [US5] ⏸ usuário — Estágio 4: `brand/brand.json` (paleta, tipografia OFL, raios, sombras, movimento, modos glass-dark/glass-light/solid-dark/solid-light/high-contrast) e brand book `brand/book.html`; o usuário revisa
-- [ ] T081 [US5] Estágio 5: `export_tokens.py` → `frontend/src/theme/tokens.css`; `frontend/src/theme/tokens.ts` passa a ler os mesmos valores; `frontend/src/theme/contrast.test.ts` (portado de `tests/unit/theme/contrast.test.ts`) passa com os valores novos
+- [X] T077 [US5] ⏸ usuário — Estágio 0 do `brand-kit`: confirmar o briefing já levantado e gravar em `brand/brief.md` (`meta.lang: pt-BR`)
+- [X] T078 [US5] ⏸ usuário — Estágio 1: rodadas de conceitos (símbolo terminal + cofre, clima moderno vibrante, sem o `>_` isolado) em `brand/explore/`; o usuário escolhe a direção
+- [X] T079 [US5] ⏸ usuário — Estágio 2: logo final e kit (`make_kit.py`) em `brand/kit/` incluindo `favicon.ico` e PNGs; o usuário aprova
+- [X] T080 [US5] ⏸ usuário — Estágio 4: `brand/brand.json` (paleta, tipografia OFL, raios, sombras, movimento, modos glass-dark/glass-light/solid-dark/solid-light/high-contrast) e brand book `brand/book.html`; o usuário revisa
+- [X] T081 [US5] Estágio 5: `export_tokens.py` → `frontend/src/theme/tokens.css`; `frontend/src/theme/tokens.ts` passa a ler os mesmos valores; `frontend/src/theme/contrast.test.ts` (portado de `tests/unit/theme/contrast.test.ts`) passa com os valores novos
 - [X] T082 [US5] Criar `scripts/check-tokens.mjs` (e no `check.mjs`): falha com cor literal (`#`, `rgb(`, `hsl(`), `font-family` ou `box-shadow` literais em `frontend/src/**/*.css` e em `style={{…}}` fora de `frontend/src/theme/`, e `<svg>` inline fora de `frontend/src/ui/` (FR-169, vindo da T107)
 - [X] T083 [US5] Criar componentes próprios `frontend/src/ui/Select.tsx`, `Checkbox.tsx`, `NumberField.tsx` e substituir os 9 controles nativos (configurações, host, encaminhamento)
-- [ ] T084 [US5] Aplicar a marca em `TitleBar`, barra lateral (grupos recolhíveis com estado em `preferences.collapsedGroups`), abas com estado por cor **e** ícone (FR-163), diálogos com cabeçalho e um único rodapé, estados vazios com ação, SFTP (ícones de arquivo/pasta), encaminhamento, toasts e faixas de erro com ícone
+- [X] T084 [US5] Aplicar a marca em `TitleBar`, barra lateral (grupos recolhíveis com estado em `preferences.collapsedGroups`), abas com estado por cor **e** ícone (FR-163), diálogos com cabeçalho e um único rodapé, estados vazios com ação, SFTP (ícones de arquivo/pasta), encaminhamento, toasts e faixas de erro com ícone
 - [X] T085 [US5] Ícone do app: `build/appicon.png` e `build/windows/icon.ico` a partir de `brand/kit/`; `wails.json` (`info.productName`, `companyName` vazio, `copyright`)
 - [X] T086 [US5] Implementar `internal/appwin/appearance.go` (registro `HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize`: `EnableTransparency`, `AppsUseLightTheme`; alto contraste via `SystemParametersInfo`), evento `app:appearance`, preferência `glassEnabled`; fallback sólido sem reiniciar
-- [ ] T087 [US5] E2E `frontend/tests/e2e/appearance.spec.ts`: vidro desligado → superfícies opacas; terminal 100% opaco por padrão; contraste computado ≥ 4,5:1 nos textos principais dos 5 modos; gera capturas de todas as telas em `test-results/brand/` para revisão
+- [X] T087 [US5] E2E `frontend/tests/e2e/appearance.spec.ts`: vidro desligado → superfícies opacas; terminal 100% opaco por padrão; contraste computado ≥ 4,5:1 nos textos principais dos 5 modos; gera capturas de todas as telas em `test-results/brand/` para revisão
 - [X] T107 [P] [US5] Ícones: adicionar `lucide-react`, criar `frontend/src/ui/Icon.tsx` (tamanhos `--icon-sm/md/lg`, `strokeWidth` fixo) e trocar todos os ícones de `frontend/src/ui/icons.tsx` e usos avulsos por Lucide; `scripts/check-tokens.mjs` falha com `<svg>` inline fora de `ui/` (FR-169); licença em `docs/licenses.md`
 - [X] T108 [P] [US5] Movimento: tokens `--motion-fast/base/slow` e curvas em `tokens.css` (zerados sob `prefers-reduced-motion`); `frontend/src/ui/motion.ts` com `useExitAnimation` (estado `open|closing` até `animationend`) e `useSlidingIndicator` (FLIP); teste `motion.test.ts` (FR-170)
-- [ ] T109 [US5] Vidro e estados nos componentes: `.glass-surface`/`.glass-control` e estados repouso/hover/foco/pressionado/selecionado/desabilitado em `Button`, `Menu`, `Popover`, `TextField`, `Select`, `Checkbox`, abas e itens da árvore; indicador deslizante nas abas, na árvore e na navegação das configurações; entrada/saída animada de menus, diálogos e toasts (FR-166, FR-170); depende de T048, T050, T083, T107, T108
+- [X] T109 [US5] Vidro e estados nos componentes: `.glass-surface`/`.glass-control` e estados repouso/hover/foco/pressionado/selecionado/desabilitado em `Button`, `Menu`, `Popover`, `TextField`, `Select`, `Checkbox`, abas e itens da árvore; indicador deslizante nas abas, na árvore e na navegação das configurações; entrada/saída animada de menus, diálogos e toasts (FR-166, FR-170); depende de T048, T050, T083, T107, T108
 - [X] T110 [US5] Barra lateral recolhível: preferência `sidebarCollapsed` em `internal/appwin/preferences.go` e `AppService.UpdatePreferences`; `frontend/src/features/sidebar/Sidebar.tsx` com modo trilho (56 px, ícones hosts/credenciais/SFTP/encaminhamentos/configurações, rótulo em tooltip), botão de recolher e Ctrl+B em `shortcuts.ts`; transição de largura e `fit` sem reconectar (FR-167); depende de T046, T047
 - [X] T111 [US5] Página de configurações: `frontend/src/features/settings/SettingsPage.tsx` com navegação por seções (Geral, Aparência, Terminal, Cofre e segurança, Atalhos, Sobre) na área principal, `view` no store de UI, Esc/botão voltar/clique em aba restauram o terminal; mover o conteúdo de `SettingsDialog.tsx` para as seções e remover o diálogo; `TerminalSettings` (T073) vira a seção Terminal; paleta e atalho abrem a página (FR-168)
-- [ ] T112 [US5] Cor de destaque: preferência `accent` (`system` ou id da marca); `internal/appwin/appearance.go` lê `DWM\AccentColor` e inclui em `app:appearance`; `frontend/src/theme/accent.ts` aplica `--accent*` com ajuste OKLCH até 4,5:1 + `accent.test.ts`; seletor na seção Aparência (FR-171); depende de T086, T111
+- [X] T112 [US5] Cor de destaque: preferência `accent` (`system` ou id da marca); `internal/appwin/appearance.go` lê `DWM\AccentColor` e inclui em `app:appearance`; `frontend/src/theme/accent.ts` aplica `--accent*` com ajuste OKLCH até 4,5:1 + `accent.test.ts`; seletor na seção Aparência (FR-171); depende de T086, T111
 - [X] T113 [US5] Barra de status: `frontend/src/app/StatusBar.tsx` (host/shell da aba ativa, estado, latência, encaminhamentos ativos, cofre; cada item clicável) e `latencyMs` no `term:state` a partir do RTT do keepalive em `internal/sshx/keepalive.go` (FR-172); depende de T057
-- [ ] T114 [US5] E2E `frontend/tests/e2e/ui-polish.spec.ts`: Ctrl+B recolhe/expande a lateral mantendo o `sessionId` e `ServerSizeOf` = xterm, estado lembrado após reiniciar; configurações abrem como página e Esc volta à aba; troca de destaque muda `--accent` e mantém contraste ≥ 4,5:1; com `prefers-reduced-motion` emulado as durações computadas são 0; barra de status mostra o host da aba ativa
+- [X] T114 [US5] E2E `frontend/tests/e2e/ui-polish.spec.ts`: Ctrl+B recolhe/expande a lateral mantendo o `sessionId` e `ServerSizeOf` = xterm, estado lembrado após reiniciar; configurações abrem como página e Esc volta à aba; troca de destaque muda `--accent` e mantém contraste ≥ 4,5:1; com `prefers-reduced-motion` emulado as durações computadas são 0; barra de status mostra o host da aba ativa
 
 **Checkpoint**: identidade aplicada
 
@@ -255,6 +255,15 @@ frontend com o Claude.
 - [X] T123 [P] Go: preferências `copyOnSelect`, `rightClickPaste`, `bell` (`off` | `sound` | `visual`), `boldBright` e `autoReconnect`; testes
 - [X] T124 Frontend: opções de FR-177 na seção Terminal (por seleção) e comportamento no `TerminalView` (copiar ao selecionar, colar no botão direito, sino, `drawBoldTextInBrightColors`, reconexão automática com recuo)
 - [X] T125 E2E `frontend/tests/e2e/daily-use.spec.ts`: Ctrl+W chega ao shell e a aba fica; Ctrl+Shift+W fecha; remapear e desativar persiste após reiniciar; erro mostra código e copia detalhes; `$TERM` escolhido aparece no `echo $TERM` do servidor de teste
+
+## Phase 8c: Logo do sistema no host (FR-178)
+
+**Purpose**: pedido do usuário em 2026-10-25 — o avatar do host mostra o logo do sistema
+(Ubuntu, Debian, MikroTik, Cisco…), como no Termius. Go com o Codex, frontend com o Claude.
+
+- [ ] T126 [P] Go: `detectedOs` e `osIcon` no Host (data-model; ids da lista fechada, validação, duplicar copia, cofre antigo lê `null`/`"auto"`); `internal/sshx` classifica a versão SSH do servidor e, só para OpenSSH sem distribuição na versão, lê `/etc/os-release` num canal `exec` à parte (tempo limite 3 s, falha silenciosa, nunca na aba do usuário, nunca em equipamento de rede); ao mudar, grava no cofre e emite `hosts:changed`; testes de classificação com versões reais e do `os-release`
+- [ ] T127 Frontend: logos de sistema embutidos (`frontend/src/ui/osIcons.tsx`, Simple Icons CC0, monocromáticos no tom do tema), `Avatar` mostra o logo de `osIcon`/`detectedOs` e cai nas iniciais; seletor "Ícone" no formulário do host; recarrega a lista em `hosts:changed`; licença em `docs/licenses.md`
+- [ ] T128 E2E: conectar ao servidor de teste muda o avatar para o logo detectado; escolher outro ícone no formulário persiste após reiniciar; "Automático" volta ao detectado
 
 ---
 

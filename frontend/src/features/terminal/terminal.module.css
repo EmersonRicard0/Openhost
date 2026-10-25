@@ -1,4 +1,5 @@
 .tabBar {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 4px;
@@ -6,6 +7,35 @@
   padding: 0 2px;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+/* A pílula da aba ativa desliza entre as abas (FR-166); sem medida, a própria aba a desenha. */
+.tabBar[data-indicator]::before {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 0;
+  width: var(--indicator-size);
+  height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-small);
+  transform: translateX(var(--indicator-offset));
+  transition:
+    transform var(--motion-base) var(--ease-emphasized),
+    width var(--motion-base) var(--ease-emphasized);
+  pointer-events: none;
+}
+
+.tabBar > * {
+  position: relative;
+}
+
+.tabBar[data-indicator] .tabActive {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
 }
 
 /* Abas em pílula; a ativa ganha superfície elevada e borda. */
@@ -60,29 +90,37 @@
   outline: none;
 }
 
-.dot {
+.state {
   flex: none;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-secondary);
+  display: inline-flex;
+  color: var(--text-secondary);
 }
 
-.dot[data-state='connected'] {
-  background: var(--success);
-  box-shadow: var(--ring-success);
+.state[data-state='connected'] {
+  color: var(--success);
 }
 
-.dot[data-state='connecting'],
-.dot[data-state='authenticating'],
-.dot[data-state='awaitingHostKey'],
-.dot[data-state='awaitingPrompt'] {
-  background: var(--warning);
+.state[data-state='connecting'],
+.state[data-state='authenticating'],
+.state[data-state='awaitingHostKey'],
+.state[data-state='awaitingPrompt'] {
+  color: var(--warning);
 }
 
-.dot[data-state='disconnected'],
-.dot[data-state='error'] {
-  background: var(--danger);
+.state[data-state='connecting'] svg,
+.state[data-state='authenticating'] svg {
+  animation: tab-spin 1s linear infinite;
+}
+
+@keyframes tab-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.state[data-state='disconnected'],
+.state[data-state='error'] {
+  color: var(--danger);
 }
 
 .tabClose {
@@ -145,6 +183,15 @@
   padding: 10px 14px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-raised);
+}
+
+.bannerIcon {
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.bannerIconDanger {
+  color: var(--danger);
 }
 
 .bannerText {

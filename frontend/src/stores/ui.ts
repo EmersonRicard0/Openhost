@@ -54,4 +54,10 @@ export async function loadUi(): Promise<void> {
   api.onAppearanceChanged((a) => {
     useUi.getState().setAppearance(a);
   });
+  // Só no build e2e (TestService ligado): o teste de aparência força o modo que viria do Windows.
+  if ((window as { go?: { testsvc?: unknown } }).go?.testsvc !== undefined) {
+    (window as { __setAppearance?: (a: Partial<Appearance>) => void }).__setAppearance = (a) => {
+      useUi.getState().setAppearance({ ...useUi.getState().appearance, ...a });
+    };
+  }
 }

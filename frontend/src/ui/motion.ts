@@ -105,3 +105,60 @@ export function useSlidingIndicator(
 
   return style;
 }
+
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/**
+ * Saída animada de quem é desmontado pelo pai (`{open && <Dialog/>}`): uma cópia inerte, sem
+ * papéis ARIA, fica no lugar do elemento com `data-closing` até a animação terminar.
+ */
+export function leaveGhost(node: HTMLElement | null): void {
+  if (!node?.isConnected || reducedMotion()) return;
+  const rect = node.getBoundingClientRect();
+  const style = getComputedStyle(node);
+  const layer =
+    style.zIndex !== 'auto' ? style.zIndex : getComputedStyle(node.parentElement ?? node).zIndex;
+  const ghost = node.cloneNode(true) as HTMLElement;
+  // cloneNode copia o atributo `value`, não o que foi digitado.
+  const fields = node.querySelectorAll<HTMLInputElement>('input, textarea');
+  ghost.querySelectorAll<HTMLInputElement>('input, textarea').forEach((field, i) => {
+    field.value = fields[i]?.value ?? '';
+  });
+  for (const el of [ghost, ...ghost.querySelectorAll<HTMLElement>('*')]) {
+    el.removeAttribute('role');
+    el.removeAttribute('aria-modal');
+    el.removeAttribute('aria-live');
+    el.removeAttribute('id');
+  }
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.inert = true;
+  ghost.dataset.closing = '';
+  Object.assign(ghost.style, {
+    position: 'fixed',
+    left: `${String(rect.left)}px`,
+    top: `${String(rect.top)}px`,
+    width: `${String(rect.width)}px`,
+    height: `${String(rect.height)}px`,
+    margin: '0',
+    zIndex: layer,
+    pointerEvents: 'none',
+  });
+  const remove = () => {
+    ghost.remove();
+  };
+  ghost.addEventListener('animationend', (e) => {
+    if (e.target === ghost) remove();
+  });
+  setTimeout(remove, EXIT_FALLBACK_MS);
+  document.body.append(ghost);
+}
+
+/** Liga `leaveGhost` ao desmontar do componente dono de `ref`. */
+export function useExitGhost(ref: RefObject<HTMLElement | null>): void {
+  useLayoutEffect(
+    () => () => {
+      leaveGhost(ref.current);
+    },
+    [ref],
+  );
+}

@@ -138,3 +138,47 @@ test('1.000 hosts: lista virtualizada e busca imediata (SC-003)', async () => {
     await app.close();
   }
 });
+
+test('grupo recolhido continua recolhido depois de reiniciar (FR-167)', async () => {
+  let app = await launchApp();
+  const { dataDir } = app;
+  try {
+    await createVault(app.page);
+    await app.page.getByRole('button', { name: 'Novo grupo' }).click();
+    await nameGroup(app.page, 'Novo grupo', 'Clientes');
+    await addHost(app.page, {
+      label: 'acme-web',
+      address: '10.1.2.3',
+      port: 22,
+      username: 'deploy',
+      method: 'Perguntar ao conectar',
+    });
+    await hostItem(app.page, 'acme-web').dragTo(groupItem(app.page, 'Clientes'));
+    await groupItem(app.page, 'Clientes').click();
+    await expect(groupItem(app.page, 'Clientes')).toHaveAttribute('aria-expanded', 'false');
+    await expect(hostItem(app.page, 'acme-web')).toBeHidden();
+    // A preferência é salva depois da interface mudar: espera chegar ao disco.
+    await expect
+      .poll(async () => {
+        return app.page.evaluate(async () => {
+          type Res = { ok: true; value: { collapsedGroups: string[] } } | { ok: false };
+          const api = (
+            window as unknown as { shellvault: { app: { getUiSettings: () => Promise<Res> } } }
+          ).shellvault;
+          const res = await api.app.getUiSettings();
+          return res.ok ? res.value.collapsedGroups.length : -1;
+        });
+      })
+      .toBe(1);
+    await app.close();
+
+    app = await launchApp({ dataDir });
+    await unlock(app.page);
+    await expect(groupItem(app.page, 'Clientes')).toHaveAttribute('aria-expanded', 'false');
+    await expect(hostItem(app.page, 'acme-web')).toBeHidden();
+    await groupItem(app.page, 'Clientes').click();
+    await expect(hostItem(app.page, 'acme-web')).toBeVisible();
+  } finally {
+    await app.close();
+  }
+});

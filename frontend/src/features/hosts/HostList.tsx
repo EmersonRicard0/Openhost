@@ -4,11 +4,15 @@ import type { Result } from '@shared/ipc/result';
 import type { Group, HostView } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
+import { useUi } from '../../stores/ui';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import type { PopoverAnchor } from '../../ui/Popover';
 import { Avatar } from '../../ui/Avatar';
-import { ChevronIcon, FolderIcon, FolderOpenIcon, WarningIcon } from '../../ui/icons';
+import { useSlidingIndicator } from '../../ui/motion';
+import { hostOs } from '../../ui/osIcons';
+import { Button } from '../../ui/Button';
+import { ChevronIcon, FolderIcon, FolderOpenIcon, PlusIcon, WarningIcon } from '../../ui/icons';
 import { toastError } from '../../ui/Toast';
 import { ForwardRulesPanel } from '../forwarding/ForwardRulesPanel';
 import { openSftp } from '../sftp/openSftp';
@@ -24,6 +28,16 @@ const VIRTUALIZE_AFTER = 200;
 const HOST_ROW = 44;
 const GROUP_ROW = 32;
 const OVERSCAN_PX = 400;
+
+/** Grupos recolhidos ficam nas preferências (FR-167): a árvore muda antes de salvar. */
+function setCollapsedGroups(collapsedGroups: string[]): void {
+  const ui = useUi.getState();
+  if (!ui.settings) return;
+  ui.setSettings({ ...ui.settings, collapsedGroups });
+  void window.shellvault.app.updateUiSettings({ collapsedGroups }).then((res) => {
+    if (!res.ok) toastError(res.error);
+  });
+}
 
 /** Executa uma mudança na ponte; em sucesso recarrega a lista, em erro mostra aviso. */
 export async function mutateHosts(call: Promise<Result<unknown>>): Promise<boolean> {
@@ -99,12 +113,14 @@ export interface HostListProps {
   query: string;
   listRef: RefObject<HTMLUListElement | null>;
   onEdit: (host: HostView) => void;
+  onAdd: () => void;
 }
 
-export function HostList({ query, listRef, onEdit }: HostListProps) {
+export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
   const { hosts, groups, loaded } = useHosts();
   const [selected, setSelected] = useState<string | null>(null);
-  const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(new Set());
+  const collapsedIds = useUi((u) => u.settings?.collapsedGroups);
+  const collapsed = useMemo<ReadonlySet<string>>(() => new Set(collapsedIds), [collapsedIds]);
   const [menu, setMenu] = useState<{ anchor: PopoverAnchor; items: MenuItem[] } | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
   const [dropTarget, setDropTarget] = useState<string | null>(null);
@@ -122,15 +138,15 @@ export function HostList({ query, listRef, onEdit }: HostListProps) {
     [searching, index, query, groups, hosts, collapsed],
   );
   const win = useVirtualWindow(rows, listRef);
+  // Linhas acima mudam de altura ao recolher grupos: a lista entra na chave.
+  const indicator = useSlidingIndicator(listRef, `${selected ?? ''}|${rows.length}|${query}`, 'y');
 
   const toggle = (groupId: string, expand?: boolean) => {
-    setCollapsed((prev) => {
-      const next = new Set(prev);
-      const open = expand ?? next.has(groupId);
-      if (open) next.delete(groupId);
-      else next.add(groupId);
-      return next;
-    });
+    const open = expand ?? collapsed.has(groupId);
+    if (open !== collapsed.has(groupId)) return;
+    setCollapsedGroups(
+      open ? [...collapsed].filter((id) => id !== groupId) : [...collapsed, groupId],
+    );
   };
 
   function hostMenu(host: HostView): MenuItem[] {
@@ -323,7 +339,7 @@ export function HostList({ query, listRef, onEdit }: HostListProps) {
       >
         {/* Alinha com o ícone de grupo, que tem a seta antes. */}
         {!searching && <span className={s.chevronSpace} />}
-        <Avatar text={host.label} />
+        <Avatar text={host.label} os={hostOs(host)} />
         <span className={s.itemText}>
           <span className={s.itemLabelRow}>
             <span className={s.itemLabel}>{host.label}</span>
@@ -427,13 +443,23 @@ export function HostList({ query, listRef, onEdit }: HostListProps) {
 
   let content;
   if (loaded && hosts.length === 0 && groups.length === 0) {
-    content = <p className={s.empty}>{t.hosts.empty}</p>;
+    content = (
+      <div className={s.empty}>
+        <p>{t.hosts.empty}</p>
+        <Button onClick={onAdd}>
+          <PlusIcon />
+          {t.hosts.addFirst}
+        </Button>
+      </div>
+    );
   } else if (searching && rows.length === 0) {
     content = <p className={s.empty}>{t.hosts.noResults}</p>;
   } else {
     content = (
       <ul
         ref={listRef}
+        style={indicator ?? undefined}
+        data-indicator={indicator ? '' : undefined}
         className={`${s.list} ${dropTarget === 'root' ? s.dropRoot : ''}`}
         role={searching ? 'listbox' : 'tree'}
         aria-label={t.hosts.title}

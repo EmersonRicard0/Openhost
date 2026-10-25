@@ -45,7 +45,13 @@ async function appPage(browser: Browser): Promise<Page> {
 }
 
 export async function launchApp(
-  options: { dataDir?: string; env?: Record<string, string> } = {},
+  options: {
+    dataDir?: string;
+    env?: Record<string, string>;
+    /** Animações reais. Por padrão a suíte emula "reduzir movimento": as cópias de saída de
+     * diálogos e menus (leaveGhost) não existem e os seletores não as encontram. */
+    motion?: boolean;
+  } = {},
 ): Promise<LaunchedApp> {
   const dataDir = options.dataDir ?? mkdtempSync(join(tmpdir(), 'shellvault-e2e-'));
   const port = nextPort++;
@@ -62,6 +68,7 @@ export async function launchApp(
   const browser = await chromium.connectOverCDP(`http://127.0.0.1:${String(port)}`);
   const page = await appPage(browser);
   await page.waitForLoadState('domcontentloaded');
+  if (!options.motion) await page.emulateMedia({ reducedMotion: 'reduce' });
   const close = async (): Promise<void> => {
     await browser.close().catch(() => undefined);
     // Morto por sinal, exitCode fica null e signalCode preenchido: fechar de novo não espera.

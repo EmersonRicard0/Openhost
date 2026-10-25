@@ -48,11 +48,45 @@ export interface Host {
   groupId: string | null;
   /** Aceita algoritmos fracos (equipamentos antigos, FR-121); mostrado com aviso. */
   legacyAlgorithms: boolean;
+  /** Sistema detectado na conexão (FR-178); só o Go grava. */
+  detectedOs?: OsId | null;
+  /** Ícone escolhido no formulário; `auto` usa o detectado. */
+  osIcon?: OsId | 'auto';
   createdAt: string;
   updatedAt: string;
 }
 
-export type HostInput = Omit<Host, 'id' | 'createdAt' | 'updatedAt'>;
+/** Ids de sistema do data-model (FR-178), na mesma ordem do Go. */
+export const OS_IDS = [
+  'ubuntu',
+  'debian',
+  'centos',
+  'rhel',
+  'fedora',
+  'rocky',
+  'almalinux',
+  'alpine',
+  'arch',
+  'opensuse',
+  'oracle',
+  'amazon',
+  'linux',
+  'freebsd',
+  'openbsd',
+  'windows',
+  'macos',
+  'mikrotik',
+  'cisco',
+  'huawei',
+  'juniper',
+  'hpe',
+  'fortinet',
+  'openwrt',
+] as const;
+
+export type OsId = (typeof OS_IDS)[number];
+
+export type HostInput = Omit<Host, 'id' | 'createdAt' | 'updatedAt' | 'detectedOs'>;
 
 export interface HostView extends Host {
   credentialName: string | null;
@@ -135,6 +169,8 @@ export interface Settings {
   defaultShell: LocalShell;
   /** Barra lateral em modo trilho. */
   sidebarCollapsed: boolean;
+  /** Ids dos grupos recolhidos na árvore de hosts, lembrados entre reinícios. */
+  collapsedGroups: string[];
   /** Vidro ligado pelo usuário (FR-162). */
   glassEnabled: boolean;
   /** `system` segue o Windows; os demais valores são ids da paleta da marca. */

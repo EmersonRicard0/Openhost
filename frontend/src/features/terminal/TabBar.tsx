@@ -1,10 +1,21 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { t } from '../../i18n/pt-BR';
 import type { SendKeysCombo } from '@shared/model/types';
 import { closeTab, isLive, useSessions, type Tab } from '../../stores/sessions';
 import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
-import { CloseIcon, KeyboardIcon, PlusIcon, RenameIcon } from '../../ui/icons';
+import { useSlidingIndicator } from '../../ui/motion';
+import {
+  CloseIcon,
+  ConnectedIcon,
+  ConnectingIcon,
+  DisconnectedIcon,
+  ErrorIcon,
+  ExitedIcon,
+  KeyboardIcon,
+  PlusIcon,
+  RenameIcon,
+} from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { toastError } from '../../ui/Toast';
 import { closeActiveTab } from './commands';
@@ -21,6 +32,25 @@ function stateLabel(tab: Tab): string {
     default:
       return `${tab.title} — ${t.terminal.connecting}`;
   }
+}
+
+/** Estado da aba por cor e por forma (FR-163): quem não distingue as cores vê o ícone. */
+function StateIcon({ state }: { state: Tab['state'] }) {
+  const Icon =
+    state === 'connected'
+      ? ConnectedIcon
+      : state === 'disconnected'
+        ? DisconnectedIcon
+        : state === 'error'
+          ? ErrorIcon
+          : state === 'closed'
+            ? ExitedIcon
+            : ConnectingIcon;
+  return (
+    <span className={s.state} data-state={state} aria-hidden>
+      <Icon width={13} height={13} />
+    </span>
+  );
 }
 
 /** Combinações que o app usa como atalho; o menu da aba as envia ao shell (FR-140). */
@@ -106,7 +136,7 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
         if (id) reorder(id, tab.id);
       }}
     >
-      <span className={s.dot} data-state={tab.state} />
+      <StateIcon state={tab.state} />
       {editing ? (
         <input
           className={s.tabRename}
@@ -164,11 +194,18 @@ export interface TabBarProps {
 export function TabBar({ newTabItems, trailing }: TabBarProps) {
   const { tabs, activeId, reorder } = useSessions();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const barRef = useRef<HTMLDivElement>(null);
+  // Ordem e títulos mudam a posição da aba ativa sem trocar o id: entram na chave.
+  const layoutKey = `${activeId ?? ''}|${tabs.map((tb) => `${tb.id}:${tb.title}`).join('|')}`;
+  const indicator = useSlidingIndicator(barRef, layoutKey, 'x');
 
   return (
     <div
+      ref={barRef}
       className={s.tabBar}
       role="tablist"
+      style={indicator ?? undefined}
+      data-indicator={indicator ? '' : undefined}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes('application/x-shellvault-tab')) e.preventDefault();
       }}

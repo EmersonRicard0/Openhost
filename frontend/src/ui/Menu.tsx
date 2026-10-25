@@ -1,4 +1,5 @@
 import { useEffect, useRef, type ReactNode } from 'react';
+import { useExitGhost } from './motion';
 import { Popover, type PopoverAnchor } from './Popover';
 import s from './ui.module.css';
 
@@ -20,6 +21,7 @@ export interface MenuProps {
 /** Menu navegável por teclado (setas, Enter, Esc), ancorado e sempre inteiro na janela. */
 export function Menu({ anchor, items, onClose }: MenuProps) {
   const ref = useRef<HTMLDivElement | null>(null);
+  useExitGhost(ref);
 
   function focusFirst() {
     ref.current?.querySelector<HTMLElement>('button:not([disabled])')?.focus();

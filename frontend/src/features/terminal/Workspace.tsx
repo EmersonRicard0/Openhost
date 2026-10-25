@@ -4,10 +4,11 @@ import { currentKeymap, useShortcutLabel } from '../../app/useShortcuts';
 import { t } from '../../i18n/pt-BR';
 import { closeTab, useSessions, type Tab } from '../../stores/sessions';
 import { useShells } from '../../stores/shells';
+import { useUi } from '../../stores/ui';
 import { useWorkspace } from '../../stores/workspace';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Button } from '../../ui/Button';
-import { RefreshIcon, TerminalIcon } from '../../ui/icons';
+import { DisconnectedIcon, ErrorIcon, ExitedIcon, RefreshIcon, TerminalIcon } from '../../ui/icons';
 import { ShellIcon } from '../../ui/ShellIcon';
 import { ConflictDialog } from '../sftp/ConflictDialog';
 import { SettingsPage } from '../settings/SettingsPage';
@@ -39,12 +40,19 @@ function useSecondsUntil(at: number | undefined): number {
   return at === undefined ? 0 : Math.max(0, Math.ceil((at - now) / 1_000));
 }
 
+function BannerIcon({ state }: { state: Tab['state'] }) {
+  if (state === 'closed') return <ExitedIcon className={s.bannerIcon} aria-hidden />;
+  const Icon = state === 'error' ? ErrorIcon : DisconnectedIcon;
+  return <Icon className={`${s.bannerIcon} ${s.bannerIconDanger}`} aria-hidden />;
+}
+
 function Banner({ tab }: { tab: Tab }) {
   const pending = useAutoReconnect((r) => r.pending[tab.id]);
   const seconds = useSecondsUntil(pending?.at);
   if (pending && (tab.state === 'disconnected' || tab.state === 'error')) {
     return (
       <div className={s.banner} role="status">
+        <BannerIcon state={tab.state} />
         <span className={s.bannerText}>
           {t.terminal.reconnectIn(seconds, pending.attempt, MAX_ATTEMPTS)}
           {tab.reason ? ` — ${tab.reason}` : ''}
@@ -66,6 +74,7 @@ function Banner({ tab }: { tab: Tab }) {
   if (tab.state === 'disconnected' || tab.state === 'error') {
     return (
       <div className={s.banner} role="status">
+        <BannerIcon state={tab.state} />
         <span className={s.bannerText}>
           {t.terminal.disconnected}
           {tab.reason ? ` — ${tab.reason}` : ''}
@@ -82,6 +91,7 @@ function Banner({ tab }: { tab: Tab }) {
   if (tab.state === 'closed') {
     return (
       <div className={s.banner} role="status">
+        <BannerIcon state={tab.state} />
         <span className={s.bannerText}>{t.terminal.exited(tab.exitCode)}</span>
         <Button onClick={() => void closeTab(tab.id)}>{t.terminal.closeTab}</Button>
       </div>
@@ -117,6 +127,7 @@ export function Workspace() {
   const settings = useWorkspace((w) => w.view === 'settings');
   const newTabShortcut = useShortcutLabel('newTab');
   const shells = useShells((s) => s.shells);
+  const defaultShell = useUi((u) => u.settings?.defaultShell);
   const newLocal = useMemo(
     () =>
       shells.map((shell) => ({
@@ -144,6 +155,16 @@ export function Workspace() {
               </span>
               <p className={app.emptyTitle}>{t.terminal.emptyTitle}</p>
               <p className={app.emptyHint}>{t.terminal.emptyHint(newTabShortcut)}</p>
+              {defaultShell && (
+                <Button
+                  variant="primary"
+                  className={app.emptyAction}
+                  onClick={() => void openLocal(defaultShell)}
+                >
+                  <TerminalIcon />
+                  {t.terminal.emptyAction}
+                </Button>
+              )}
             </div>
           )}
           {tabs.map((tab) =>

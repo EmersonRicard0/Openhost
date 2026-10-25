@@ -96,6 +96,10 @@
   margin: 0;
 }
 
+.emptyAction {
+  margin-top: 14px;
+}
+
 .fullscreen {
   display: grid;
   grid-template-areas:

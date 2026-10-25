@@ -1,11 +1,12 @@
 // Erros e avisos na interface (FR-030: nada vai para arquivo de log). Erros dizem a causa, o
 // código e oferecem "Copiar detalhes" (FR-174).
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { create } from 'zustand';
 import type { AppError } from '@shared/ipc/errors';
 import { ERROR_CAUSES, errorDetails } from '../i18n/errors';
 import { t } from '../i18n/pt-BR';
 import { CheckIcon, CloseIcon, CopyIcon, WarningIcon } from './icons';
+import { useExitGhost } from './motion';
 import s from './ui.module.css';
 
 interface ToastItem {
@@ -95,38 +96,47 @@ function ErrorExtra({ error, at }: { error: AppError; at: Date }) {
   );
 }
 
+function ToastCard({ item }: { item: ToastItem }) {
+  const { dismiss, hold } = useToasts();
+  const ref = useRef<HTMLDivElement>(null);
+  useExitGhost(ref);
+  return (
+    <div
+      ref={ref}
+      role={item.kind === 'error' ? 'alert' : undefined}
+      className={`${s.toast} raised`}
+      onMouseEnter={() => {
+        hold(item.id, true);
+      }}
+      onMouseLeave={() => {
+        hold(item.id, false);
+      }}
+    >
+      {item.kind === 'error' && <WarningIcon className={s.toastErrorIcon} />}
+      <span className={s.toastBody}>
+        <span className={item.error ? s.toastTitle : undefined}>{item.text}</span>
+        {item.error && <ErrorExtra error={item.error} at={item.at} />}
+      </span>
+      <button
+        type="button"
+        className={`${s.button} ${s.ghost} ${s.icon}`}
+        aria-label={t.common.close}
+        onClick={() => {
+          dismiss(item.id);
+        }}
+      >
+        <CloseIcon />
+      </button>
+    </div>
+  );
+}
+
 export function Toasts() {
-  const { items, dismiss, hold } = useToasts();
+  const items = useToasts((st) => st.items);
   return (
     <div className={s.toasts} role="status" aria-live="polite">
       {items.map((item) => (
-        <div
-          key={item.id}
-          role={item.kind === 'error' ? 'alert' : undefined}
-          className={`${s.toast} raised`}
-          onMouseEnter={() => {
-            hold(item.id, true);
-          }}
-          onMouseLeave={() => {
-            hold(item.id, false);
-          }}
-        >
-          {item.kind === 'error' && <WarningIcon className={s.toastErrorIcon} />}
-          <span className={s.toastBody}>
-            <span className={item.error ? s.toastTitle : undefined}>{item.text}</span>
-            {item.error && <ErrorExtra error={item.error} at={item.at} />}
-          </span>
-          <button
-            type="button"
-            className={`${s.button} ${s.ghost} ${s.icon}`}
-            aria-label={t.common.close}
-            onClick={() => {
-              dismiss(item.id);
-            }}
-          >
-            <CloseIcon />
-          </button>
-        </div>
+        <ToastCard key={item.id} item={item} />
       ))}
     </div>
   );
