@@ -3,8 +3,10 @@ package vault
 import (
 	"bytes"
 	"database/sql"
+	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"shellvault/internal/apperr"
@@ -80,9 +82,13 @@ func TestUnlockLockAndReopen(t *testing.T) {
 	addHosts(t, s, hostA)
 	var events []State
 	s.OnStatus(func(st Status) { events = append(events, st.State) })
+	dek := s.dek
 	s.Lock()
 	if s.dek != nil || s.content != nil {
 		t.Fatal("bloquear não descartou chave e conteúdo")
+	}
+	if !bytes.Equal(dek, make([]byte, len(dek))) {
+		t.Fatal("bloquear não zerou os bytes da DEK")
 	}
 	_, err := s.Read()
 	wantCode(t, err, apperr.VaultLocked)
@@ -373,5 +379,24 @@ func TestColorSchemeStoreDeleteAndSeedRefresh(t *testing.T) {
 	}
 	if !found {
 		t.Fatal("builtin da marca ausente após reabrir")
+	}
+}
+
+func TestSaveColorSchemeReportsDuplicateName(t *testing.T) {
+	s := openTest(t, t.TempDir())
+	first := brandScheme()
+	first.ID, first.Name, first.Origin = "00000000-0000-4000-8000-0000000000b1", "Nome repetido", model.SchemeCustom
+	if err := s.SaveColorScheme(first); err != nil {
+		t.Fatal(err)
+	}
+	second := first
+	second.ID = "00000000-0000-4000-8000-0000000000b2"
+	err := s.SaveColorScheme(second)
+	if apperr.CodeOf(err) != apperr.AlreadyExists {
+		t.Fatalf("conflito = %v", err)
+	}
+	var appErr *apperr.Error
+	if !errors.As(err, &appErr) || !strings.Contains(appErr.Detail, first.Name) {
+		t.Fatalf("detalhe = %v", err)
 	}
 }

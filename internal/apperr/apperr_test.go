@@ -23,7 +23,7 @@ func TestEveryCodeHasMessage(t *testing.T) {
 }
 
 func TestNewCodesExist(t *testing.T) {
-	for _, c := range []Code{NoCommonAlgorithm, AgentUnavailable, SchemeInvalid, InUse, VaultMigrationFailed} {
+	for _, c := range []Code{NoCommonAlgorithm, AgentUnavailable, SchemeInvalid, AlreadyExists, InUse, VaultMigrationFailed} {
 		if _, ok := Messages[c]; !ok {
 			t.Errorf("código novo %s ausente", c)
 		}
@@ -52,6 +52,28 @@ func TestSanitizeNeverLeaksOriginalText(t *testing.T) {
 	}
 	if CodeOf(err) != Internal {
 		t.Fatalf("erro desconhecido deveria virar INTERNAL, veio %s", CodeOf(err))
+	}
+}
+
+func TestSanitizeRedactsCommonCredentialShapes(t *testing.T) {
+	cases := []string{
+		`falhou: api_key="api-super-secreta"`,
+		`curl --password senha-da-cli https://example.com`,
+		`Authorization: Bearer token-do-cabecalho`,
+		`ssh://usuario:senha-na-url@example.com/repositorio`,
+		`resposta incluiu ghp_1234567890abcdefghijklmn`,
+		"-----BEGIN OPENSSH PRIVATE KEY-----\nsegredo\n-----END OPENSSH PRIVATE KEY-----",
+	}
+	for _, input := range cases {
+		got := redact(input)
+		if !strings.Contains(got, "[REDACTED") {
+			t.Errorf("não removeu segredo de %q: %q", input, got)
+		}
+		for _, secret := range []string{"api-super-secreta", "senha-da-cli", "token-do-cabecalho", "senha-na-url", "ghp_1234567890abcdefghijklmn", "\nsegredo\n"} {
+			if strings.Contains(got, secret) {
+				t.Errorf("segredo %q vazou em %q", secret, got)
+			}
+		}
 	}
 }
 

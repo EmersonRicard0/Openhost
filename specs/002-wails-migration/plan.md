@@ -90,6 +90,7 @@ autenticação SSH (agente, algoritmos legados), ponte (novo mecanismo).
 | Colagem de comandos perigosos | Confirmação para várias linhas com caracteres de controle exibidos escapados |
 | Segredos residuais em memória | DEK/KEK em `[]byte` zerados no bloqueio; strings não zeráveis — risco aceito como na 001 |
 | Crash dumps do WebView2 com conteúdo de memória | `--disable-breakpad`/`--disable-crash-reporter`; teste varre o diretório de dados |
+| Autofill do WebView2 persistir formulários e chaves em claro | Desabilitar autofill geral e salvamento de senhas via `ICoreWebView2Settings4`; remover `Web Data` e seus sidecars legados antes de criar o WebView |
 | Binário de shell falso no PATH | Caminho absoluto em `%SystemRoot%\System32` (como na 001) |
 
 ## Project Structure

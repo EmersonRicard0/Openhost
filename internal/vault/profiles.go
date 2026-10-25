@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"strconv"
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/model"
@@ -284,6 +285,15 @@ func (s *Store) ColorSchemes() ([]model.ColorScheme, error) {
 func (s *Store) SaveColorScheme(item model.ColorScheme) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	var existingID string
+	err := s.db.QueryRow(`SELECT id FROM color_schemes WHERE name = ?`, item.Name).Scan(&existingID)
+	if err == nil && existingID != item.ID {
+		return &apperr.Error{Code: apperr.AlreadyExists, Message: apperr.Messages[apperr.AlreadyExists],
+			Detail: "já existe um esquema com o nome " + strconv.Quote(item.Name)}
+	}
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return err
+	}
 	if err := putColorScheme(s.db, item); err != nil {
 		return apperr.New(apperr.InvalidInput)
 	}

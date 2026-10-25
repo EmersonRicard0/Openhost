@@ -1,7 +1,9 @@
 package domain
 
 import (
+	"errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"shellvault/internal/apperr"
@@ -133,6 +135,48 @@ func TestBuiltinSchemeIsImmutableAndSchemeInUseCannotBeRemoved(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantCode(t, profiles.RemoveScheme(custom.ID), apperr.InUse)
+}
+
+func TestImportedSchemeGetsUniqueNameAndUserDuplicatesFail(t *testing.T) {
+	_, profiles := testProfiles(t)
+	items, err := profiles.ListSchemes()
+	if err != nil {
+		t.Fatal(err)
+	}
+	imported := items[0]
+	imported.ID, imported.Name, imported.Origin = "", "Fixture WT", model.SchemeImported
+	first, err := profiles.SaveScheme(imported)
+	if err != nil || first.Name != "Fixture WT" {
+		t.Fatalf("primeira importação = %+v, %v", first, err)
+	}
+	imported.ID = ""
+	second, err := profiles.SaveScheme(imported)
+	if err != nil || second.Name != "Fixture WT (2)" || second.ID == first.ID {
+		t.Fatalf("segunda importação = %+v, %v", second, err)
+	}
+	imported.ID = ""
+	third, err := profiles.SaveScheme(imported)
+	if err != nil || third.Name != "Fixture WT (3)" {
+		t.Fatalf("terceira importação = %+v, %v", third, err)
+	}
+
+	custom, err := profiles.DuplicateScheme(items[0].ID, "Nome exclusivo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = profiles.DuplicateScheme(items[0].ID, custom.Name)
+	if apperr.CodeOf(err) != apperr.AlreadyExists {
+		t.Fatalf("duplicação com nome repetido = %v", err)
+	}
+	custom.Name = first.Name
+	_, err = profiles.SaveScheme(custom)
+	if apperr.CodeOf(err) != apperr.AlreadyExists {
+		t.Fatalf("renomeação para nome repetido = %v", err)
+	}
+	var appErr *apperr.Error
+	if !errors.As(err, &appErr) || !strings.Contains(appErr.Detail, first.Name) {
+		t.Fatalf("detalhe do conflito = %v", err)
+	}
 }
 
 func TestProfilesPersistAcrossReopen(t *testing.T) {
