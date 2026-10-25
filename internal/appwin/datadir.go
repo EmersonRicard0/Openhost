@@ -35,10 +35,13 @@ func WebViewDir(dataDir string) string {
 
 // ClearWebViewAutofillData remove dados que versões anteriores do WebView2 possam ter salvo em
 // claro. Deve rodar antes de criar o WebView; falhar fechado evita abrir o app mantendo segredos.
+// Arquivo em uso significa outra instância aberta, que já limpou ao iniciar: a trava de instância
+// única do Wails vai só trazer aquela janela para a frente.
 func ClearWebViewAutofillData(dataDir string) error {
 	profile := filepath.Join(WebViewDir(dataDir), "EBWebView", "Default")
 	for _, name := range []string{"Web Data", "Web Data-journal", "Web Data-wal", "Web Data-shm"} {
-		if err := os.Remove(filepath.Join(profile, name)); err != nil && !errors.Is(err, os.ErrNotExist) {
+		err := os.Remove(filepath.Join(profile, name))
+		if err != nil && !errors.Is(err, os.ErrNotExist) && !fileInUse(err) {
 			return err
 		}
 	}
