@@ -6,4 +6,5 @@ import "github.com/wailsapp/go-webview2/pkg/edge"
 // go-webview2 (third_party/go-webview2/PATCH.md): o loader ignora a variável de ambiente.
 func ConfigureWebView(extra []string) {
 	edge.ExtraBrowserArgs = WebViewArgs(extra)
+	edge.DisableAutofill = true
 }

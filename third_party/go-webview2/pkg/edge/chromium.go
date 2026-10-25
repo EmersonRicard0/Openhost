@@ -105,6 +105,10 @@ type Chromium struct {
 // WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS e o Wails v2 não expõe AdditionalBrowserArgs.
 var ExtraBrowserArgs []string
 
+// DisableAutofill faz o embedder desligar a coleta geral de formulários e o salvamento de senhas
+// diretamente em ICoreWebView2Settings4 assim que o CoreWebView2 é criado.
+var DisableAutofill bool
+
 func NewChromium() *Chromium {
 	e := &Chromium{AdditionalBrowserArgs: append([]string(nil), ExtraBrowserArgs...)}
 	/*
@@ -361,6 +365,14 @@ func (e *Chromium) CreateCoreWebView2ControllerCompleted(res uintptr, controller
 	}
 
 	e.webview.vtbl.AddRef.Call(uintptr(unsafe.Pointer(e.webview)))
+	if DisableAutofill {
+		if err = e.PutIsGeneralAutofillEnabled(false); err != nil {
+			e.errorCallback(err)
+		}
+		if err = e.PutIsPasswordAutosaveEnabled(false); err != nil {
+			e.errorCallback(err)
+		}
+	}
 	err = e.webview.AddWebMessageReceived(e.webMessageReceived, &token)
 	if err != nil {
 		e.errorCallback(err)

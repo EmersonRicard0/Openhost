@@ -42,6 +42,9 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if err := appwin.ClearWebViewAutofillData(dataDir); err != nil {
+		return fmt.Errorf("limpar dados antigos de preenchimento automático: %w", err)
+	}
 	appwin.ConfigureWebView(extraWebViewArgs)
 
 	services, err := bridge.NewServices(dataDir)

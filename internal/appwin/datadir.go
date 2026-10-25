@@ -33,6 +33,18 @@ func WebViewDir(dataDir string) string {
 	return filepath.Join(dataDir, "webview")
 }
 
+// ClearWebViewAutofillData remove dados que versões anteriores do WebView2 possam ter salvo em
+// claro. Deve rodar antes de criar o WebView; falhar fechado evita abrir o app mantendo segredos.
+func ClearWebViewAutofillData(dataDir string) error {
+	profile := filepath.Join(WebViewDir(dataDir), "EBWebView", "Default")
+	for _, name := range []string{"Web Data", "Web Data-journal", "Web Data-wal", "Web Data-shm"} {
+		if err := os.Remove(filepath.Join(profile, name)); err != nil && !errors.Is(err, os.ErrNotExist) {
+			return err
+		}
+	}
+	return nil
+}
+
 // baseWebViewArgs desliga o envio e a gravação de crash dumps do WebView2 (FR-030, R17).
 var baseWebViewArgs = []string{"--disable-breakpad", "--disable-crash-reporter"}
 
