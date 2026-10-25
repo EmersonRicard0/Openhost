@@ -67,6 +67,26 @@ function cellsOf(sessionId: string, needle: string): ProbeCell[] | null {
   return cells;
 }
 
+export interface ProbeLook {
+  fontFamily: string;
+  fontSize: number;
+  background: string;
+  foreground: string;
+}
+
+/** Perfil aplicado de fato ao xterm (E2E de personalização: sem reconectar). */
+function lookOf(sessionId: string): ProbeLook | null {
+  const term = terminals.get(sessionId);
+  if (!term) return null;
+  const { fontFamily, fontSize, theme } = term.options;
+  return {
+    fontFamily: fontFamily ?? '',
+    fontSize: fontSize ?? 0,
+    background: theme?.background ?? '',
+    foreground: theme?.foreground ?? '',
+  };
+}
+
 /** Seleciona `needle` na última linha onde aparece. */
 function select(sessionId: string, needle: string): boolean {
   const term = terminals.get(sessionId);
@@ -88,6 +108,7 @@ export function registerProbe(sessionId: string, term: Terminal): () => void {
         cells: cellsOf,
         select,
         size: sizeOf,
+        look: lookOf,
         resizes: (id: string) => resizes.get(id) ?? 0,
       }),
     });

@@ -101,12 +101,20 @@ export interface ProbeCell {
   fgColor: number;
 }
 
+export interface ProbeLook {
+  fontFamily: string;
+  fontSize: number;
+  background: string;
+  foreground: string;
+}
+
 /** Probe exposto pelo renderer em E2E (frontend/src/features/terminal/testProbe.ts). */
 interface Probe {
   text: (id: string) => string | null;
   cells: (id: string, needle: string) => ProbeCell[] | null;
   select: (id: string, needle: string) => boolean;
   size: (id: string) => { cols: number; rows: number } | null;
+  look: (id: string) => ProbeLook | null;
   resizes: (id: string) => number;
 }
 
@@ -133,6 +141,11 @@ export async function terminalCells(
 
 export async function terminalSize(page: Page, sessionId: string) {
   return page.evaluate((id) => window.__shellvaultProbe.size(id), sessionId);
+}
+
+/** Fonte, tamanho e cores aplicados ao xterm da aba. */
+export async function terminalLook(page: Page, sessionId: string): Promise<ProbeLook | null> {
+  return page.evaluate((id) => window.__shellvaultProbe.look(id), sessionId);
 }
 
 export async function resizeCount(page: Page, sessionId: string): Promise<number> {
