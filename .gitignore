@@ -30,3 +30,15 @@ frontend/wailsjs/go/
 # Gerados pelo wails build -nsis a cada execução
 build/windows/installer/tmp/
 build/windows/installer/wails_tools.nsh
+
+# Ferramentas locais dos agentes e medições avulsas
+.agents/
+specs/*/measure-last.json
+
+# Uso interno: ferramentas do Spec Kit e dos agentes, notas de coordenação e referências
+.claude/
+.specify/
+skills-lock.json
+specs/*/coordination.md
+docs/reference/
+frontend/package.json.md5
