@@ -45,6 +45,7 @@ type Options struct {
 	ConnectTimeout   time.Duration
 	Keepalive        time.Duration
 	LegacyAlgorithms bool
+	Term             string
 	KnownHosts       KnownHosts
 	// Agent abre a conexão com o ssh-agent; nil usa o do sistema.
 	Agent AgentOpener
@@ -54,6 +55,7 @@ type Options struct {
 type Client struct {
 	*ssh.Client
 	stop         chan struct{}
+	term         string
 	once         sync.Once
 	latencyNanos atomic.Int64
 }
@@ -81,6 +83,9 @@ func (x deadline) resume() { _ = x.conn.SetDeadline(time.Now().Add(x.d)) }
 func Dial(ctx context.Context, o Options, ix session.Interactor) (*Client, error) {
 	if o.ConnectTimeout <= 0 {
 		o.ConnectTimeout = 15 * time.Second
+	}
+	if !model.ValidTerm(o.Term) {
+		o.Term = model.DefaultTerm
 	}
 	endpoint := domain.EndpointOf(o.Address, o.Port)
 	known, err := o.KnownHosts.Known(endpoint)
@@ -129,7 +134,7 @@ func Dial(ctx context.Context, o Options, ix session.Interactor) (*Client, error
 		return nil, err
 	}
 	_ = conn.SetDeadline(time.Time{})
-	client := &Client{Client: ssh.NewClient(c, chans, reqs), stop: make(chan struct{})}
+	client := &Client{Client: ssh.NewClient(c, chans, reqs), stop: make(chan struct{}), term: o.Term}
 	if ctx.Err() != nil {
 		_ = client.Close()
 		return nil, ctx.Err()

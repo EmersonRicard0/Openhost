@@ -1,6 +1,7 @@
 package appwin
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -13,6 +14,17 @@ const preferencesKey = "preferences"
 
 var accentID = regexp.MustCompile(`^[a-z][a-z0-9-]{0,31}$`)
 
+var shortcutActions = map[string]struct{}{
+	"newTab": {}, "newPowerShell": {}, "closeTab": {}, "nextTab": {}, "prevTab": {},
+	"search": {}, "palette": {}, "zoomIn": {}, "zoomOut": {}, "zoomReset": {},
+	"toggleSidebar": {},
+}
+
+var (
+	shortcutFunctionKey = regexp.MustCompile(`^F(?:[1-9]|1[0-9]|2[0-4])$`)
+	shortcutCode        = regexp.MustCompile(`^(?:[A-Z]|Digit[0-9]|[A-Z][A-Za-z0-9]*)$`)
+)
+
 type WindowBounds struct {
 	Width     int  `json:"width"`
 	Height    int  `json:"height"`
@@ -22,15 +34,16 @@ type WindowBounds struct {
 }
 
 type Preferences struct {
-	Theme              string       `json:"theme"`
-	TerminalFontFamily string       `json:"terminalFontFamily"`
-	TerminalFontSize   int          `json:"terminalFontSize"`
-	Window             WindowBounds `json:"window"`
-	GlassEnabled       bool         `json:"glassEnabled"`
-	SidebarCollapsed   bool         `json:"sidebarCollapsed"`
-	Accent             string       `json:"accent"`
-	DefaultShell       string       `json:"defaultShell"`
-	CollapsedGroups    []string     `json:"collapsedGroups"`
+	Theme              string            `json:"theme"`
+	TerminalFontFamily string            `json:"terminalFontFamily"`
+	TerminalFontSize   int               `json:"terminalFontSize"`
+	Window             WindowBounds      `json:"window"`
+	GlassEnabled       bool              `json:"glassEnabled"`
+	SidebarCollapsed   bool              `json:"sidebarCollapsed"`
+	Accent             string            `json:"accent"`
+	DefaultShell       string            `json:"defaultShell"`
+	CollapsedGroups    []string          `json:"collapsedGroups"`
+	Shortcuts          map[string]string `json:"shortcuts"`
 }
 
 func DefaultPreferences() Preferences {
@@ -44,6 +57,7 @@ func DefaultPreferences() Preferences {
 		Accent:             "system",
 		DefaultShell:       "powershell",
 		CollapsedGroups:    []string{},
+		Shortcuts:          map[string]string{},
 	}
 }
 
@@ -117,7 +131,67 @@ func normalizedPreferences(preferences Preferences) Preferences {
 	if preferences.CollapsedGroups == nil {
 		preferences.CollapsedGroups = []string{}
 	}
+	if preferences.Shortcuts == nil || ValidateShortcuts(preferences.Shortcuts) != nil {
+		preferences.Shortcuts = map[string]string{}
+	}
 	return preferences
 }
 
 func ValidAccent(value string) bool { return value == "system" || accentID.MatchString(value) }
+
+// ValidateShortcuts valida somente as substituições gravadas. Uma combinação vazia desativa
+// a ação e combinações ausentes continuam usando o padrão definido pela interface.
+func ValidateShortcuts(shortcuts map[string]string) error {
+	used := make(map[string]string, len(shortcuts))
+	for action, combination := range shortcuts {
+		if _, ok := shortcutActions[action]; !ok {
+			return fmt.Errorf("ação de atalho desconhecida: %s", action)
+		}
+		if combination == "" {
+			continue
+		}
+		if err := validateShortcutCombination(combination); err != nil {
+			return fmt.Errorf("atalho de %s: %w", action, err)
+		}
+		if previous, exists := used[combination]; exists {
+			return fmt.Errorf("combinação %s duplicada entre %s e %s", combination, previous, action)
+		}
+		used[combination] = action
+	}
+	return nil
+}
+
+func validateShortcutCombination(combination string) error {
+	parts := strings.Split(combination, "+")
+	if len(parts) == 0 || parts[len(parts)-1] == "" {
+		return fmt.Errorf("combinação inválida: %s", combination)
+	}
+	code := parts[len(parts)-1]
+	modifiers := parts[:len(parts)-1]
+	wantModifier := 0
+	hasCtrlOrAlt := false
+	for _, modifier := range modifiers {
+		position := 0
+		switch modifier {
+		case "Ctrl":
+			position, hasCtrlOrAlt = 1, true
+		case "Alt":
+			position, hasCtrlOrAlt = 2, true
+		case "Shift":
+			position = 3
+		default:
+			return fmt.Errorf("modificador inválido em %s", combination)
+		}
+		if position <= wantModifier {
+			return fmt.Errorf("modificadores fora da ordem Ctrl+Alt+Shift em %s", combination)
+		}
+		wantModifier = position
+	}
+	if !shortcutCode.MatchString(code) || strings.HasPrefix(code, "Key") {
+		return fmt.Errorf("código de tecla inválido em %s", combination)
+	}
+	if !hasCtrlOrAlt && !shortcutFunctionKey.MatchString(code) {
+		return fmt.Errorf("%s precisa de Ctrl ou Alt", combination)
+	}
+	return nil
+}

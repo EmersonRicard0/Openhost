@@ -14,10 +14,13 @@ Operações sem marcação mantêm assinatura e semântica da 001.
   Métodos exportados que não fazem parte deste contrato MUST NOT existir nessas structs (teste
   de reflexão compara a lista de métodos com este documento).
 - A interface recebe sempre `Result<T>` =
-  `{ ok: true, value: T } | { ok: false, error: { code: ErrorCode, message: string } }`.
+  `{ ok: true, value: T } | { ok: false, error: { code: ErrorCode, message: string, op: string, detail: string } }`.
   Em Go, cada método devolve `(T, error)` (o gerador de bindings do Wails v2 não tipa
   genéricos) e todo erro passa por `apperr.Sanitize`: vira `*apperr.Error`, cujo texto é o JSON
-  `{code, message}` com mensagem fixa em pt-BR, sem nada do erro original. O adaptador
+  `{code, message, op, detail}`. `message` é fixa e curta em pt-BR; `op` identifica
+  `Serviço.Método`; `detail` preserva o encadeamento técnico depois de remover senhas,
+  passphrases, tokens e chaves privadas. Pânicos recuperados usam `INTERNAL` e colocam somente
+  a mensagem sanitizada do pânico em `detail`, nunca a pilha. O adaptador
   `frontend/src/bridge` converte a promessa rejeitada em `{ ok: false, error }`; nenhuma
   exceção chega aos componentes.
 - Toda entrada é validada no Go (tipos + regras do data-model); falha → `INVALID_INPUT`.
@@ -43,7 +46,7 @@ Como `vault.*` da 001, com:
 |---|---|
 | `GetStatus()` | **alterado**: `state` ganha `"migratable"` — existe `vault.svlt` da 001 e ainda não há `shellvault.db` |
 | `Unlock(password)` | **alterado**: no estado `migratable`, desbloqueia e migra (R5); falha da migração → `VAULT_MIGRATION_FAILED` e estado volta a `migratable` |
-| `GetSettings()` / `UpdateSettings(patch)` 🔒 | **alterado**: `VaultSettings` ganha `keepaliveSeconds` |
+| `GetSettings()` / `UpdateSettings(patch)` 🔒 | **alterado**: `VaultSettings` inclui `connectTimeoutSeconds` (5–120), `keepaliveSeconds`, `legacyDefault` e `term` (`xterm-256color` \| `xterm` \| `vt100` \| `linux`) |
 
 Evento `vault:state`: `VaultStatus` a cada mudança de estado (equivale ao `onStateChanged` da 001).
 
@@ -114,7 +117,7 @@ Como `app.*` da 001, com:
 | Método / evento | Mudança |
 |---|---|
 | `GetAppearance()` / `app:appearance` | igual |
-| `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups` |
+| `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups` e `shortcuts: Record<string, string>`; no patch, `shortcuts` substitui o mapa inteiro (`""` desativa a ação) |
 | `app:close-requested` / `ConfirmClose(bool)` | igual à 001 (FR-028) |
 | `WindowMinimise()`, `WindowToggleMaximise()`, `WindowClose()` **novo** | botões da barra de título própria (FR-133); `WindowClose` passa pela confirmação de FR-028 |
 | `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (FR-145) |

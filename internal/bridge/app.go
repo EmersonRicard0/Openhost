@@ -126,6 +126,15 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 				seen[id] = true
 				preferences.CollapsedGroups = append(preferences.CollapsedGroups, id)
 			}
+		case "shortcuts":
+			shortcuts, ok := bridgeStringMap(raw)
+			if !ok {
+				return appwin.Preferences{}, invalidPreference("shortcuts precisa ser um objeto de texto para texto")
+			}
+			if err := appwin.ValidateShortcuts(shortcuts); err != nil {
+				return appwin.Preferences{}, invalidPreference(err.Error())
+			}
+			preferences.Shortcuts = shortcuts
 		default:
 			return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
 		}
@@ -185,4 +194,39 @@ func bridgeStrings(value any) ([]string, bool) {
 	default:
 		return nil, false
 	}
+}
+
+func bridgeStringMap(value any) (map[string]string, bool) {
+	switch values := value.(type) {
+	case map[string]string:
+		return cloneStringMap(values), true
+	case map[string]any:
+		out := make(map[string]string, len(values))
+		for key, value := range values {
+			text, ok := value.(string)
+			if !ok {
+				return nil, false
+			}
+			out[key] = text
+		}
+		return out, true
+	default:
+		return nil, false
+	}
+}
+
+func cloneStringMap(values map[string]string) map[string]string {
+	out := make(map[string]string, len(values))
+	for key, value := range values {
+		out[key] = value
+	}
+	return out
+}
+
+func invalidPreference(detail string) error {
+	return clean(&apperr.Error{
+		Code:    apperr.InvalidInput,
+		Message: apperr.Messages[apperr.InvalidInput],
+		Detail:  detail,
+	})
 }

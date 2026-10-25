@@ -66,6 +66,7 @@ func run() error {
 		AssetServer:        &assetserver.Options{Assets: assets},
 		LogLevel:           logger.ERROR,
 		LogLevelProduction: logger.ERROR,
+		ErrorFormatter:     bridge.FormatError,
 		SingleInstanceLock: &options.SingleInstanceLock{
 			UniqueId: instanceID(dataDir),
 			// Segunda execução não abre outra janela: traz a existente para frente (FR-111).

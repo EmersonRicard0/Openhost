@@ -18,6 +18,7 @@ type Kind string
 const (
 	KindSSH   Kind = "ssh"
 	KindLocal Kind = "local"
+	KindSFTP  Kind = "sftp"
 )
 
 type State string
@@ -167,8 +168,14 @@ func NewManager(emit Emitter) *Manager {
 
 // Open cria a sessão e começa a conectar. O PTY só é pedido no primeiro Resize válido.
 func (m *Manager) Open(kind Kind, hostID *string, dial Dialer) string {
+	return m.OpenID(domain.NewID(), kind, hostID, dial)
+}
+
+// OpenID abre uma sessão com id previamente reservado. Serviços que precisam devolver o id
+// apenas depois de concluir uma conexão interativa (como SFTP) usam este caminho.
+func (m *Manager) OpenID(id string, kind Kind, hostID *string, dial Dialer) string {
 	ctx, cancel := context.WithCancel(context.Background())
-	s := &Session{ID: domain.NewID(), Kind: kind, HostID: hostID, m: m, ctx: ctx, cancel: cancel,
+	s := &Session{ID: id, Kind: kind, HostID: hostID, m: m, ctx: ctx, cancel: cancel,
 		state: StateConnecting, sized: make(chan struct{}), reconnect: make(chan Dialer, 1),
 		hostKey: make(chan bool, 1), prompt: make(chan []string, 1)}
 	s.out = NewBatcher(func(data string) { s.emit(EventData, DataEvent{SessionID: s.ID, Data: data}) })

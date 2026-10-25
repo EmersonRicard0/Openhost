@@ -2,7 +2,11 @@ package bridge
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"strings"
 	"testing"
+	"time"
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/domain"
@@ -36,13 +40,28 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		"accent":           "brand-violet",
 		"defaultShell":     "cmd",
 		"collapsedGroups":  []any{groupID},
+		"shortcuts":        map[string]any{"closeTab": "Ctrl+Alt+W", "palette": ""},
 	})
-	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 {
+	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 || updated.Shortcuts["closeTab"] != "Ctrl+Alt+W" {
 		t.Fatalf("preferências atualizadas %+v, %v", updated, err)
 	}
 	persisted, err := app.GetPreferences()
 	if err != nil || !persisted.SidebarCollapsed {
 		t.Fatalf("sidebarCollapsed não persistiu: %+v, %v", persisted, err)
+	}
+	if len(persisted.Shortcuts) != 2 || persisted.Shortcuts["palette"] != "" {
+		t.Fatalf("shortcuts não persistiram: %+v", persisted.Shortcuts)
+	}
+	replaced, err := app.UpdatePreferences(PreferencesPatch{"shortcuts": map[string]string{"search": "F5"}})
+	if err != nil || len(replaced.Shortcuts) != 1 || replaced.Shortcuts["search"] != "F5" {
+		t.Fatalf("substituição de shortcuts = %+v, %v", replaced.Shortcuts, err)
+	}
+	_, err = app.UpdatePreferences(PreferencesPatch{
+		"shortcuts": map[string]any{"newTab": "Ctrl+T", "closeTab": "Ctrl+T"},
+	})
+	var shortcutError *apperr.Error
+	if !errors.As(err, &shortcutError) || shortcutError.Code != apperr.InvalidInput || !strings.Contains(shortcutError.Detail, "duplicada") {
+		t.Fatalf("erro de shortcut = %+v", err)
 	}
 	wantBridgeCode(t, func() error {
 		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "bash"})
@@ -144,4 +163,44 @@ func TestSessionServiceLocalLifecycle(t *testing.T) {
 	_, err = sessions.OpenLocal("bash")
 	wantBridgeCode(t, err, apperr.InvalidInput)
 	wantBridgeCode(t, sessions.SendKeys(opened.SessionID, "ctrl+x"), apperr.InvalidInput)
+}
+
+func TestConnectionSettingsTermAndLegacyDefault(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	settings, err := services.vaultService.UpdateSettings(VaultSettingsPatch{
+		"connectTimeoutSeconds": 42,
+		"legacyDefault":         true,
+		"term":                  "linux",
+	})
+	if err != nil || settings.ConnectTimeoutSeconds != 42 || !settings.LegacyDefault || settings.Term != "linux" {
+		t.Fatalf("configurações = %+v, %v", settings, err)
+	}
+
+	var omitted domain.HostInput
+	if err := json.Unmarshal([]byte(`{"label":"Padrão","address":"localhost","port":22,"username":"noc","authMethod":"ask","credentialId":null,"groupId":null}`), &omitted); err != nil {
+		t.Fatal(err)
+	}
+	host, err := services.hostService.Create(omitted)
+	if err != nil || !host.LegacyAlgorithms {
+		t.Fatalf("host com padrão = %+v, %v", host, err)
+	}
+	options, err := services.sessionService.optionsForHost(host.ID)
+	if err != nil || options.ConnectTimeout != 42*time.Second || options.Term != "linux" || !options.LegacyAlgorithms {
+		t.Fatalf("opções SSH = %+v, %v", options, err)
+	}
+
+	var explicit domain.HostInput
+	if err := json.Unmarshal([]byte(`{"label":"Explícito","address":"localhost","port":22,"username":"noc","authMethod":"ask","credentialId":null,"groupId":null,"legacyAlgorithms":false}`), &explicit); err != nil {
+		t.Fatal(err)
+	}
+	host, err = services.hostService.Create(explicit)
+	if err != nil || host.LegacyAlgorithms {
+		t.Fatalf("host explícito = %+v, %v", host, err)
+	}
+
+	_, err = services.vaultService.UpdateSettings(VaultSettingsPatch{"term": "screen"})
+	wantBridgeCode(t, err, apperr.InvalidInput)
 }

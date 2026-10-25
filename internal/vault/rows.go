@@ -367,7 +367,7 @@ func decodeRow(c *model.Content, t, id string, cols []any, plain []byte) error {
 		if err := json.Unmarshal(plain, &p); err != nil {
 			return err
 		}
-		c.Settings = p
+		c.Settings = model.NormalizeVaultSettings(p)
 	}
 	return nil
 }

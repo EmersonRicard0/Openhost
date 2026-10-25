@@ -17,6 +17,24 @@ o que é embutido como **conteúdo** (ícones, fontes, esquemas de cores), com o
 | Tokyo Night | https://github.com/enkia/tokyo-night-vscode-theme | MIT | preset de cores embutido |
 | Catppuccin Mocha | https://github.com/catppuccin/catppuccin | MIT | preset de cores embutido |
 
+## Dependências npm de produção do frontend
+
+Versões e licenças conferidas nos manifestos instalados em `frontend/node_modules`.
+
+| Item | Origem | Licença | Uso |
+|---|---|---|---|
+| `@floating-ui/react-dom` 2.1.9 | https://github.com/floating-ui/floating-ui | MIT | posicionamento de menus e popovers |
+| `@xterm/addon-fit` 0.11.0 | https://github.com/xtermjs/xterm.js/tree/master/addons/addon-fit | MIT | ajuste do terminal ao contêiner |
+| `@xterm/addon-search` 0.16.0 | https://github.com/xtermjs/xterm.js/tree/master/addons/addon-search | MIT | busca no conteúdo do terminal |
+| `@xterm/addon-unicode11` 0.9.0 | https://github.com/xtermjs/xterm.js/tree/master/addons/addon-unicode11 | MIT | largura e segmentação de caracteres Unicode 11 |
+| `@xterm/addon-web-links` 0.12.0 | https://github.com/xtermjs/xterm.js/tree/master/addons/addon-web-links | MIT | detecção de links na saída do terminal |
+| `@xterm/addon-webgl` 0.19.0 | https://github.com/xtermjs/xterm.js/tree/master/addons/addon-webgl | MIT | renderização acelerada do terminal |
+| `@xterm/xterm` 6.0.0 | https://github.com/xtermjs/xterm.js | MIT | emulador de terminal na interface |
+| `lucide-react` 1.52.0 | https://github.com/lucide-icons/lucide | ISC | biblioteca de ícones React |
+| `react` 19.3.1 | https://github.com/react/react | MIT | componentes da interface |
+| `react-dom` 19.3.1 | https://github.com/react/react | MIT | renderização da interface no DOM |
+| `zustand` 5.0.16 | https://github.com/pmndrs/zustand | MIT | gerenciamento de estado da interface |
+
 ## Dependências Go
 
 Versões e licenças conferidas no `go.mod` e nos arquivos de licença dos módulos locais.

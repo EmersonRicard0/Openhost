@@ -227,8 +227,8 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 
 ### Implementation for User Story 6
 
-- [ ] T092 [US6] Implementar `internal/sftpx/browser.go` e `transfers.go` (`pkg/sftp` com escritas concorrentes, 3 transferências simultâneas, parciais, conflito substituir/pular/cancelar tudo, progresso a 10/s) para passar a T088 e T090
-- [ ] T093 [US6] Implementar `SftpService` (diálogos nativos para caminhos locais, eventos `sftp:transfer`/`sftp:conflict`)
+- [X] T092 [US6] Implementar `internal/sftpx/browser.go` e `transfers.go` (`pkg/sftp` com escritas concorrentes, 3 transferências simultâneas, parciais, conflito substituir/pular/cancelar tudo, progresso a 10/s) para passar a T088 e T090
+- [X] T093 [US6] Implementar `SftpService` (diálogos nativos para caminhos locais, eventos `sftp:transfer`/`sftp:conflict`)
 - [X] T094 [US6] Implementar `internal/domain/forwardrules.go`, `internal/forwarding/manager.go` e `ForwardService` (`ListActive`/`Deactivate` sem cofre) para passar a T089 e T091; T013 passa para todos os 8 serviços
 - [ ] T095 [US6] Adaptar `frontend/src/features/sftp/*` e `frontend/src/features/forwarding/*` ao adaptador
 - [ ] T096 [US6] Portar `scripts/bench-sftp.mjs` para `scripts/bench-sftp/main.go` e medir 1 GB (≥ resultado da 001 no mesmo ambiente)
@@ -244,11 +244,11 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 seção de conexão, shells detectados e opções de terminal que faltavam. Go com o Codex,
 frontend com o Claude.
 
-- [ ] T115 [P] Go: preferência `shortcuts` (`map[ação]combinação`, `""` = desativado) em `Preferences`/`Settings`, validada (ação conhecida, combinação no formato `Ctrl+Shift+T`, sem duplicata) e devolvida por `GetPreferences`; teste em `internal/appwin`
+- [X] T115 [P] Go: preferência `shortcuts` (`map[ação]combinação`, `""` = desativado) em `Preferences`/`Settings`, validada (ação conhecida, combinação no formato `Ctrl+Shift+T`, sem duplicata) e devolvida por `GetPreferences`; teste em `internal/appwin`
 - [X] T116 Frontend: `frontend/src/app/shortcuts.ts` passa a ler o mapa (padrões Ctrl+Shift de FR-173), seção Atalhos com gravação da combinação, "Desativado", recusa de conflito com o nome da ação e aviso para Ctrl+letra sem Shift; `shortcuts.test.ts`, `TabBar` e textos de ajuda atualizados
-- [ ] T117 [P] Go: erros da ponte com `op` (serviço.método) e `detail` técnico separado da mensagem, sem segredos; teste em `internal/bridge`
+- [X] T117 [P] Go: erros da ponte com `op` (serviço.método) e `detail` técnico separado da mensagem, sem segredos; teste em `internal/bridge`
 - [X] T118 Frontend: `toastError` com causa por código (`frontend/src/i18n/errors.ts`), código visível e "Copiar detalhes" (código, detalhe, operação, data/hora, versão); teste unitário
-- [ ] T119 [P] Go: `connectTimeoutSeconds`, `legacyDefault` e `term` (`xterm-256color` | `xterm` | `vt100` | `linux`) nas configurações; `term` vai no pedido de PTY e `legacyDefault` vale para hosts criados sem o campo; testes
+- [X] T119 [P] Go: `connectTimeoutSeconds`, `legacyDefault` e `term` (`xterm-256color` | `xterm` | `vt100` | `linux`) nas configurações; `term` vai no pedido de PTY e `legacyDefault` vale para hosts criados sem o campo; testes
 - [ ] T120 Frontend: seção "Conexão (SSH)" nas configurações (keepalive e tempo limite saem de "Cofre e segurança", padrão de algoritmos legados, `$TERM` por seleção); formulário de host novo usa `legacyDefault`
 - [ ] T121 [P] Go: detecção de shells — `pwsh` (PATH e `%ProgramFiles%\PowerShell\*`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe` e registro), distros WSL (`wsl.exe -l -q`, saída UTF-16) — em `LocalShell` com id estável; testes com leitores falsos
 - [ ] T122 Frontend: shell padrão em Geral e menu de nova aba com os shells detectados, cada um com ícone próprio
@@ -264,8 +264,8 @@ frontend com o Claude.
 - [ ] T099 [P] E2E `frontend/tests/e2e/performance.spec.ts` (SC-112): 20 abas, uma com `yes` contínuo, troca de aba < 100 ms; busca em 1.000 hosts < 200 ms
 - [ ] T100 [P] Criar `scripts/measure.ps1` (SC-109): tamanho do instalador e soma do *private working set* do app + processos WebView2 após 2 min ocioso com 1 aba; registrar em `specs/002-wails-migration/validation.md`; se > 150 MB, aplicar mitigações de research R19 e registrar números
 - [ ] T101 Revisão de segurança em `docs/security-review-002.md` conferindo cada linha da tabela do plan.md contra o código e corrigindo achados
-- [ ] T102 [P] `docs/licenses.md`: dependências Go (`go-licenses report`), npm do frontend, fontes OFL e origem dos presets de cor
-- [ ] T103 [P] Atualizar `README.md`: requisitos (Go, Wails, NSIS, Docker), `wails dev`, `wails build -nsis`, testes, migração do cofre da versão anterior
+- [X] T102 [P] `docs/licenses.md`: dependências Go (`go-licenses report`), npm do frontend, fontes OFL e origem dos presets de cor
+- [X] T103 [P] Atualizar `README.md`: requisitos (Go, Wails, NSIS, Docker), `wails dev`, `wails build -nsis`, testes, migração do cofre da versão anterior
 - [ ] T104 ⏸ usuário — Validar `quickstart.md` de ponta a ponta (cenários manuais, incluindo SC-102 nos equipamentos reais) e registrar em `specs/002-wails-migration/validation.md`
 - [ ] T105 Gerar instalador com `wails build -clean -nsis -trimpath -ldflags "-s -w"` e `scripts/check-release.mjs`; validar instalação limpa e desinstalação no Windows 11 e fallback sólido no Windows 10
 - [ ] T106 Remover a base Electron após a paridade validada: `src/main`, `src/preload`, `electron.vite.config.ts`, `electron-builder.yml`, configs TS da raiz, testes antigos já portados (`tests/unit`, `tests/integration`, `tests/e2e`), dependências do `package.json` da raiz (que fica só com scripts de teste/fixtures); tudo verde em `scripts/check.mjs`

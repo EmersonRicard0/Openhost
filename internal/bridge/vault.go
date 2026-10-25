@@ -94,6 +94,18 @@ func (s *VaultService) UpdateSettings(patch VaultSettingsPatch) (model.VaultSett
 					return apperr.New(apperr.InvalidInput)
 				}
 				next.KeepaliveSeconds = value
+			case "legacyDefault":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				next.LegacyDefault = value
+			case "term":
+				value, ok := raw.(string)
+				if !ok || !model.ValidTerm(value) {
+					return apperr.New(apperr.InvalidInput)
+				}
+				next.Term = value
 			default:
 				return apperr.New(apperr.InvalidInput)
 			}

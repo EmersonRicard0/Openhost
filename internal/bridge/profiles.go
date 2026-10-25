@@ -288,8 +288,9 @@ func (s *ProfileService) ExportScheme(id string) error {
 	return clean(os.WriteFile(path, data, 0o600))
 }
 
-func (s *ProfileService) ListFonts() ([]fonts.Font, error) {
-	items, err := s.listFonts()
+func (s *ProfileService) ListFonts() (items []fonts.Font, err error) {
+	defer apperr.Recover("ProfileService.ListFonts", &err)
+	items, err = s.listFonts()
 	return items, clean(err)
 }
 
