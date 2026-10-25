@@ -77,7 +77,7 @@ export function TextAreaField({ label, hint, error, ...rest }: TextAreaFieldProp
         {label}
       </label>
       <div className={s.inputWrap}>
-        <textarea id={id} className={s.input} spellCheck={false} {...rest} />
+        <textarea id={id} className={s.input} spellCheck={false} autoComplete="off" {...rest} />
       </div>
       {error ? (
         <span className={s.error}>{error}</span>

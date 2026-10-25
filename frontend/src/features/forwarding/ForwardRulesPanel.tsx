@@ -238,6 +238,7 @@ export function ForwardRulesPanel({ host, onClose }: { host: HostView; onClose: 
 
       {draft ? (
         <form
+          autoComplete="off"
           className={s.form}
           aria-label={draft.id ? t.forwarding.edit : t.forwarding.add}
           onSubmit={(e) => {

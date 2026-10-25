@@ -64,7 +64,8 @@ export async function launchApp(
   await page.waitForLoadState('domcontentloaded');
   const close = async (): Promise<void> => {
     await browser.close().catch(() => undefined);
-    if (child.exitCode === null) {
+    // Morto por sinal, exitCode fica null e signalCode preenchido: fechar de novo não espera.
+    if (child.exitCode === null && child.signalCode === null) {
       const exited = new Promise((r) => child.once('exit', r));
       child.kill();
       await exited;

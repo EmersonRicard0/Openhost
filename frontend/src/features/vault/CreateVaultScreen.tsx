@@ -31,7 +31,11 @@ export function CreateVaultScreen() {
 
   return (
     <div className={s.fullscreen}>
-      <form className={`${s.card} raised glass-edge`} onSubmit={(e) => void submit(e)}>
+      <form
+        className={`${s.card} raised glass-edge`}
+        autoComplete="off"
+        onSubmit={(e) => void submit(e)}
+      >
         <div className={s.brand}>
           <Logo size={44} />
         </div>

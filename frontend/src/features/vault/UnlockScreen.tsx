@@ -43,7 +43,12 @@ export function UnlockPanel() {
 
   return (
     <>
-      <form className={s.panel} onSubmit={(e) => void submit(e)} aria-label={text.title}>
+      <form
+        className={s.panel}
+        autoComplete="off"
+        onSubmit={(e) => void submit(e)}
+        aria-label={text.title}
+      >
         <h2 className={s.panelTitle}>
           <span className={s.panelIcon}>
             <LockIcon />

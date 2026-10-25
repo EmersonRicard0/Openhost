@@ -184,6 +184,7 @@ export function CredentialsDialog({ onClose }: { onClose: () => void }) {
       </div>
 
       <form
+        autoComplete="off"
         className={s.form}
         onSubmit={(e) => {
           e.preventDefault();

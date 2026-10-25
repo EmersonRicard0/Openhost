@@ -119,7 +119,7 @@ export function Dialog({
         style={width ? { width: `min(${width}px, calc(100vw - 48px))` } : undefined}
       >
         {onSubmit ? (
-          <form onSubmit={submit} style={{ display: 'contents' }}>
+          <form onSubmit={submit} autoComplete="off" style={{ display: 'contents' }}>
             {body}
           </form>
         ) : (

@@ -59,3 +59,17 @@ export function isMinimised(pid: number): boolean {
   );
   return out.trim() === 'True';
 }
+
+/** Espera os processos do WebView2 deste diretório de dados terminarem (eles saem depois do app). */
+export async function waitWebViewGone(dataDir: string, timeoutMs = 20_000): Promise<void> {
+  const needle = dataDir.replace(/'/g, "''");
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const count = powershell(
+      `@(Get-CimInstance Win32_Process -Filter "Name='msedgewebview2.exe'" | Where-Object { $_.CommandLine -like '*${needle}*' }).Count`,
+    ).trim();
+    if (count === '0') return;
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  throw new Error(`WebView2 de ${dataDir} não terminou em ${String(timeoutMs)} ms`);
+}
