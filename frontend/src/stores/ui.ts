@@ -24,7 +24,7 @@ const initialAppearance: Appearance = {
 function derive(appearance: Appearance, settings: Settings | null) {
   const preference = settings?.theme ?? 'system';
   return {
-    tokens: applyTheme(appearance, preference),
+    tokens: applyTheme(appearance, preference, settings?.accent),
     dark: !resolveMode(appearance, preference).endsWith('light'),
   };
 }

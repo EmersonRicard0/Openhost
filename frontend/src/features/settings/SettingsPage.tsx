@@ -15,6 +15,8 @@ import { shellInfo, useShells } from '../../stores/shells';
 import { useUi } from '../../stores/ui';
 import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
+import { DEFAULT_ACCENT, resolveAccent } from '../../theme/accent';
+import { BRAND_ACCENTS } from '../../theme/brand.gen';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import {
@@ -189,6 +191,35 @@ function TerminalBehavior({ settings }: { settings: Settings }) {
   );
 }
 
+/** Amostra da cor como ela fica no tema atual (a do Windows já ajustada para 4,5:1). */
+function AccentSwatch({ color }: { color: string }) {
+  return <span className={s.swatch} style={{ background: color }} aria-hidden="true" />;
+}
+
+function AccentSelect({ value }: { value: string }) {
+  const dark = useUi((u) => u.dark);
+  const systemAccent = useUi((u) => u.appearance.systemAccent);
+  const ids = [
+    ...(Object.keys(BRAND_ACCENTS) as (keyof typeof BRAND_ACCENTS)[]),
+    'system',
+  ] as const;
+  const options = ids.map((id) => ({
+    value: id,
+    label: id === 'system' ? t.settings.accentSystem : BRAND_ACCENTS[id].label,
+    icon: <AccentSwatch color={resolveAccent(id, dark, systemAccent)} />,
+  }));
+  const current = ids.find((id) => id === value) ?? DEFAULT_ACCENT;
+  return (
+    <Select
+      label={t.settings.accent}
+      hint={t.settings.accentHint}
+      value={current}
+      options={options}
+      onChange={(accent) => void saveUi({ accent })}
+    />
+  );
+}
+
 function AppearanceSection({ settings }: { settings: Settings }) {
   return (
     <Group>
@@ -198,6 +229,7 @@ function AppearanceSection({ settings }: { settings: Settings }) {
         options={THEMES}
         onChange={(theme) => void saveUi({ theme })}
       />
+      <AccentSelect value={settings.accent} />
       <Checkbox
         label={t.settings.glass}
         hint={t.settings.glassHint}

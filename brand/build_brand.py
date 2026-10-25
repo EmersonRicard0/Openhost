@@ -188,6 +188,11 @@ brand = {
             'Estado nunca depende só de cor: conectado, erro e aviso levam também ícone ou texto.',
         ],
     },
+    # Opções do seletor de destaque (T112); 'system' usa a cor do Windows ajustada para 4,5:1.
+    'accents': [
+        {'id': 'laranja', 'label': 'Laranja', 'dark': C['Laranja OpenHost'], 'light': C['Laranja profundo']},
+        {'id': 'grafite', 'label': 'Grafite', 'dark': '#F2F2F2', 'light': C['Tinta']},
+    ],
     'theme': {
         'light': {'bg': 'Papel', 'fg': 'Tinta', 'muted': 'Chumbo'},
         'dark': {'bg': 'Laca', 'fg': 'Névoa', 'muted': 'Cinza'},

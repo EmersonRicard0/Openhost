@@ -112,6 +112,9 @@ export const t = {
     themeSystem: 'Seguir o Windows',
     themeLight: 'Claro',
     themeDark: 'Escuro',
+    accent: 'Cor de destaque',
+    accentHint: 'Botões principais, foco e seleção. A cor do Windows é ajustada para continuar legível.',
+    accentSystem: 'Cor do Windows',
     glass: 'Efeito de vidro',
     glassHint:
       'Transparência com desfoque na barra lateral, nas abas e nos menus. Fica opaco em alto contraste ou com a transparência do Windows desligada.',

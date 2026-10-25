@@ -60,7 +60,7 @@ func DefaultPreferences() Preferences {
 		Window:             WindowBounds{Width: 1200, Height: 780},
 		GlassEnabled:       true,
 		SidebarCollapsed:   false,
-		Accent:             "system",
+		Accent:             "laranja",
 		DefaultShell:       "powershell",
 		CollapsedGroups:    []string{},
 		Shortcuts:          map[string]string{},

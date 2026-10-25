@@ -389,6 +389,20 @@
       "Estado nunca depende só de cor: conectado, erro e aviso levam também ícone ou texto."
     ]
   },
+  "accents": [
+    {
+      "id": "laranja",
+      "label": "Laranja",
+      "dark": "#FD7B17",
+      "light": "#B04E06"
+    },
+    {
+      "id": "grafite",
+      "label": "Grafite",
+      "dark": "#F2F2F2",
+      "light": "#111111"
+    }
+  ],
   "theme": {
     "light": {
       "bg": "Papel",

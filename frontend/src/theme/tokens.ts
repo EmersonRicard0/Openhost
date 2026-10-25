@@ -1,4 +1,7 @@
-// Tokens visuais próprios do ShellVault (FR-031–FR-034). Cores em rgba() ou #rrggbb.
+// Tokens visuais do OpenHost (FR-031–FR-034). Cores em rgba() ou #rrggbb; a paleta da marca vem
+// de brand.gen.ts (gerado de brand/brand.json) e o destaque de accent.ts.
+import { accentTokens, DEFAULT_ACCENT } from './accent';
+import { BRAND } from './brand.gen';
 
 export type ThemeMode =
   'glass-dark' | 'glass-light' | 'solid-dark' | 'solid-light' | 'high-contrast';
@@ -46,7 +49,7 @@ export interface ThemeTokens {
 }
 
 const darkTerminal = {
-  terminalBackground: '#050505',
+  terminalBackground: BRAND.pretoPiano,
   terminalForeground: '#e8e8e8',
   terminalCursor: '#f5f5f5',
   terminalSelection: 'rgba(255, 255, 255, 0.22)',
@@ -64,19 +67,14 @@ const lightTerminal = {
 };
 
 const dark = {
-  textPrimary: '#f5f5f5',
-  textSecondary: '#a6a6a6',
+  textPrimary: BRAND.nevoa,
+  textSecondary: BRAND.cinza,
   border: 'rgba(255, 255, 255, 0.09)',
   hover: 'rgba(255, 255, 255, 0.06)',
-  selected: 'rgba(255, 255, 255, 0.11)',
-  accent: '#f2f2f2',
-  accentGradient: 'linear-gradient(180deg, #ffffff 0%, #d0d0d0 100%)',
-  accentSoft: 'rgba(255, 255, 255, 0.18)',
-  accentText: '#0a0a0a',
-  danger: '#ff7b7b',
-  warning: '#f0b955',
-  success: '#4fd18b',
-  focus: '#e6e6e6',
+  ...accentTokens(DEFAULT_ACCENT, true, null),
+  danger: BRAND.perigo,
+  warning: BRAND.aviso,
+  success: BRAND.sucesso,
   windowCloseHover: '#c42b1c',
   windowCloseActive: '#b22a1d',
   windowCloseText: '#ffffff',
@@ -90,19 +88,14 @@ const dark = {
 };
 
 const light = {
-  textPrimary: '#111111',
-  textSecondary: '#4a4a4a',
+  textPrimary: BRAND.tinta,
+  textSecondary: BRAND.chumbo,
   border: 'rgba(0, 0, 0, 0.10)',
   hover: 'rgba(0, 0, 0, 0.05)',
-  selected: 'rgba(0, 0, 0, 0.08)',
-  accent: '#111111',
-  accentGradient: 'linear-gradient(180deg, #2e2e2e 0%, #050505 100%)',
-  accentSoft: 'rgba(0, 0, 0, 0.16)',
-  accentText: '#ffffff',
-  danger: '#c4322b',
-  warning: '#9a6400',
-  success: '#1f7a46',
-  focus: '#111111',
+  ...accentTokens(DEFAULT_ACCENT, false, null),
+  danger: BRAND.perigoProfundo,
+  warning: BRAND.avisoProfundo,
+  success: BRAND.sucessoProfundo,
   windowCloseHover: '#c42b1c',
   windowCloseActive: '#b22a1d',
   windowCloseText: '#ffffff',
@@ -131,14 +124,14 @@ export const THEMES: Record<ThemeMode, ThemeTokens> = {
   },
   'solid-dark': {
     ...dark,
-    surfaceGlass: '#0b0b0b',
-    surfaceRaised: '#171717',
+    surfaceGlass: BRAND.laca,
+    surfaceRaised: BRAND.superficie,
     glassEdge: 'linear-gradient(rgba(255,255,255,0.09), rgba(255,255,255,0.09))',
   },
   'solid-light': {
     ...light,
-    surfaceGlass: '#f3f3f1',
-    surfaceRaised: '#ffffff',
+    surfaceGlass: BRAND.papel,
+    surfaceRaised: BRAND.branco,
     glassEdge: 'linear-gradient(rgba(0,0,0,0.10), rgba(0,0,0,0.10))',
   },
   // Alto contraste: cores de sistema do Windows, sem translucidez.

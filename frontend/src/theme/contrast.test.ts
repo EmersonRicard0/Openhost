@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { contrast, over, parseColor } from '../../../frontend/src/theme/color';
-import { GLASS_MODES, SOLID_MODES, THEMES } from '../../../frontend/src/theme/tokens';
+import { themeTokens } from './apply';
+import { contrast, over, parseColor } from './color';
+import { GLASS_MODES, SOLID_MODES, THEMES } from './tokens';
 
 const WHITE = parseColor('#ffffff');
 const BLACK = parseColor('#000000');
@@ -50,5 +51,23 @@ describe('contraste do texto (FR-034)', () => {
         contrast(parseColor(t.terminalForeground), parseColor(t.terminalBackground)),
       ).toBeGreaterThanOrEqual(7);
     }
+  });
+
+  describe.each(['laranja', 'grafite', 'system'])('destaque %s', (accent) => {
+    it.each([...SOLID_MODES])('%s: anel, seleção e botão primário legíveis', (mode) => {
+      const dark = mode.endsWith('dark');
+      const t = themeTokens(
+        { glass: false, highContrast: false, dark, systemAccent: '#0078d4' },
+        dark ? 'dark' : 'light',
+        accent,
+      );
+      for (const bg of [t.surfaceGlass, t.surfaceRaised]) {
+        expect(contrast(parseColor(t.accent), parseColor(bg))).toBeGreaterThanOrEqual(MIN);
+        // Texto sobre a seleção (destaque translúcido) continua legível.
+        const selected = over(parseColor(t.selected), parseColor(bg));
+        expect(contrast(parseColor(t.textPrimary), selected)).toBeGreaterThanOrEqual(MIN);
+      }
+      expect(contrast(parseColor(t.accentText), parseColor(t.accent))).toBeGreaterThanOrEqual(MIN);
+    });
   });
 });

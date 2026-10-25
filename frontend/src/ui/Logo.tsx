@@ -24,7 +24,8 @@ export function Logo({
         fill="none"
         strokeWidth="1.1"
         strokeLinecap="round"
-        style={{ stroke: 'var(--brand-ring)' }}
+        // Sem o quadrado grafite, o anel segue o texto do tema (branco no escuro, tinta no claro).
+        style={{ stroke: mark ? 'var(--text-primary)' : 'var(--brand-ring)' }}
       />
       <path
         d="M10.45 9.9L12.6 12l-2.15 2.1"

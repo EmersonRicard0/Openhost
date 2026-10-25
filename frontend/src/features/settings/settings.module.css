@@ -332,3 +332,11 @@
     transform: translateX(6px);
   }
 }
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: var(--inset-swatch);
+}
