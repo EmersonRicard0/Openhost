@@ -30,6 +30,7 @@ export function Avatar({ text, size = 28, os = null }: AvatarProps) {
     <span
       className={s.avatar}
       aria-hidden="true"
+      data-os={os ?? undefined}
       style={
         {
           '--avatar-fill': avatarFill(hueOf(text)),

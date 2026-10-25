@@ -255,6 +255,12 @@ export interface SchemeImportResult {
   completed: string[];
 }
 
+/** O Go gravou um novo sistema detectado para o host (FR-178). */
+export interface HostsChangedEvent {
+  hostId: string;
+  detectedOs: OsId | null;
+}
+
 export interface ProfilesChangedEvent {
   scope: 'global' | 'host';
   hostId?: string;

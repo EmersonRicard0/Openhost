@@ -80,8 +80,8 @@ export const EVENT_NAMES = [
   'sftp:conflict',
   'forwards:status',
   'profiles:changed',
+  'hosts:changed',
   'app:appearance',
-  'profiles:changed',
   'app:close-requested',
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
@@ -141,6 +141,7 @@ function createApi(): ShellVaultApi {
       duplicate: (id) => call(H, 'Duplicate', id),
       remove: (id) => call(H, 'Remove', id),
       move: (id, groupId) => call(H, 'Move', id, groupId),
+      onChanged: ev('hosts:changed'),
     },
     groups: {
       list: () => call(H, 'ListGroups'),

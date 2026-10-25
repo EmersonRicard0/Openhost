@@ -19,6 +19,7 @@ import type {
   LocalShellInfo,
   SendKeysCombo,
   ProfilesChangedEvent,
+  HostsChangedEvent,
   PromptEvent,
   RemoteEntry,
   SchemeImportResult,
@@ -62,6 +63,7 @@ export interface ShellVaultApi {
     duplicate: (id: string) => R<HostView>;
     remove: (id: string) => R<void>;
     move: (id: string, groupId: string | null) => R<void>;
+    onChanged: On<HostsChangedEvent>;
   };
   groups: {
     list: () => R<Group[]>;
@@ -178,7 +180,10 @@ export const API_SHAPE = {
     ],
     events: ['onStateChanged'],
   },
-  hosts: { invoke: ['list', 'create', 'update', 'duplicate', 'remove', 'move'], events: [] },
+  hosts: {
+    invoke: ['list', 'create', 'update', 'duplicate', 'remove', 'move'],
+    events: ['onChanged'],
+  },
   groups: { invoke: ['list', 'create', 'rename', 'move', 'remove'], events: [] },
   credentials: {
     invoke: [

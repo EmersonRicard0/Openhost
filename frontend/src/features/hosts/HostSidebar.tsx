@@ -23,7 +23,12 @@ export function HostSidebar() {
   // Montado só com o cofre desbloqueado; ao bloquear, os dados saem da interface.
   useEffect(() => {
     void reload();
-    return clear;
+    // Sistema detectado numa conexão (FR-178): o avatar troca as iniciais pelo logo.
+    const off = window.shellvault.hosts.onChanged(() => void reload());
+    return () => {
+      off();
+      clear();
+    };
   }, [reload, clear]);
 
   return (
