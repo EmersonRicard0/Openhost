@@ -68,6 +68,22 @@ wails build -clean -nsis -trimpath -ldflags "-s -w"
 O executável mantém o nome interno `shellvault.exe`; o produto instalado é apresentado como
 OpenHost.
 
+## Publicar uma versão
+
+O workflow de release é disparado por tags no formato `vX.Y.Z`. Antes de publicar, mantenha o
+número em `wails.json` alinhado com a tag e confirme que `node scripts/check.mjs` está verde.
+
+Crie e envie a tag a partir do commit que será publicado:
+
+```powershell
+git tag v0.3.0
+git push origin v0.3.0
+```
+
+O GitHub Actions instala Go, Node.js, Wails e NSIS, gera o instalador, executa a verificação de
+release e anexa `OpenHost-amd64-installer.exe` ao release da tag. Tags `v0.*` e tags com sufixo,
+como `v1.0.0-rc.1`, são publicadas como pré-release.
+
 ## Testes
 
 Testes Go:

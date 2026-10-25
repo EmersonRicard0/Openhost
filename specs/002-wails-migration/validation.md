@@ -20,6 +20,24 @@ cada arquivo de `C:\Windows\Fonts` inteiro (322 MB alocados, vistos num perfil d
 não devolvia a memória com o app ocioso. A leitura passou a ser sob demanda
 (`sfnt.ParseCollectionReaderAt`); as mitigações de R19 no WebView2 não foram necessárias.
 
+## T105 — instalação e desinstalação
+
+Validação automatizada em 2026-10-25 no Windows 11 build 26200.7623, usando
+`scripts/check-installer.ps1` elevado e o instalador de 9,41 MiB gerado pelo build atual.
+
+| Verificação | Resultado |
+|---|---|
+| Instalação silenciosa e registro | OpenHost 0.2.0 instalado; `DisplayName`, `DisplayVersion`, `DisplayIcon` e desinstalador válidos |
+| Arquivos e atalhos | `OpenHost.exe`, `uninstall.exe`, Menu Iniciar e Área de Trabalho encontrados |
+| Inicialização | processo permaneceu ativo por 10 s com 6 descendentes WebView2 |
+| Segunda instância | segundo processo saiu com código 0; primeira janela permaneceu ativa |
+| Desinstalação silenciosa | diretório, atalhos e chave de registro removidos após o `Au_.exe` terminar |
+| Dados do usuário | hash da árvore `%APPDATA%\ShellVault` idêntico antes e depois |
+
+O fallback visual e o ciclo de instalação no Windows 10 permanecem pendentes de validação manual
+do usuário, pois essa versão do sistema não está disponível nesta máquina. Por isso T105 ainda
+não foi marcada como concluída em `tasks.md`.
+
 ## SC-006 / T096 — desempenho SFTP de 1 GB
 
 Medição em 2026-10-25 no mesmo host Windows e no mesmo contêiner OpenSSH local, com arquivo
