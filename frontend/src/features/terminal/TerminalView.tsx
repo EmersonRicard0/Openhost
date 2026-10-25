@@ -8,8 +8,10 @@ import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
 import type { Tab } from '../../stores/sessions';
 import { effectiveProfile, useProfiles } from '../../stores/profiles';
+import { useUi } from '../../stores/ui';
 import { useVault } from '../../stores/vault';
 import { fontSizeOf, useWorkspace } from '../../stores/workspace';
+import { ringBell } from './bell';
 import { attach } from './dataBus';
 import { needsConfirm } from './paste';
 import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from './profile';
@@ -73,6 +75,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       allowTransparency: initial.backgroundOpacity < 1,
       theme: schemeTheme(schemeOf(profiles.schemes, initial.colorSchemeId), initial),
       rightClickSelectsWord: false,
+      drawBoldTextInBrightColors: useUi.getState().settings?.boldBright ?? true,
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
@@ -118,6 +121,9 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     const onData = term.onData((data) => {
       void api.write(sessionId, data);
     });
+    const onBell = term.onBell(() => {
+      ringBell(behavior()?.bell ?? 'visual', container.parentElement ?? container);
+    });
 
     term.attachCustomKeyEventHandler((e) => {
       if (e.type !== 'keydown' || !e.ctrlKey || !e.shiftKey) return true;
@@ -129,10 +135,13 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       if (e.code === 'KeyV') return false;
       return true;
     });
-    // Selecionar copia (FR-143); por isso o clique direito só cola (FR-144).
+    // Opções de FR-177 lidas na hora do evento: mudar nas configurações vale sem recriar o xterm.
+    const behavior = () => useUi.getState().settings;
+    // Selecionar copia (FR-143), se ligado; o clique direito cola (FR-144), se ligado.
     let copyTimer: ReturnType<typeof setTimeout> | null = null;
     const onSelection = term.onSelectionChange(() => {
       if (copyTimer) clearTimeout(copyTimer);
+      if (!(behavior()?.copyOnSelect ?? false)) return;
       copyTimer = setTimeout(() => {
         const text = term.getSelection();
         if (text) void navigator.clipboard.writeText(text);
@@ -140,6 +149,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     });
     const onContextMenu = (e: MouseEvent) => {
       e.preventDefault();
+      if (!(behavior()?.rightClickPaste ?? true)) return;
       void navigator.clipboard.readText().then((text) => {
         pasteText(sessionId, term, text);
       });
@@ -188,6 +198,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       container.removeEventListener('contextmenu', onContextMenu);
       container.removeEventListener('paste', onPaste, true);
       onData.dispose();
+      onBell.dispose();
       detach();
       unregisterProbe();
       term.dispose();
@@ -219,6 +230,13 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       webgl?.dispose();
     };
   }, [active]);
+
+  // Negrito em cores claras (FR-177) muda ao vivo, como o perfil.
+  const boldBright = useUi((u) => u.settings?.boldBright ?? true);
+  useEffect(() => {
+    const term = termRef.current;
+    if (term) term.options.drawBoldTextInBrightColors = boldBright;
+  }, [boldBright]);
 
   // Override do host (FR-156): consultado com o cofre aberto.
   useEffect(() => {

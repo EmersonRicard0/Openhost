@@ -37,8 +37,11 @@ export function toAppError(reason: unknown, op?: string): AppError {
         code: parsed.code,
         message: parsed.message,
         ...where,
-        ...(typeof parsed.op === 'string' ? { op: parsed.op } : {}),
-        ...(typeof parsed.detail === 'string' ? { detail: parsed.detail } : {}),
+        // `op` vazio vindo do Go não apaga o da chamada, que o front sempre sabe.
+        ...(typeof parsed.op === 'string' && parsed.op !== '' ? { op: parsed.op } : {}),
+        ...(typeof parsed.detail === 'string' && parsed.detail !== ''
+          ? { detail: parsed.detail }
+          : {}),
       };
     }
   } catch {

@@ -35,6 +35,18 @@ describe('toAppError', () => {
     });
   });
 
+  it('op e detail vazios do Go não apagam a operação da chamada', () => {
+    const e = toAppError(
+      '{"code":"SCHEME_INVALID","message":"Inválido.","op":"","detail":""}',
+      'ProfileService.ImportScheme',
+    );
+    expect(e).toEqual({
+      code: 'SCHEME_INVALID',
+      message: 'Inválido.',
+      op: 'ProfileService.ImportScheme',
+    });
+  });
+
   it('rejeita código desconhecido', () => {
     expect(toAppError('{"code":"OUTRO","message":"x"}').code).toBe('INTERNAL');
   });

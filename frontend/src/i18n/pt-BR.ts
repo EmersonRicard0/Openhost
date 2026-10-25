@@ -115,6 +115,17 @@ export const t = {
     glass: 'Efeito de vidro',
     glassHint:
       'Transparência com desfoque na barra lateral, nas abas e nos menus. Fica opaco em alto contraste ou com a transparência do Windows desligada.',
+    behavior: 'Comportamento',
+    copyOnSelect: 'Copiar ao selecionar',
+    copyOnSelectHint: 'O texto selecionado vai para a área de transferência sem Ctrl+Shift+C.',
+    rightClickPaste: 'Colar com o botão direito',
+    bell: 'Sino do terminal',
+    bellOptions: { off: 'Desligado', sound: 'Som', visual: 'Piscar a tela' },
+    boldBright: 'Negrito em cores claras',
+    boldBrightHint: 'Texto em negrito usa a versão clara da cor, como nos terminais clássicos.',
+    autoReconnect: 'Reconectar automaticamente',
+    autoReconnectHint:
+      'Se a conexão SSH cair, tenta de novo após 1, 2, 4, 8, 16 e 30 s. Fica parado com o cofre bloqueado.',
     shortcutsIntro:
       'Os atalhos usam Ctrl+Shift para não roubar teclas do terminal (Ctrl+W, Ctrl+K, Ctrl+T e o Ctrl+B do tmux continuam indo para o servidor). Clique em uma combinação para trocá-la.',
     shortcutKeys: 'Teclas',
@@ -246,6 +257,9 @@ export const t = {
     authenticating: 'Autenticando…',
     disconnected: 'Desconectado',
     reconnect: 'Reconectar',
+    reconnectIn: (seconds: number, attempt: number, max: number) =>
+      `Reconectando em ${String(seconds)} s (tentativa ${String(attempt)} de ${String(max)})`,
+    reconnectCancel: 'Cancelar',
     exited: (code: number | null) =>
       code === null ? 'Processo encerrado' : `Processo encerrado (código ${code})`,
     closeTab: 'Fechar aba',

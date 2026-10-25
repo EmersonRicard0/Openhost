@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import { installBridge } from './bridge';
+import { installAutoReconnect } from './features/terminal/autoReconnect';
 import { subscribeData } from './features/terminal/dataBus';
 import { subscribeForwards } from './stores/forwards';
 import { subscribeInteractions } from './stores/interactions';
@@ -20,6 +21,7 @@ async function start(): Promise<void> {
   subscribeInteractions();
   subscribeTransfers();
   subscribeForwards();
+  installAutoReconnect();
   // Perfil antes da primeira aba, para o terminal já nascer com a fonte e as cores certas.
   await Promise.all([loadUi(), subscribeProfiles()]);
   const root = document.getElementById('root');

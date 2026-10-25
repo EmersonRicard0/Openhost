@@ -117,10 +117,20 @@
 
 /* Espaçamento e fundo vêm do perfil (FR-152). */
 .frame {
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   min-height: 0;
+}
+
+/* Sino visual (FR-177): véu claro sobre o terminal por um instante. */
+.bellFlash::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--selected);
+  pointer-events: none;
 }
 
 .xterm {

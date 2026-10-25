@@ -253,8 +253,8 @@ frontend com o Claude.
 - [X] T121 [P] Go: detecção de shells — `pwsh` (PATH e `%ProgramFiles%\PowerShell\*`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe` e registro), distros WSL (`wsl.exe -l -q`, saída UTF-16) — em `LocalShell` com id estável; testes com leitores falsos
 - [X] T122 Frontend: shell padrão em Geral e menu de nova aba com os shells detectados, cada um com ícone próprio
 - [X] T123 [P] Go: preferências `copyOnSelect`, `rightClickPaste`, `bell` (`off` | `sound` | `visual`), `boldBright` e `autoReconnect`; testes
-- [ ] T124 Frontend: opções de FR-177 na seção Terminal (por seleção) e comportamento no `TerminalView` (copiar ao selecionar, colar no botão direito, sino, `drawBoldTextInBrightColors`, reconexão automática com recuo)
-- [ ] T125 E2E `frontend/tests/e2e/daily-use.spec.ts`: Ctrl+W chega ao shell e a aba fica; Ctrl+Shift+W fecha; remapear e desativar persiste após reiniciar; erro mostra código e copia detalhes; `$TERM` escolhido aparece no `echo $TERM` do servidor de teste
+- [X] T124 Frontend: opções de FR-177 na seção Terminal (por seleção) e comportamento no `TerminalView` (copiar ao selecionar, colar no botão direito, sino, `drawBoldTextInBrightColors`, reconexão automática com recuo)
+- [X] T125 E2E `frontend/tests/e2e/daily-use.spec.ts`: Ctrl+W chega ao shell e a aba fica; Ctrl+Shift+W fecha; remapear e desativar persiste após reiniciar; erro mostra código e copia detalhes; `$TERM` escolhido aparece no `echo $TERM` do servidor de teste
 
 ---
 

@@ -141,7 +141,15 @@ export interface Settings {
   accent: string;
   /** Atalhos alterados pelo usuário: ação → combinação (`""` = desativado) (FR-173). */
   shortcuts?: Record<string, string>;
+  /** Comportamento do terminal (FR-177). */
+  copyOnSelect: boolean;
+  rightClickPaste: boolean;
+  bell: BellMode;
+  boldBright: boolean;
+  autoReconnect: boolean;
 }
+
+export type BellMode = 'off' | 'sound' | 'visual';
 
 export interface Appearance {
   glass: boolean;

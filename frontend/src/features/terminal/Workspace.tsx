@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { installShortcuts } from '../../app/shortcuts';
 import { currentKeymap, useShortcutLabel } from '../../app/useShortcuts';
 import { t } from '../../i18n/pt-BR';
@@ -12,6 +12,7 @@ import { ShellIcon } from '../../ui/ShellIcon';
 import { ConflictDialog } from '../sftp/ConflictDialog';
 import { SettingsPage } from '../settings/SettingsPage';
 import { SftpView } from '../sftp/SftpView';
+import { MAX_ATTEMPTS, stopAutoReconnect, useAutoReconnect } from './autoReconnect';
 import { runShortcut } from './commands';
 import { HostKeyDialog } from './HostKeyDialog';
 import { openLocal } from './openLocal';
@@ -23,7 +24,45 @@ import { TerminalView } from './TerminalView';
 import s from './terminal.module.css';
 import app from '../../app/app.module.css';
 
+/** Segundos até a próxima tentativa automática, atualizados a cada segundo. */
+function useSecondsUntil(at: number | undefined): number {
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (at === undefined) return;
+    const timer = setInterval(() => {
+      setNow(Date.now());
+    }, 1_000);
+    return () => {
+      clearInterval(timer);
+    };
+  }, [at]);
+  return at === undefined ? 0 : Math.max(0, Math.ceil((at - now) / 1_000));
+}
+
 function Banner({ tab }: { tab: Tab }) {
+  const pending = useAutoReconnect((r) => r.pending[tab.id]);
+  const seconds = useSecondsUntil(pending?.at);
+  if (pending && (tab.state === 'disconnected' || tab.state === 'error')) {
+    return (
+      <div className={s.banner} role="status">
+        <span className={s.bannerText}>
+          {t.terminal.reconnectIn(seconds, pending.attempt, MAX_ATTEMPTS)}
+          {tab.reason ? ` — ${tab.reason}` : ''}
+        </span>
+        <Button
+          onClick={() => {
+            stopAutoReconnect(tab.id);
+          }}
+        >
+          {t.terminal.reconnectCancel}
+        </Button>
+        <Button variant="primary" onClick={() => void reconnect(tab)}>
+          <RefreshIcon />
+          {t.terminal.reconnect}
+        </Button>
+      </div>
+    );
+  }
   if (tab.state === 'disconnected' || tab.state === 'error') {
     return (
       <div className={s.banner} role="status">

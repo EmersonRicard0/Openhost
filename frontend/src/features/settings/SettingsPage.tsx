@@ -2,6 +2,7 @@
 // conteúdo à direita e salvamento automático. As abas seguem vivas por baixo.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type {
+  BellMode,
   LocalShell,
   Settings,
   TermType,
@@ -97,10 +98,17 @@ function useAutosave<T>(desired: T | null, saved: T, save: (value: T) => void) {
   }, [key, savedKey]);
 }
 
+/** Vale na tela na hora; volta atrás se o Go recusar. */
 async function saveUi(patch: Partial<Omit<Settings, 'window'>>): Promise<void> {
+  const ui = useUi.getState();
+  const before = ui.settings;
+  if (before) ui.setSettings({ ...before, ...patch });
   const res = await window.shellvault.app.updateUiSettings(patch);
   if (res.ok) useUi.getState().setSettings(res.value);
-  else toastError(res.error);
+  else {
+    if (before) useUi.getState().setSettings(before);
+    toastError(res.error);
+  }
 }
 
 function Group({ title, children }: { title?: string; children: ReactNode }) {
@@ -135,6 +143,47 @@ function GeneralSection({ settings }: { settings: Settings }) {
         value={settings.defaultShell}
         options={options}
         onChange={(defaultShell) => void saveUi({ defaultShell })}
+      />
+    </Group>
+  );
+}
+
+const BELLS: { value: BellMode; label: string }[] = (['visual', 'sound', 'off'] as const).map(
+  (value) => ({ value, label: t.settings.bellOptions[value] }),
+);
+
+/** Opções de FR-177; valem na hora para todas as abas. */
+function TerminalBehavior({ settings }: { settings: Settings }) {
+  return (
+    <Group title={t.settings.behavior}>
+      <Checkbox
+        label={t.settings.copyOnSelect}
+        hint={t.settings.copyOnSelectHint}
+        checked={settings.copyOnSelect}
+        onChange={(e) => void saveUi({ copyOnSelect: e.target.checked })}
+      />
+      <Checkbox
+        label={t.settings.rightClickPaste}
+        checked={settings.rightClickPaste}
+        onChange={(e) => void saveUi({ rightClickPaste: e.target.checked })}
+      />
+      <Checkbox
+        label={t.settings.boldBright}
+        hint={t.settings.boldBrightHint}
+        checked={settings.boldBright}
+        onChange={(e) => void saveUi({ boldBright: e.target.checked })}
+      />
+      <Checkbox
+        label={t.settings.autoReconnect}
+        hint={t.settings.autoReconnectHint}
+        checked={settings.autoReconnect}
+        onChange={(e) => void saveUi({ autoReconnect: e.target.checked })}
+      />
+      <Select
+        label={t.settings.bell}
+        value={settings.bell}
+        options={BELLS}
+        onChange={(bell) => void saveUi({ bell })}
       />
     </Group>
   );
@@ -476,7 +525,12 @@ export function SettingsPage() {
           <h2 className={s.sectionTitle}>{t.settings.sections[section]}</h2>
           {settings && section === 'general' && <GeneralSection settings={settings} />}
           {settings && section === 'appearance' && <AppearanceSection settings={settings} />}
-          {section === 'terminal' && <GlobalTerminalSettings />}
+          {section === 'terminal' && (
+            <>
+              {settings && <TerminalBehavior settings={settings} />}
+              <GlobalTerminalSettings />
+            </>
+          )}
           {section === 'connection' && <ConnectionSection />}
           {section === 'vault' && <VaultSection />}
           {section === 'shortcuts' && <ShortcutsSection />}
