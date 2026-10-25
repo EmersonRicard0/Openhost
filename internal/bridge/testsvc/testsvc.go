@@ -6,6 +6,7 @@ package testsvc
 
 import (
 	"context"
+	"os"
 	"runtime"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -42,6 +43,12 @@ func (t *TestService) Restore() {
 func (t *TestService) SetSize(width, height int) {
 	wruntime.WindowUnmaximise(t.ctx())
 	wruntime.WindowSetSize(t.ctx(), width, height)
+}
+
+// SetDialogPath troca o arquivo devolvido pelos diálogos de abrir/salvar
+// (SHELLVAULT_TEST_DIALOG_PATH) sem reiniciar o app: importar e exportar no mesmo teste.
+func (t *TestService) SetDialogPath(path string) error {
+	return os.Setenv("SHELLVAULT_TEST_DIALOG_PATH", path)
 }
 
 func (t *TestService) Goroutines() int { return runtime.NumGoroutine() }

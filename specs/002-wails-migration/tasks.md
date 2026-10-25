@@ -230,7 +230,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 - [X] T092 [US6] Implementar `internal/sftpx/browser.go` e `transfers.go` (`pkg/sftp` com escritas concorrentes, 3 transferências simultâneas, parciais, conflito substituir/pular/cancelar tudo, progresso a 10/s) para passar a T088 e T090
 - [X] T093 [US6] Implementar `SftpService` (diálogos nativos para caminhos locais, eventos `sftp:transfer`/`sftp:conflict`)
 - [X] T094 [US6] Implementar `internal/domain/forwardrules.go`, `internal/forwarding/manager.go` e `ForwardService` (`ListActive`/`Deactivate` sem cofre) para passar a T089 e T091; T013 passa para todos os 8 serviços
-- [ ] T095 [US6] Adaptar `frontend/src/features/sftp/*` e `frontend/src/features/forwarding/*` ao adaptador
+- [X] T095 [US6] Adaptar `frontend/src/features/sftp/*` e `frontend/src/features/forwarding/*` ao adaptador
 - [ ] T096 [US6] Portar `scripts/bench-sftp.mjs` para `scripts/bench-sftp/main.go` e medir 1 GB (≥ resultado da 001 no mesmo ambiente)
 - [ ] T097 [US6] Portar `tests/e2e/sftp.spec.ts` e `tests/e2e/forwarding.spec.ts` para `frontend/tests/e2e/`
 
