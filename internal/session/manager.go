@@ -158,17 +158,20 @@ type Session struct {
 type Manager struct {
 	emit Emitter
 
-	mu       sync.Mutex
-	sessions map[string]*Session
+	mu           sync.Mutex
+	sessions     map[string]*Session
+	interactions map[string]*interaction
 }
 
 func NewManager(emit Emitter) *Manager {
-	return &Manager{emit: emit, sessions: map[string]*Session{}}
+	return &Manager{emit: emit, sessions: map[string]*Session{}, interactions: map[string]*interaction{}}
 }
+
+func newID() string { return domain.NewID() }
 
 // Open cria a sessão e começa a conectar. O PTY só é pedido no primeiro Resize válido.
 func (m *Manager) Open(kind Kind, hostID *string, dial Dialer) string {
-	return m.OpenID(domain.NewID(), kind, hostID, dial)
+	return m.OpenID(newID(), kind, hostID, dial)
 }
 
 // OpenID abre uma sessão com id previamente reservado. Serviços que precisam devolver o id
@@ -261,34 +264,46 @@ func (m *Manager) Reconnect(id string, dial Dialer) error {
 }
 
 func (m *Manager) AnswerHostKey(id string, accept bool) error {
-	s, err := m.get(id)
-	if err != nil {
-		return err
+	m.mu.Lock()
+	s := m.sessions[id]
+	ix := m.interactions[id]
+	m.mu.Unlock()
+	if s != nil {
+		return s.answer(StateAwaitingHostKey, func() bool {
+			select {
+			case s.hostKey <- accept:
+				return true
+			default:
+				return false
+			}
+		})
 	}
-	return s.answer(StateAwaitingHostKey, func() bool {
-		select {
-		case s.hostKey <- accept:
-			return true
-		default:
-			return false
-		}
-	})
+	if ix != nil {
+		return ix.answerHostKey(accept)
+	}
+	return apperr.New(apperr.NotFound)
 }
 
 // AnswerPrompt entrega as respostas; nil cancela a autenticação.
 func (m *Manager) AnswerPrompt(id string, answers []string) error {
-	s, err := m.get(id)
-	if err != nil {
-		return err
+	m.mu.Lock()
+	s := m.sessions[id]
+	ix := m.interactions[id]
+	m.mu.Unlock()
+	if s != nil {
+		return s.answer(StateAwaitingPrompt, func() bool {
+			select {
+			case s.prompt <- answers:
+				return true
+			default:
+				return false
+			}
+		})
 	}
-	return s.answer(StateAwaitingPrompt, func() bool {
-		select {
-		case s.prompt <- answers:
-			return true
-		default:
-			return false
-		}
-	})
+	if ix != nil {
+		return ix.answerPrompt(answers)
+	}
+	return apperr.New(apperr.NotFound)
 }
 
 // Close cancela a sessão, espera a goroutine terminar e emite term:closed, o último evento.
@@ -312,7 +327,15 @@ func (m *Manager) CloseAll() {
 		all = append(all, s)
 		delete(m.sessions, id)
 	}
+	interactions := make([]*interaction, 0, len(m.interactions))
+	for id, ix := range m.interactions {
+		interactions = append(interactions, ix)
+		delete(m.interactions, id)
+	}
 	m.mu.Unlock()
+	for _, ix := range interactions {
+		ix.cancel()
+	}
 	var wg sync.WaitGroup
 	for _, s := range all {
 		wg.Add(1)

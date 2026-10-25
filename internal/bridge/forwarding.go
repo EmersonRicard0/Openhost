@@ -1,6 +1,7 @@
 package bridge
 
 import (
+	"shellvault/internal/apperr"
 	"shellvault/internal/domain"
 	"shellvault/internal/forwarding"
 	"shellvault/internal/model"
@@ -95,7 +96,11 @@ func (s *ForwardService) Activate(id string) error {
 	if err != nil {
 		return clean(err)
 	}
-	return clean(s.manager.Activate(rule, host.Label))
+	err = s.manager.Activate(rule, host.Label)
+	if err != nil && apperr.CodeOf(err) == apperr.HostKeyRejected {
+		s.manager.Deactivate(rule.ID)
+	}
+	return clean(err)
 }
 
 // Deactivate não toca no cofre: encaminhamentos continuam controláveis após o bloqueio.
