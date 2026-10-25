@@ -3,6 +3,7 @@ import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'rea
 import { createPortal } from 'react-dom';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
+import { useShells } from '../../stores/shells';
 import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
 import {
@@ -11,7 +12,6 @@ import {
   SearchIcon,
   ServerIcon,
   SettingsIcon,
-  TerminalIcon,
   ThemeIcon,
 } from '../../ui/icons';
 import { connectHost } from '../hosts/connect';
@@ -19,6 +19,7 @@ import { openSftp } from '../sftp/openSftp';
 import { activeTerminalId, openSearch, toggleTheme } from '../terminal/commands';
 import { openLocal } from '../terminal/openLocal';
 import { useShortcutLabel } from '../../app/useShortcuts';
+import { ShellIcon } from '../../ui/ShellIcon';
 import { filterCommands, type Command } from './palette';
 import s from './palette.module.css';
 
@@ -33,28 +34,19 @@ function useCommands(): Entry[] {
   const lock = useVault((v) => v.lock);
   const setView = useWorkspace((w) => w.setView);
   const powershellKey = useShortcutLabel('newPowerShell') ?? '';
+  const shells = useShells((x) => x.shells);
   const searchKey = useShortcutLabel('search') ?? '';
 
   return useMemo(() => {
     const p = t.palette;
-    const actions: Entry[] = [
-      {
-        id: 'local:powershell',
-        label: p.newPowerShell,
-        hint: powershellKey,
-        group: 'action',
-        icon: <TerminalIcon />,
-        run: () => void openLocal('powershell'),
-      },
-      {
-        id: 'local:cmd',
-        label: p.newCmd,
-        hint: '',
-        group: 'action',
-        icon: <TerminalIcon />,
-        run: () => void openLocal('cmd'),
-      },
-    ];
+    const actions: Entry[] = shells.map((shell) => ({
+      id: `local:${shell.id}`,
+      label: p.newLocal(shell.label),
+      hint: shell.id === 'powershell' ? powershellKey : '',
+      group: 'action',
+      icon: <ShellIcon kind={shell.kind} label={shell.label} />,
+      run: () => void openLocal(shell.id),
+    }));
     if (activeTerminalId())
       actions.push({
         id: 'search',
@@ -115,7 +107,7 @@ function useCommands(): Entry[] {
       ];
     });
     return [...actions, ...hostEntries];
-  }, [unlocked, hosts, lock, setView, powershellKey, searchKey]);
+  }, [shells, unlocked, hosts, lock, setView, powershellKey, searchKey]);
 }
 
 export function CommandPalette() {

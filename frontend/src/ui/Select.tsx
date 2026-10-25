@@ -1,6 +1,6 @@
 // Seleção própria (FR-166): botão com lista flutuante, navegável por teclado e com busca pela
 // primeira letra. Mesmo visual dos outros campos; a lista usa o Popover (fica inteira na janela).
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { CheckIcon, ChevronDownIcon } from './icons';
 import { Popover } from './Popover';
 import s from './ui.module.css';
@@ -8,6 +8,8 @@ import s from './ui.module.css';
 export interface SelectOption<V extends string> {
   value: V;
   label: string;
+  /** Ícone à esquerda do rótulo, na lista e no valor escolhido. */
+  icon?: ReactNode;
 }
 
 export interface SelectProps<V extends string> {
@@ -136,7 +138,10 @@ export function Select<V extends string>({
         }}
         onKeyDown={onKeyDown}
       >
-        <span className={s.selectValue}>{current?.label ?? ''}</span>
+        <span className={s.selectValue}>
+          {current?.icon}
+          {current?.label ?? ''}
+        </span>
         <ChevronDownIcon className={s.selectChevron} />
       </button>
       {hint && <span className={s.hint}>{hint}</span>}
@@ -172,6 +177,7 @@ export function Select<V extends string>({
                   }}
                 >
                   <span className={s.selectCheck}>{option.value === value && <CheckIcon />}</span>
+                  {option.icon}
                   {option.label}
                 </li>
               ))}

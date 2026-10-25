@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Appearance, Settings } from '@shared/model/types';
 import { applyTheme, resolveMode } from '../theme/apply';
 import { THEMES, type ThemeTokens } from '../theme/tokens';
+import { useShells } from './shells';
 
 interface UiState {
   appearance: Appearance;
@@ -43,7 +44,11 @@ export const useUi = create<UiState>((set, get) => ({
 
 export async function loadUi(): Promise<void> {
   const api = window.shellvault.app;
-  const [appearance, settings] = await Promise.all([api.getAppearance(), api.getUiSettings()]);
+  const [appearance, settings] = await Promise.all([
+    api.getAppearance(),
+    api.getUiSettings(),
+    useShells.getState().load(),
+  ]);
   if (settings.ok) useUi.getState().setSettings(settings.value);
   if (appearance.ok) useUi.getState().setAppearance(appearance.value);
   api.onAppearanceChanged((a) => {

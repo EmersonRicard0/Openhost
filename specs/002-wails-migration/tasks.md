@@ -250,8 +250,8 @@ frontend com o Claude.
 - [X] T118 Frontend: `toastError` com causa por código (`frontend/src/i18n/errors.ts`), código visível e "Copiar detalhes" (código, detalhe, operação, data/hora, versão); teste unitário
 - [X] T119 [P] Go: `connectTimeoutSeconds`, `legacyDefault` e `term` (`xterm-256color` | `xterm` | `vt100` | `linux`) nas configurações; `term` vai no pedido de PTY e `legacyDefault` vale para hosts criados sem o campo; testes
 - [X] T120 Frontend: seção "Conexão (SSH)" nas configurações (keepalive e tempo limite saem de "Cofre e segurança", padrão de algoritmos legados, `$TERM` por seleção); formulário de host novo usa `legacyDefault`
-- [ ] T121 [P] Go: detecção de shells — `pwsh` (PATH e `%ProgramFiles%\PowerShell\*`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe` e registro), distros WSL (`wsl.exe -l -q`, saída UTF-16) — em `LocalShell` com id estável; testes com leitores falsos
-- [ ] T122 Frontend: shell padrão em Geral e menu de nova aba com os shells detectados, cada um com ícone próprio
+- [X] T121 [P] Go: detecção de shells — `pwsh` (PATH e `%ProgramFiles%\PowerShell\*`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe` e registro), distros WSL (`wsl.exe -l -q`, saída UTF-16) — em `LocalShell` com id estável; testes com leitores falsos
+- [X] T122 Frontend: shell padrão em Geral e menu de nova aba com os shells detectados, cada um com ícone próprio
 - [ ] T123 [P] Go: preferências `copyOnSelect`, `rightClickPaste`, `bell` (`off` | `sound` | `visual`), `boldBright` e `autoReconnect`; testes
 - [ ] T124 Frontend: opções de FR-177 na seção Terminal (por seleção) e comportamento no `TerminalView` (copiar ao selecionar, colar no botão direito, sino, `drawBoldTextInBrightColors`, reconexão automática com recuo)
 - [ ] T125 E2E `frontend/tests/e2e/daily-use.spec.ts`: Ctrl+W chega ao shell e a aba fica; Ctrl+Shift+W fecha; remapear e desativar persiste após reiniciar; erro mostra código e copia detalhes; `$TERM` escolhido aparece no `echo $TERM` do servidor de teste

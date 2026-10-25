@@ -215,6 +215,7 @@ function createApi(): ShellVaultApi {
     app: {
       getAppearance: () => call(A, 'GetAppearance'),
       getUiSettings: () => call(A, 'GetPreferences'),
+      listLocalShells: () => call(A, 'ListLocalShells'),
       updateUiSettings: (patch) => call(A, 'UpdatePreferences', patch),
       confirmClose: (confirmed) => call(A, 'ConfirmClose', confirmed),
       windowMinimise: () => call(A, 'WindowMinimise'),

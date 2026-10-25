@@ -1,12 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { installShortcuts } from '../../app/shortcuts';
 import { currentKeymap, useShortcutLabel } from '../../app/useShortcuts';
 import { t } from '../../i18n/pt-BR';
 import { closeTab, useSessions, type Tab } from '../../stores/sessions';
+import { useShells } from '../../stores/shells';
 import { useWorkspace } from '../../stores/workspace';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Button } from '../../ui/Button';
 import { RefreshIcon, TerminalIcon } from '../../ui/icons';
+import { ShellIcon } from '../../ui/ShellIcon';
 import { ConflictDialog } from '../sftp/ConflictDialog';
 import { SettingsPage } from '../settings/SettingsPage';
 import { SftpView } from '../sftp/SftpView';
@@ -71,22 +73,27 @@ function CloseTabConfirm() {
   );
 }
 
-const NEW_LOCAL = [
-  { label: t.terminal.powershell, onSelect: () => void openLocal('powershell') },
-  { label: t.terminal.cmd, onSelect: () => void openLocal('cmd') },
-];
-
 export function Workspace() {
   const { tabs, activeId } = useSessions();
   const settings = useWorkspace((w) => w.view === 'settings');
   const newTabShortcut = useShortcutLabel('newTab');
+  const shells = useShells((s) => s.shells);
+  const newLocal = useMemo(
+    () =>
+      shells.map((shell) => ({
+        label: shell.label,
+        icon: <ShellIcon kind={shell.kind} label={shell.label} />,
+        onSelect: () => void openLocal(shell.id),
+      })),
+    [shells],
+  );
 
   // Atalhos de FR-140/FR-173, capturados antes do xterm para não virarem caracteres de controle.
   useEffect(() => installShortcuts(runShortcut, currentKeymap), []);
 
   return (
     <>
-      <TabBar newTabItems={NEW_LOCAL} />
+      <TabBar newTabItems={newLocal} />
       <div className={`${app.content} solid`} data-terminal-area>
         {/* Sob a página de configurações as abas ficam escondidas, não desmontadas:
             sessões e tamanho do xterm seguem intactos (FR-168). */}

@@ -16,6 +16,7 @@ import type {
   HostKeyEvent,
   HostView,
   LocalShell,
+  LocalShellInfo,
   SendKeysCombo,
   ProfilesChangedEvent,
   PromptEvent,
@@ -140,6 +141,8 @@ export interface ShellVaultApi {
   app: {
     getAppearance: () => R<Appearance>;
     getUiSettings: () => R<Settings>;
+    /** Shells instalados, em ordem estável (FR-176). */
+    listLocalShells: () => R<LocalShellInfo[]>;
     updateUiSettings: (patch: Patch<Omit<Settings, 'window'>>) => R<Settings>;
     confirmClose: (confirmed: boolean) => R<void>;
     /** Botões da barra de título própria (FR-133); fechar passa pela confirmação de FR-028. */
@@ -244,6 +247,7 @@ export const API_SHAPE = {
     invoke: [
       'getAppearance',
       'getUiSettings',
+      'listLocalShells',
       'updateUiSettings',
       'confirmClose',
       'windowMinimise',

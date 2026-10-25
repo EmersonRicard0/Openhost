@@ -10,6 +10,7 @@ import type {
 } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useSessions } from '../../stores/sessions';
+import { shellInfo, useShells } from '../../stores/shells';
 import { useUi } from '../../stores/ui';
 import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
@@ -28,6 +29,7 @@ import {
 import { useSlidingIndicator } from '../../ui/motion';
 import { NumberField } from '../../ui/NumberField';
 import { Select } from '../../ui/Select';
+import { ShellIcon } from '../../ui/ShellIcon';
 import { toastError } from '../../ui/Toast';
 import { focusTerminal } from '../terminal/terminalRegistry';
 import { ChangePasswordDialog } from '../vault/ChangePasswordDialog';
@@ -52,11 +54,6 @@ const THEMES: { value: ThemePreference; label: string }[] = [
   { value: 'system', label: t.settings.themeSystem },
   { value: 'light', label: t.settings.themeLight },
   { value: 'dark', label: t.settings.themeDark },
-];
-
-const SHELLS: { value: LocalShell; label: string }[] = [
-  { value: 'powershell', label: t.settings.shellPowerShell },
-  { value: 'cmd', label: t.settings.shellCmd },
 ];
 
 const TERMS: { value: TermType; label: string }[] = (
@@ -116,12 +113,27 @@ function Group({ title, children }: { title?: string; children: ReactNode }) {
 }
 
 function GeneralSection({ settings }: { settings: Settings }) {
+  const shells = useShells((s) => s.shells);
+  const options: { value: LocalShell; label: string; icon: ReactNode }[] = shells.map((shell) => ({
+    value: shell.id,
+    label: shell.label,
+    icon: <ShellIcon kind={shell.kind} label={shell.label} />,
+  }));
+  // Shell salvo que sumiu da máquina (WSL removido, Git desinstalado) continua visível.
+  if (!shells.some((shell) => shell.id === settings.defaultShell)) {
+    const missing = shellInfo(settings.defaultShell);
+    options.push({
+      value: missing.id,
+      label: t.settings.shellMissing(missing.label),
+      icon: <ShellIcon kind={missing.kind} label={missing.label} />,
+    });
+  }
   return (
     <Group>
       <Select
         label={t.settings.defaultShell}
         value={settings.defaultShell}
-        options={SHELLS}
+        options={options}
         onChange={(defaultShell) => void saveUi({ defaultShell })}
       />
     </Group>

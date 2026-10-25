@@ -219,7 +219,17 @@ export interface ProfilesChangedEvent {
 // --- Sessões (só em memória) ------------------------------------------------
 
 export type SessionKind = 'ssh' | 'local' | 'sftp';
-export type LocalShell = 'powershell' | 'cmd';
+/** Id estável de shell local: `powershell`, `pwsh`, `cmd`, `gitbash` ou `wsl:<distro>`. */
+export type LocalShell = string;
+
+export type LocalShellKind = 'powershell' | 'pwsh' | 'cmd' | 'gitbash' | 'wsl';
+
+/** Shell detectado na máquina (o caminho do executável fica no Go). */
+export interface LocalShellInfo {
+  id: LocalShell;
+  label: string;
+  kind: LocalShellKind;
+}
 export type SendKeysCombo = 'ctrl+w' | 'ctrl+t' | 'ctrl+tab' | 'ctrl+k' | 'ctrl+b';
 
 export type SessionState =
