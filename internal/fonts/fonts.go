@@ -107,12 +107,15 @@ func fontExtension(name string) bool {
 	}
 }
 
+// familiesInFile lê só as tabelas que o sfnt pede: carregar os arquivos inteiros somava mais de
+// 300 MB de heap (C:\Windows\Fonts) que o GC não devolvia com o app ocioso (SC-109).
 func familiesInFile(path string) []string {
-	data, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil
 	}
-	collection, err := sfnt.ParseCollection(data)
+	defer file.Close()
+	collection, err := sfnt.ParseCollectionReaderAt(file)
 	if err != nil {
 		return nil
 	}
