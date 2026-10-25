@@ -19,6 +19,7 @@ type PTY interface {
 // Process é um shell local preparado; só inicia no Start, com o primeiro tamanho válido.
 type Process struct {
 	path string
+	args []string
 
 	mu       sync.Mutex
 	pty      PTY
@@ -30,11 +31,11 @@ type Process struct {
 }
 
 func New(shell Shell) (*Process, error) {
-	path, err := ShellPath(shell)
+	resolved, err := resolveShell(shell)
 	if err != nil {
 		return nil, err
 	}
-	return &Process{path: path, exited: make(chan struct{})}, nil
+	return &Process{path: resolved.path, args: append([]string{}, resolved.args...), exited: make(chan struct{})}, nil
 }
 
 func (p *Process) Path() string { return p.path }
@@ -48,7 +49,7 @@ func (p *Process) Start(cols, rows int, out io.Writer) error {
 		_ = pt.Close()
 		return err
 	}
-	cmd := pt.Command(p.path)
+	cmd := pt.Command(p.path, p.args...)
 	cmd.Env = os.Environ()
 	if home, err := os.UserHomeDir(); err == nil {
 		cmd.Dir = home

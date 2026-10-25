@@ -10,6 +10,7 @@ import (
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/domain"
+	"shellvault/internal/localpty"
 	"shellvault/internal/model"
 	"shellvault/internal/vault"
 )
@@ -29,7 +30,8 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 	app := services.appService
 
 	preferences, err := app.GetPreferences()
-	if err != nil || preferences.DefaultShell != "powershell" || !preferences.GlassEnabled || preferences.SidebarCollapsed {
+	if err != nil || preferences.DefaultShell != "powershell" || !preferences.GlassEnabled || preferences.SidebarCollapsed ||
+		preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect {
 		t.Fatalf("preferências %+v, %v", preferences, err)
 	}
 	groupID := "4ce66518-3068-4bef-ad0b-eb3f0141443d"
@@ -41,8 +43,14 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		"defaultShell":     "cmd",
 		"collapsedGroups":  []any{groupID},
 		"shortcuts":        map[string]any{"closeTab": "Ctrl+Alt+W", "palette": ""},
+		"copyOnSelect":     true,
+		"rightClickPaste":  false,
+		"bell":             "sound",
+		"boldBright":       false,
+		"autoReconnect":    true,
 	})
-	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 || updated.Shortcuts["closeTab"] != "Ctrl+Alt+W" {
+	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 || updated.Shortcuts["closeTab"] != "Ctrl+Alt+W" ||
+		!updated.CopyOnSelect || updated.RightClickPaste || updated.Bell != "sound" || updated.BoldBright || !updated.AutoReconnect {
 		t.Fatalf("preferências atualizadas %+v, %v", updated, err)
 	}
 	persisted, err := app.GetPreferences()
@@ -67,6 +75,14 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "bash"})
 		return err
 	}(), apperr.InvalidInput)
+	wantBridgeCode(t, func() error {
+		_, err := app.UpdatePreferences(PreferencesPatch{"bell": "beep"})
+		return err
+	}(), apperr.InvalidInput)
+	wantBridgeCode(t, func() error {
+		_, err := app.UpdatePreferences(PreferencesPatch{"copyOnSelect": "sim"})
+		return err
+	}(), apperr.InvalidInput)
 
 	var opened string
 	app.openURL = func(_ context.Context, url string) { opened = url }
@@ -74,6 +90,43 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		t.Fatalf("url %q, %v", opened, err)
 	}
 	wantBridgeCode(t, app.OpenExternalUrl("file:///C:/segredo"), apperr.InvalidInput)
+}
+
+func TestAppServiceLocalShellsAndMissingDefaultFallback(t *testing.T) {
+	services := testServices(t)
+	app := services.appService
+	app.localShells = func() []localpty.LocalShell {
+		return []localpty.LocalShell{
+			{ID: "powershell", Label: "Windows PowerShell", Kind: localpty.KindPowerShell},
+			{ID: "gitbash", Label: "Git Bash", Kind: localpty.KindGitBash},
+			{ID: "wsl:Ubuntu", Label: "Ubuntu", Kind: localpty.KindWSL},
+		}
+	}
+
+	shells, err := app.ListLocalShells()
+	if err != nil || len(shells) != 3 || shells[1].Kind != localpty.KindGitBash {
+		t.Fatalf("shells = %+v, %v", shells, err)
+	}
+	updated, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "wsl:Ubuntu"})
+	if err != nil || updated.DefaultShell != "wsl:Ubuntu" {
+		t.Fatalf("preferência = %+v, %v", updated, err)
+	}
+	wantBridgeCode(t, func() error {
+		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "pwsh"})
+		return err
+	}(), apperr.InvalidInput)
+
+	app.localShells = func() []localpty.LocalShell {
+		return []localpty.LocalShell{{ID: "powershell", Label: "Windows PowerShell", Kind: localpty.KindPowerShell}}
+	}
+	got, err := app.GetPreferences()
+	if err != nil || got.DefaultShell != "powershell" {
+		t.Fatalf("fallback = %+v, %v", got, err)
+	}
+	persisted, err := app.preferences.Get()
+	if err != nil || persisted.DefaultShell != "powershell" {
+		t.Fatalf("fallback persistido = %+v, %v", persisted, err)
+	}
 }
 
 func wantBridgeCode(t *testing.T, err error, code apperr.Code) {

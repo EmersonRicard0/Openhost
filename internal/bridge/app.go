@@ -8,6 +8,7 @@ import (
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/appwin"
+	"shellvault/internal/localpty"
 	"shellvault/internal/validate"
 )
 
@@ -20,6 +21,7 @@ type AppService struct {
 	appearance  *appwin.AppearanceMonitor
 	closeGuard  *appwin.CloseGuard
 	context     func() context.Context
+	localShells func() []localpty.LocalShell
 
 	minimise       func(context.Context)
 	toggleMaximise func(context.Context)
@@ -38,6 +40,7 @@ func newAppService(
 		appearance:  appearance,
 		closeGuard:  closeGuard,
 		context:     contextFn,
+		localShells: localpty.ListShells,
 		minimise:    wruntime.WindowMinimise,
 		toggleMaximise: func(ctx context.Context) {
 			wruntime.WindowToggleMaximise(ctx)
@@ -53,7 +56,21 @@ func (s *AppService) GetAppearance() (Appearance, error) {
 
 func (s *AppService) GetPreferences() (appwin.Preferences, error) {
 	preferences, err := s.preferences.Get()
-	return preferences, clean(err)
+	if err != nil {
+		return appwin.Preferences{}, clean(err)
+	}
+	if preferences.DefaultShell != string(localpty.PowerShell) && !shellAvailable(s.localShells(), preferences.DefaultShell) {
+		preferences.DefaultShell = string(localpty.PowerShell)
+		if err := s.preferences.Save(preferences); err != nil {
+			return appwin.Preferences{}, clean(err)
+		}
+	}
+	return preferences, nil
+}
+
+// ListLocalShells devolve os shells instalados para o menu de nova aba e para as preferências.
+func (s *AppService) ListLocalShells() ([]localpty.LocalShell, error) {
+	return s.localShells(), nil
 }
 
 func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferences, error) {
@@ -108,7 +125,7 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 			preferences.Accent = value
 		case "defaultShell":
 			value, ok := raw.(string)
-			if !ok || validate.OneOf(value, "powershell", "cmd") != nil {
+			if !ok || !localpty.ValidShellID(value) || !shellAvailable(s.localShells(), value) {
 				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
 			}
 			preferences.DefaultShell = value
@@ -135,6 +152,36 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 				return appwin.Preferences{}, invalidPreference(err.Error())
 			}
 			preferences.Shortcuts = shortcuts
+		case "copyOnSelect":
+			value, ok := raw.(bool)
+			if !ok {
+				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
+			}
+			preferences.CopyOnSelect = value
+		case "rightClickPaste":
+			value, ok := raw.(bool)
+			if !ok {
+				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
+			}
+			preferences.RightClickPaste = value
+		case "bell":
+			value, ok := raw.(string)
+			if !ok || validate.OneOf(value, "off", "sound", "visual") != nil {
+				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
+			}
+			preferences.Bell = value
+		case "boldBright":
+			value, ok := raw.(bool)
+			if !ok {
+				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
+			}
+			preferences.BoldBright = value
+		case "autoReconnect":
+			value, ok := raw.(bool)
+			if !ok {
+				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
+			}
+			preferences.AutoReconnect = value
 		default:
 			return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
 		}
@@ -144,6 +191,15 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 	}
 	s.appearance.EmitCurrent()
 	return preferences, nil
+}
+
+func shellAvailable(shells []localpty.LocalShell, id string) bool {
+	for _, shell := range shells {
+		if shell.ID == id {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *AppService) ConfirmClose(confirmed bool) error {
