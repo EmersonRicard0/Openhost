@@ -77,8 +77,12 @@ func TestKeepaliveSendsOpenSSHRequestAtConfiguredInterval(t *testing.T) {
 		if request.name != "keepalive@openssh.com" || !request.wantReply {
 			t.Fatalf("request[%d] = %#v, want keepalive@openssh.com with reply", i, request)
 		}
-		if i > 0 && request.at.Sub(requests[i-1].at) < 5*time.Millisecond {
-			t.Fatalf("request interval = %v, want approximately 10ms", request.at.Sub(requests[i-1].at))
+	}
+	// Média, não cada par: sob carga o ticker entrega um tique atrasado e o seguinte logo depois.
+	if n := len(requests); n > 1 {
+		mean := requests[n-1].at.Sub(requests[0].at) / time.Duration(n-1)
+		if mean < 5*time.Millisecond {
+			t.Fatalf("mean request interval = %v, want approximately 10ms", mean)
 		}
 	}
 }

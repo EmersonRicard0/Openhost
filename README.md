@@ -40,9 +40,10 @@ computador.
 - Docker Desktop para executar os servidores SSH usados nos testes de integração e E2E.
 - OpenSSH Client e `ssh-agent` do Windows para validar autenticação por agente.
 
-Instale as dependências do frontend depois de obter o repositório:
+Instale as dependências das ferramentas de teste e do frontend depois de obter o repositório:
 
 ```powershell
+npm ci
 npm --prefix frontend ci
 ```
 
@@ -138,7 +139,7 @@ Remove-Item Env:SHELLVAULT_E2E_SKIP_BUILD
 
 ## Migração do cofre anterior
 
-A versão Wails reconhece automaticamente o cofre Electron da versão 001 no diretório:
+A versão Wails reconhece automaticamente o cofre da versão 001 no diretório:
 
 ```text
 %APPDATA%\ShellVault

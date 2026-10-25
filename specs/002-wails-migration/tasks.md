@@ -277,7 +277,7 @@ frontend com o Claude.
 - [X] T103 [P] Atualizar `README.md`: requisitos (Go, Wails, NSIS, Docker), `wails dev`, `wails build -nsis`, testes, migração do cofre da versão anterior
 - [ ] T104 ⏸ usuário — Validar `quickstart.md` de ponta a ponta (cenários manuais, incluindo SC-102 nos equipamentos reais) e registrar em `specs/002-wails-migration/validation.md`
 - [ ] T105 Gerar instalador com `wails build -clean -nsis -trimpath -ldflags "-s -w"` e `scripts/check-release.mjs`; validar instalação limpa e desinstalação no Windows 11 e fallback sólido no Windows 10
-- [ ] T106 Remover a base Electron após a paridade validada: `src/main`, `src/preload`, `electron.vite.config.ts`, `electron-builder.yml`, configs TS da raiz, testes antigos já portados (`tests/unit`, `tests/integration`, `tests/e2e`), dependências do `package.json` da raiz (que fica só com scripts de teste/fixtures); tudo verde em `scripts/check.mjs`
+- [X] T106 Remover a base Electron após a paridade validada: `src/main`, `src/preload`, `electron.vite.config.ts`, `electron-builder.yml`, configs TS da raiz, testes antigos já portados (`tests/unit`, `tests/integration`, `tests/e2e`), dependências do `package.json` da raiz (que fica só com scripts de teste/fixtures); tudo verde em `scripts/check.mjs`
 
 ---
 

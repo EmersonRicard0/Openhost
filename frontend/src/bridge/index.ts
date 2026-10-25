@@ -239,8 +239,7 @@ function createApi(): ShellVaultApi {
 }
 
 /**
- * Instala `window.shellvault` sobre o Wails. Na base Electron (até a remoção na T106) o preload
- * já definiu a API e nada é feito.
+ * Instala `window.shellvault` sobre o Wails e mantém uma única API para os consumidores.
  */
 export function installBridge(): void {
   if ('shellvault' in window) return;

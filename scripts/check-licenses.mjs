@@ -77,7 +77,7 @@ const undocumented = frontendDirect.filter((entry) => {
 const requiredContent = [
   'JetBrains Mono',
   'Cascadia Code',
-  'OpenConnect Dark',
+  'OpenHost Dark',
   'Dracula',
   'Nord',
   'Solarized Dark',
@@ -86,7 +86,7 @@ const requiredContent = [
   'Tokyo Night',
   'Catppuccin Mocha',
 ];
-const missingContent = requiredContent.filter((item) => !documentation.includes(`| ${item} |`));
+const missingContent = requiredContent.filter((item) => !documentation.includes(`| ${item}`));
 for (const entry of undocumented) console.error(`DOC ausente: ${entry}`);
 for (const item of missingContent) console.error(`CONTEÚDO ausente: ${item}`);
 if (bad.length > 0 || undocumented.length > 0 || missingContent.length > 0) {

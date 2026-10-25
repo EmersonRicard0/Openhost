@@ -8,13 +8,15 @@ const ROOT = resolve(import.meta.dirname, '..');
 
 const steps = [
   ['go', 'vet', './...'],
-  ['go', 'test', './internal/...'],
+  ['go', 'test', './...'],
+  ['node', '--test', 'scripts/check-tokens.test.mjs'],
   ...(existsSync(resolve(ROOT, 'scripts/check-tokens.mjs'))
     ? [['node', 'scripts/check-tokens.mjs']]
     : []),
   ['npm', '--prefix', 'frontend', 'run', 'lint'],
   ['npm', '--prefix', 'frontend', 'run', 'typecheck'],
   ['npm', '--prefix', 'frontend', 'test'],
+  ['node', 'scripts/check-licenses.mjs'],
 ];
 
 for (const [cmd, ...args] of steps) {
