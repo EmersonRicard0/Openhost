@@ -7,6 +7,22 @@ perfis de terminal em uma aplicação nativa construída com Go, Wails e React.
 O nome visível do produto é **OpenHost**. Identificadores internos e o diretório de dados
 continuam usando `ShellVault` para manter compatibilidade com versões anteriores.
 
+**[Baixar o instalador para Windows](https://github.com/EmersonRicard0/Openhost/releases)**
+
+![Terminal SSH com a lista de hosts](docs/screenshots/02-terminal-ssh.png)
+
+| | |
+|---|---|
+| ![Paleta de comandos](docs/screenshots/03-paleta.png) | ![Navegador SFTP](docs/screenshots/04-sftp.png) |
+| **Paleta de comandos** (Ctrl+Shift+P): hosts, terminais locais detectados e ações. | **SFTP** com transferências em paralelo, na mesma aba de trabalho. |
+| ![Personalização do terminal](docs/screenshots/05-personalizacao.png) | ![Host com algoritmos legados](docs/screenshots/06-host-legado.png) |
+| **Personalização ao vivo**: fonte, tamanho e esquemas de cores, com importação de Windows Terminal e iTerm. | **Equipamentos legados**: algoritmos antigos por host, com aviso permanente na lista. |
+
+![Criação do cofre](docs/screenshots/01-cofre.png)
+
+O cofre é criptografado com a senha mestra (Argon2id + XChaCha20-Poly1305) e nunca sai do
+computador.
+
 ## Requisitos
 
 - Windows 11, ou Windows 10 com o fallback visual sólido.
