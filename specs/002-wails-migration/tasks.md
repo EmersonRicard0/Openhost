@@ -232,7 +232,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 - [X] T094 [US6] Implementar `internal/domain/forwardrules.go`, `internal/forwarding/manager.go` e `ForwardService` (`ListActive`/`Deactivate` sem cofre) para passar a T089 e T091; T013 passa para todos os 8 serviços
 - [X] T095 [US6] Adaptar `frontend/src/features/sftp/*` e `frontend/src/features/forwarding/*` ao adaptador
 - [ ] T096 [US6] Portar `scripts/bench-sftp.mjs` para `scripts/bench-sftp/main.go` e medir 1 GB (≥ resultado da 001 no mesmo ambiente)
-- [ ] T097 [US6] Portar `tests/e2e/sftp.spec.ts` e `tests/e2e/forwarding.spec.ts` para `frontend/tests/e2e/`
+- [X] T097 [US6] Portar `tests/e2e/sftp.spec.ts` e `tests/e2e/forwarding.spec.ts` para `frontend/tests/e2e/`
 
 **Checkpoint**: paridade total
 
@@ -252,7 +252,7 @@ frontend com o Claude.
 - [X] T120 Frontend: seção "Conexão (SSH)" nas configurações (keepalive e tempo limite saem de "Cofre e segurança", padrão de algoritmos legados, `$TERM` por seleção); formulário de host novo usa `legacyDefault`
 - [X] T121 [P] Go: detecção de shells — `pwsh` (PATH e `%ProgramFiles%\PowerShell\*`), Git Bash (`%ProgramFiles%\Git\bin\bash.exe` e registro), distros WSL (`wsl.exe -l -q`, saída UTF-16) — em `LocalShell` com id estável; testes com leitores falsos
 - [X] T122 Frontend: shell padrão em Geral e menu de nova aba com os shells detectados, cada um com ícone próprio
-- [ ] T123 [P] Go: preferências `copyOnSelect`, `rightClickPaste`, `bell` (`off` | `sound` | `visual`), `boldBright` e `autoReconnect`; testes
+- [X] T123 [P] Go: preferências `copyOnSelect`, `rightClickPaste`, `bell` (`off` | `sound` | `visual`), `boldBright` e `autoReconnect`; testes
 - [ ] T124 Frontend: opções de FR-177 na seção Terminal (por seleção) e comportamento no `TerminalView` (copiar ao selecionar, colar no botão direito, sino, `drawBoldTextInBrightColors`, reconexão automática com recuo)
 - [ ] T125 E2E `frontend/tests/e2e/daily-use.spec.ts`: Ctrl+W chega ao shell e a aba fica; Ctrl+Shift+W fecha; remapear e desativar persiste após reiniciar; erro mostra código e copia detalhes; `$TERM` escolhido aparece no `echo $TERM` do servidor de teste
 
