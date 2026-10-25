@@ -4,6 +4,7 @@ import type { AuthMethod, HostInput, HostView } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
 import { useProfiles } from '../../stores/profiles';
+import { useVault } from '../../stores/vault';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import { Dialog } from '../../ui/Dialog';
@@ -42,7 +43,11 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
     host?.credentialId ?? (host ? NONE : NEW_PASSWORD),
   );
   const [newPassword, setNewPassword] = useState('');
-  const [legacy, setLegacy] = useState(host?.legacyAlgorithms ?? false);
+  // Host novo começa com o padrão da seção Conexão até o usuário mexer no campo.
+  const legacyDefault = useVault((v) => v.settings?.legacyDefault ?? false);
+  const loadVaultSettings = useVault((v) => v.loadSettings);
+  const [legacyChoice, setLegacy] = useState<boolean | null>(host?.legacyAlgorithms ?? null);
+  const legacy = legacyChoice ?? legacyDefault;
   const [busy, setBusy] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const hasOwnProfile = useProfiles((p) => (host ? Boolean(p.overrides[host.id]) : false));
@@ -53,6 +58,10 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
   useEffect(() => {
     if (hostId) void loadOverride(hostId);
   }, [hostId, loadOverride]);
+
+  useEffect(() => {
+    if (!host) void loadVaultSettings();
+  }, [host, loadVaultSettings]);
 
   const kind = method === 'key' ? 'key' : 'password';
   const options = [

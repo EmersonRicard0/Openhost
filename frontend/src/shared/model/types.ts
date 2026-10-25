@@ -18,7 +18,13 @@ export interface VaultSettings {
   connectTimeoutSeconds: number;
   /** 10–300 segundos; padrão 30. */
   keepaliveSeconds: number;
+  /** Valor inicial de "algoritmos legados" em hosts novos. */
+  legacyDefault: boolean;
+  /** `$TERM` enviado no pedido de PTY. */
+  term: TermType;
 }
+
+export type TermType = 'xterm-256color' | 'xterm' | 'vt100' | 'linux';
 
 // --- Hosts, grupos, credenciais --------------------------------------------
 

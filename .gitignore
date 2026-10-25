@@ -25,3 +25,4 @@ tests/fixtures/keys/generated/
 
 # Bindings gerados pelo wails dev (a ponte usa window.go diretamente)
 frontend/wailsjs/go/
+.agent-queue/

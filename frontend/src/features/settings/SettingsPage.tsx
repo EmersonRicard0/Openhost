@@ -1,7 +1,13 @@
 // Configurações como página na área principal (FR-168): navegação por seções à esquerda,
 // conteúdo à direita e salvamento automático. As abas seguem vivas por baixo.
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import type { LocalShell, Settings, ThemePreference, VaultSettings } from '@shared/model/types';
+import type {
+  LocalShell,
+  Settings,
+  TermType,
+  ThemePreference,
+  VaultSettings,
+} from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useSessions } from '../../stores/sessions';
 import { useUi } from '../../stores/ui';
@@ -14,6 +20,7 @@ import {
   GeneralIcon,
   InfoIcon,
   KeyboardIcon,
+  NetworkIcon,
   PaletteIcon,
   ShieldIcon,
   TerminalIcon,
@@ -35,6 +42,7 @@ const SECTIONS: { id: Section; icon: ReactNode }[] = [
   { id: 'general', icon: <GeneralIcon /> },
   { id: 'appearance', icon: <PaletteIcon /> },
   { id: 'terminal', icon: <TerminalIcon /> },
+  { id: 'connection', icon: <NetworkIcon /> },
   { id: 'vault', icon: <ShieldIcon /> },
   { id: 'shortcuts', icon: <KeyboardIcon /> },
   { id: 'about', icon: <InfoIcon /> },
@@ -50,6 +58,10 @@ const SHELLS: { value: LocalShell; label: string }[] = [
   { value: 'powershell', label: t.settings.shellPowerShell },
   { value: 'cmd', label: t.settings.shellCmd },
 ];
+
+const TERMS: { value: TermType; label: string }[] = (
+  ['xterm-256color', 'xterm', 'vt100', 'linux'] as const
+).map((value) => ({ value, label: t.settings.termOptions[value] }));
 
 const SAVE_DELAY_MS = 400;
 
@@ -135,28 +147,33 @@ function AppearanceSection({ settings }: { settings: Settings }) {
   );
 }
 
-function VaultSection() {
+/** Configurações guardadas no cofre: carrega ao desbloquear e salva por patch. */
+function useVaultSettings() {
   const { status, settings, loadSettings, updateSettings } = useVault();
   const unlocked = status?.state === 'unlocked';
-  const [sub, setSub] = useState<'password' | 'erase' | null>(null);
 
   useEffect(() => {
     if (unlocked) void loadSettings();
   }, [unlocked, loadSettings]);
+
+  const save = (patch: Partial<VaultSettings>) => {
+    void updateSettings(patch).then((res) => {
+      if (!res.ok) toastError(res.error);
+    });
+  };
+  return { unlocked, settings, save };
+}
+
+function VaultSection() {
+  const { unlocked, settings, save } = useVaultSettings();
+  const [sub, setSub] = useState<'password' | 'erase' | null>(null);
 
   if (!unlocked) return <p className={s.notice}>{t.settings.vaultLocked}</p>;
   if (!settings) return null;
 
   return (
     <>
-      <VaultFields
-        saved={settings}
-        save={(patch) => {
-          void updateSettings(patch).then((res) => {
-            if (!res.ok) toastError(res.error);
-          });
-        }}
-      />
+      <AutoLockFields saved={settings} save={save} />
       <Group title={t.settings.masterPassword}>
         <div className={s.actions}>
           <Button
@@ -195,33 +212,75 @@ function VaultSection() {
   );
 }
 
-function VaultFields({
+function AutoLockFields({
   saved,
   save,
 }: {
   saved: VaultSettings;
-  save: (value: VaultSettings) => void;
+  save: (patch: Partial<VaultSettings>) => void;
 }) {
   const [autoLockOn, setAutoLockOn] = useField(saved.autoLockMinutes !== null);
   const [autoLock, setAutoLock] = useField(String(saved.autoLockMinutes ?? 15));
-  const [timeout, setTimeoutText] = useField(String(saved.connectTimeoutSeconds));
-  const [keepalive, setKeepalive] = useField(String(saved.keepaliveSeconds));
   const autoLockValue = intIn(autoLock, 1, 120);
-  const timeoutValue = intIn(timeout, 5, 120);
-  const keepaliveValue = intIn(keepalive, 10, 300);
-  const valid =
-    (!autoLockOn || autoLockValue !== null) && timeoutValue !== null && keepaliveValue !== null;
 
   useAutosave(
-    valid
-      ? {
-          autoLockMinutes: autoLockOn ? autoLockValue : null,
-          connectTimeoutSeconds: timeoutValue,
-          keepaliveSeconds: keepaliveValue,
-        }
+    !autoLockOn || autoLockValue !== null
+      ? { autoLockMinutes: autoLockOn ? autoLockValue : null }
+      : null,
+    { autoLockMinutes: saved.autoLockMinutes },
+    save,
+  );
+
+  return (
+    <Group>
+      <Checkbox
+        label={t.settings.autoLock}
+        checked={autoLockOn}
+        onChange={(e) => {
+          setAutoLockOn(e.target.checked);
+        }}
+      />
+      {autoLockOn && (
+        <NumberField
+          label={t.settings.autoLockMinutes}
+          min={1}
+          max={120}
+          unit="min"
+          value={autoLock}
+          error={autoLockValue === null ? '1–120' : null}
+          onChange={setAutoLock}
+        />
+      )}
+    </Group>
+  );
+}
+
+function ConnectionSection() {
+  const { unlocked, settings, save } = useVaultSettings();
+  if (!unlocked) return <p className={s.notice}>{t.settings.vaultLocked}</p>;
+  if (!settings) return null;
+  return <ConnectionFields saved={settings} save={save} />;
+}
+
+function ConnectionFields({
+  saved,
+  save,
+}: {
+  saved: VaultSettings;
+  save: (patch: Partial<VaultSettings>) => void;
+}) {
+  const [timeout, setTimeoutText] = useField(String(saved.connectTimeoutSeconds));
+  const [keepalive, setKeepalive] = useField(String(saved.keepaliveSeconds));
+  const timeoutValue = intIn(timeout, 5, 120);
+  const keepaliveValue = intIn(keepalive, 10, 300);
+  const [term, setTerm] = useField(saved.term);
+  const [legacyDefault, setLegacyDefault] = useField(saved.legacyDefault);
+
+  useAutosave(
+    timeoutValue !== null && keepaliveValue !== null
+      ? { connectTimeoutSeconds: timeoutValue, keepaliveSeconds: keepaliveValue }
       : null,
     {
-      autoLockMinutes: saved.autoLockMinutes,
       connectTimeoutSeconds: saved.connectTimeoutSeconds,
       keepaliveSeconds: saved.keepaliveSeconds,
     },
@@ -230,26 +289,6 @@ function VaultFields({
 
   return (
     <>
-      <Group>
-        <Checkbox
-          label={t.settings.autoLock}
-          checked={autoLockOn}
-          onChange={(e) => {
-            setAutoLockOn(e.target.checked);
-          }}
-        />
-        {autoLockOn && (
-          <NumberField
-            label={t.settings.autoLockMinutes}
-            min={1}
-            max={120}
-            unit="min"
-            value={autoLock}
-            error={autoLockValue === null ? '1–120' : null}
-            onChange={setAutoLock}
-          />
-        )}
-      </Group>
       <Group>
         <NumberField
           label={t.settings.connectTimeout}
@@ -270,6 +309,27 @@ function VaultFields({
           value={keepalive}
           error={keepaliveValue === null ? '10–300' : null}
           onChange={setKeepalive}
+        />
+      </Group>
+      <Group>
+        <Select
+          label={t.settings.term}
+          hint={t.settings.termHint}
+          value={term}
+          options={TERMS}
+          onChange={(value) => {
+            setTerm(value);
+            save({ term: value });
+          }}
+        />
+        <Checkbox
+          label={t.settings.legacyDefault}
+          hint={t.settings.legacyDefaultHint}
+          checked={legacyDefault}
+          onChange={(e) => {
+            setLegacyDefault(e.target.checked);
+            save({ legacyDefault: e.target.checked });
+          }}
         />
       </Group>
     </>
@@ -405,6 +465,7 @@ export function SettingsPage() {
           {settings && section === 'general' && <GeneralSection settings={settings} />}
           {settings && section === 'appearance' && <AppearanceSection settings={settings} />}
           {section === 'terminal' && <GlobalTerminalSettings />}
+          {section === 'connection' && <ConnectionSection />}
           {section === 'vault' && <VaultSection />}
           {section === 'shortcuts' && <ShortcutsSection />}
           {section === 'about' && <AboutSection />}

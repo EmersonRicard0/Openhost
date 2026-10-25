@@ -78,6 +78,7 @@ export const t = {
       general: 'Geral',
       appearance: 'Aparência',
       terminal: 'Terminal',
+      connection: 'Conexão (SSH)',
       vault: 'Cofre e segurança',
       shortcuts: 'Atalhos',
       about: 'Sobre',
@@ -91,6 +92,18 @@ export const t = {
     connectTimeout: 'Tempo limite de conexão',
     keepalive: 'Intervalo de keepalive',
     keepaliveHint: 'Mantém conexões ociosas abertas atrás de firewalls e NAT.',
+    legacyDefault: 'Algoritmos legados em hosts novos',
+    legacyDefaultHint:
+      'Hosts criados a partir de agora já vêm com a opção marcada. Útil em redes com muitos equipamentos antigos (OLTs, switches).',
+    term: 'Tipo de terminal ($TERM)',
+    termHint:
+      'Vale para as próximas conexões. Troque para vt100 ou linux se o equipamento desenhar a tela errado.',
+    termOptions: {
+      'xterm-256color': 'xterm-256color (padrão)',
+      xterm: 'xterm',
+      vt100: 'vt100',
+      linux: 'linux',
+    },
     vaultLocked: 'Desbloqueie o cofre para alterar estas opções.',
     masterPassword: 'Senha mestra',
     changePassword: 'Trocar senha mestra…',

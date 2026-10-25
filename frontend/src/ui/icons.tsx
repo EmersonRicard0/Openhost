@@ -5,6 +5,7 @@ import {
   Palette,
   ShieldCheck,
   SlidersHorizontal,
+  Network,
   CaseSensitive,
   Check,
   ChevronDown,
@@ -88,3 +89,4 @@ export const InfoIcon = icon(Info);
 export const PaletteIcon = icon(Palette);
 export const ShieldIcon = icon(ShieldCheck);
 export const GeneralIcon = icon(SlidersHorizontal);
+export const NetworkIcon = icon(Network);
