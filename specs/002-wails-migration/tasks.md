@@ -262,7 +262,7 @@ frontend com o Claude.
 
 - [X] T098 E2E `frontend/tests/e2e/secrets-scan.spec.ts` (SC-108): fluxo completo e varredura recursiva do diretório de dados (incluindo `.db`, `-wal`, pasta do WebView2) por senha mestra, senhas, passphrase e trechos da chave em UTF-8, UTF-16LE e base64 → 0 ocorrências; nenhum `*.dmp`, `*.log` nem `Crashpad/reports` com arquivos
 - [X] T099 [P] E2E `frontend/tests/e2e/performance.spec.ts` (SC-112): 20 abas, uma com `yes` contínuo, troca de aba < 100 ms; busca em 1.000 hosts < 200 ms
-- [ ] T100 [P] Criar `scripts/measure.ps1` (SC-109): tamanho do instalador e soma do *private working set* do app + processos WebView2 após 2 min ocioso com 1 aba; registrar em `specs/002-wails-migration/validation.md`; se > 150 MB, aplicar mitigações de research R19 e registrar números
+- [X] T100 [P] Criar `scripts/measure.ps1` (SC-109): tamanho do instalador e soma do *private working set* do app + processos WebView2 após 2 min ocioso com 1 aba; registrar em `specs/002-wails-migration/validation.md`; se > 150 MB, aplicar mitigações de research R19 e registrar números
 - [X] T101 Revisão de segurança em `docs/security-review-002.md` conferindo cada linha da tabela do plan.md contra o código e corrigindo achados
 - [X] T102 [P] `docs/licenses.md`: dependências Go (`go-licenses report`), npm do frontend, fontes OFL e origem dos presets de cor
 - [X] T103 [P] Atualizar `README.md`: requisitos (Go, Wails, NSIS, Docker), `wails dev`, `wails build -nsis`, testes, migração do cofre da versão anterior

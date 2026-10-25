@@ -6,10 +6,19 @@ Execute `scripts/measure.ps1` com uma única aba local aberta e o app ocioso por
 O script mede o instalador (ou o executável quando ainda não houver instalador) e soma o
 *private working set* do processo principal com seus descendentes `msedgewebview2.exe`.
 
-**Estado atual**: medição pendente. Não havia uma instância com uma aba local aberta, e iniciar
-uma janela sem automatizar essa pré-condição produziria um número inválido. Registrar aqui o
-resultado de `measure.ps1` antes de encerrar T100; aplicar as mitigações de R19 somente se a soma
-ultrapassar 150 MiB.
+**Resultado (2026-10-25, Windows 11 Pro 26200, WebView2 155.0.4283.62)**: build de release
+(`wails build -clean -nsis -trimpath -ldflags "-s -w"`, `check-release.mjs` ok).
+
+| Medida | Valor | Meta |
+|---|---:|---:|
+| Instalador `OpenHost-amd64-installer.exe` | 9,22 MiB | < 15 MB |
+| Executável `shellvault.exe` | 18,5 MiB | — |
+| App + 6 processos WebView2, 1 aba local, 120 s ocioso | 107,13 MiB | ≤ 150 MB |
+
+A primeira medição deu 402,66 MiB: a listagem de fontes monoespaçadas (`internal/fonts`) lia
+cada arquivo de `C:\Windows\Fonts` inteiro (322 MB alocados, vistos num perfil de heap) e o GC
+não devolvia a memória com o app ocioso. A leitura passou a ser sob demanda
+(`sfnt.ParseCollectionReaderAt`); as mitigações de R19 no WebView2 não foram necessárias.
 
 ## SC-006 / T096 — desempenho SFTP de 1 GB
 
