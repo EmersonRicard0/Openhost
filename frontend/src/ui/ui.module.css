@@ -424,7 +424,6 @@ textarea.input {
   gap: 10px;
   max-width: 380px;
   padding: 12px 14px;
-  border: 1px solid var(--border);
   animation: slide-in var(--motion-base) var(--ease-standard);
 }
 
@@ -432,8 +431,9 @@ textarea.input {
   border-left: 3px solid var(--danger);
 }
 
-.toastInfo {
-  border-left: 3px solid var(--accent);
+/* Sem contorno: só o alto contraste precisa separar o toast do fundo. */
+:global(:root[data-mode='high-contrast']) .toast {
+  outline: 1px solid CanvasText;
 }
 
 .toastBody {

@@ -103,7 +103,7 @@ export function Toasts() {
         <div
           key={item.id}
           role={item.kind === 'error' ? 'alert' : undefined}
-          className={`${s.toast} ${item.kind === 'error' ? s.toastError : s.toastInfo} raised glass-edge`}
+          className={`${s.toast} ${item.kind === 'error' ? s.toastError : ''} raised`}
           onMouseEnter={() => {
             hold(item.id, true);
           }}
