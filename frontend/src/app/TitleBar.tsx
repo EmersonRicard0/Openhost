@@ -49,7 +49,7 @@ export function TitleBar({ leading, actions }: TitleBarProps) {
     >
       {leading && <div className={`${s.leading} no-drag`}>{leading}</div>}
       <span className={s.brand} data-drag-area>
-        <Logo size={18} />
+        <Logo size={16} variant="mark" />
         <span className={s.appName} data-drag-area>
           {t.common.appName}
         </span>

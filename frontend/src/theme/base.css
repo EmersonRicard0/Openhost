@@ -35,6 +35,11 @@
   --avatar-text: #ffffff;
   --avatar-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.25);
   --avatar-text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+
+  /* Marca do OpenHost (brand/logo.png): quadrado grafite, anel branco e chevron laranja. */
+  --brand-tile: #1e2026;
+  --brand-ring: #ffffff;
+  --brand-chevron: #fd7b17;
 }
 
 /* O WebView2 (Edge) desenha o próprio olho de revelar em campos de senha; o TextField já tem o nosso. */
