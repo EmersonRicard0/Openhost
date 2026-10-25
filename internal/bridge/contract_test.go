@@ -23,7 +23,7 @@ var contract = map[string][]string{
 	"ProfileService": {"GetGlobal", "UpdateGlobal", "GetForHost", "SetHostOverride", "Effective",
 		"ListSchemes", "SaveScheme", "DuplicateScheme", "RemoveScheme", "ImportScheme",
 		"ExportScheme", "ListFonts"},
-	"AppService": {"GetAppearance", "GetPreferences", "UpdatePreferences", "ConfirmClose",
+	"AppService": {"GetAppearance", "GetPreferences", "ListLocalShells", "UpdatePreferences", "ConfirmClose",
 		"WindowMinimise", "WindowToggleMaximise", "WindowClose", "OpenExternalUrl"},
 }
 

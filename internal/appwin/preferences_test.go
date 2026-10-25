@@ -1,6 +1,7 @@
 package appwin
 
 import (
+	"encoding/json"
 	"strings"
 	"testing"
 )
@@ -37,5 +38,31 @@ func TestValidateShortcuts(t *testing.T) {
 				t.Fatalf("erro = %v, esperado motivo %q", err, test.want)
 			}
 		})
+	}
+}
+
+func TestNormalizedPreferencesBell(t *testing.T) {
+	preferences := DefaultPreferences()
+	preferences.Bell = "beep"
+	got := normalizedPreferences(preferences)
+	if got.Bell != "visual" {
+		t.Fatalf("sino normalizado = %q", got.Bell)
+	}
+	for _, bell := range []string{"off", "sound", "visual"} {
+		preferences.Bell = bell
+		if got := normalizedPreferences(preferences); got.Bell != bell {
+			t.Errorf("sino %q virou %q", bell, got.Bell)
+		}
+	}
+}
+
+func TestPreferencesWithoutTerminalOptionsKeepDefaults(t *testing.T) {
+	preferences := DefaultPreferences()
+	if err := json.Unmarshal([]byte(`{"theme":"dark"}`), &preferences); err != nil {
+		t.Fatal(err)
+	}
+	preferences = normalizedPreferences(preferences)
+	if preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect {
+		t.Fatalf("preferências migradas = %+v", preferences)
 	}
 }

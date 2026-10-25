@@ -6,6 +6,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"shellvault/internal/localpty"
 	"shellvault/internal/vault"
 	"shellvault/internal/vault/migrate001"
 )
@@ -44,6 +45,11 @@ type Preferences struct {
 	DefaultShell       string            `json:"defaultShell"`
 	CollapsedGroups    []string          `json:"collapsedGroups"`
 	Shortcuts          map[string]string `json:"shortcuts"`
+	CopyOnSelect       bool              `json:"copyOnSelect"`
+	RightClickPaste    bool              `json:"rightClickPaste"`
+	Bell               string            `json:"bell"`
+	BoldBright         bool              `json:"boldBright"`
+	AutoReconnect      bool              `json:"autoReconnect"`
 }
 
 func DefaultPreferences() Preferences {
@@ -58,6 +64,11 @@ func DefaultPreferences() Preferences {
 		DefaultShell:       "powershell",
 		CollapsedGroups:    []string{},
 		Shortcuts:          map[string]string{},
+		CopyOnSelect:       false,
+		RightClickPaste:    true,
+		Bell:               "visual",
+		BoldBright:         true,
+		AutoReconnect:      false,
 	}
 }
 
@@ -122,7 +133,7 @@ func normalizedPreferences(preferences Preferences) Preferences {
 		preferences.Window.Height < 300 || preferences.Window.Height > 10_000 {
 		preferences.Window = defaults.Window
 	}
-	if preferences.DefaultShell != "powershell" && preferences.DefaultShell != "cmd" {
+	if !localpty.ValidShellID(preferences.DefaultShell) {
 		preferences.DefaultShell = defaults.DefaultShell
 	}
 	if !ValidAccent(preferences.Accent) {
@@ -133,6 +144,11 @@ func normalizedPreferences(preferences Preferences) Preferences {
 	}
 	if preferences.Shortcuts == nil || ValidateShortcuts(preferences.Shortcuts) != nil {
 		preferences.Shortcuts = map[string]string{}
+	}
+	switch preferences.Bell {
+	case "off", "sound", "visual":
+	default:
+		preferences.Bell = defaults.Bell
 	}
 	return preferences
 }
