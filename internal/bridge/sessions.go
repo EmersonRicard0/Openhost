@@ -51,11 +51,12 @@ func (s *SessionService) OpenSsh(hostID string) (OpenSessionResult, error) {
 
 func (s *SessionService) OpenLocal(shell string) (OpenSessionResult, error) {
 	localShell := localpty.Shell(shell)
-	if _, err := localpty.ShellPath(localShell); err != nil {
+	process, err := localpty.New(localShell)
+	if err != nil {
 		return OpenSessionResult{}, clean(err)
 	}
 	id := s.sessions.Open(session.KindLocal, nil, func(context.Context, session.Interactor) (session.Conn, error) {
-		return localpty.New(localShell)
+		return process, nil
 	})
 	return OpenSessionResult{SessionID: id}, nil
 }

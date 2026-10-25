@@ -263,6 +263,84 @@ func TestPTYOnlyAfterFirstValidResize(t *testing.T) {
 	}
 }
 
+func TestWriteBeforeStartIsFlushedInOrder(t *testing.T) {
+	var r recorder
+	m := NewManager(r.emit)
+	c := newFakeConn()
+	id := m.Open(KindSSH, nil, dialTo(c))
+	defer m.Close(id)
+
+	if err := m.Write(id, "primeiro "); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Write(id, "segundo"); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Resize(id, 80, 24); err != nil {
+		t.Fatal(err)
+	}
+	r.waitState(t, id, StateConnected)
+	c.mu.Lock()
+	got := string(c.written)
+	c.mu.Unlock()
+	if got != "primeiro segundo" {
+		t.Fatalf("entrada = %q", got)
+	}
+}
+
+func TestPendingInputIsBounded(t *testing.T) {
+	var r recorder
+	m := NewManager(r.emit)
+	c := newFakeConn()
+	id := m.Open(KindSSH, nil, dialTo(c))
+	defer m.Close(id)
+
+	input := string(make([]byte, pendingInputLimit+1024))
+	if err := m.Write(id, input); err != nil {
+		t.Fatal(err)
+	}
+	if err := m.Resize(id, 80, 24); err != nil {
+		t.Fatal(err)
+	}
+	r.waitState(t, id, StateConnected)
+	c.mu.Lock()
+	got := len(c.written)
+	c.mu.Unlock()
+	if got != pendingInputLimit {
+		t.Fatalf("entrada pendente = %d bytes, esperado %d", got, pendingInputLimit)
+	}
+}
+
+func TestInputWhileDisconnectedIsDropped(t *testing.T) {
+	var r recorder
+	m := NewManager(r.emit)
+	c1 := newFakeConn()
+	id := m.Open(KindSSH, nil, dialTo(c1))
+	defer m.Close(id)
+	_ = m.Resize(id, 80, 24)
+	r.waitState(t, id, StateConnected)
+	_ = c1.pw.Close()
+	r.waitState(t, id, StateDisconnected)
+
+	if err := m.Write(id, "rm -rf ~"); err != nil {
+		t.Fatal(err)
+	}
+	c2 := newFakeConn()
+	if err := m.Reconnect(id, dialTo(c2)); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool {
+		s := r.states(id)
+		return s[len(s)-1] == StateConnected
+	})
+	c2.mu.Lock()
+	got := string(c2.written)
+	c2.mu.Unlock()
+	if got != "" {
+		t.Fatalf("entrada digitada com a aba caída chegou ao shell: %q", got)
+	}
+}
+
 func TestSameResizeIgnored(t *testing.T) {
 	var r recorder
 	m := NewManager(r.emit)
