@@ -27,6 +27,7 @@ export const ERROR_CAUSES: Record<ErrorCode, string> = {
   PERMISSION_DENIED: 'Sem permissão para esta operação.',
   PORT_IN_USE: 'A porta local já está em uso.',
   SCHEME_INVALID: 'O arquivo de esquema de cores não é válido.',
+  ALREADY_EXISTS: 'Já existe um item com esse nome.',
   IN_USE: 'O item está em uso e não pode ser removido.',
   CANCELLED: 'A operação foi cancelada.',
   INTERNAL: 'Ocorreu um erro inesperado.',
