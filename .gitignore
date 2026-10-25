@@ -26,3 +26,7 @@ tests/fixtures/keys/generated/
 # Bindings gerados pelo wails dev (a ponte usa window.go diretamente)
 frontend/wailsjs/go/
 .agent-queue/
+
+# Gerados pelo wails build -nsis a cada execução
+build/windows/installer/tmp/
+build/windows/installer/wails_tools.nsh
