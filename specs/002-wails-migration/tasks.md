@@ -176,7 +176,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 - [X] T073 [US4] Criar `frontend/src/features/settings/TerminalSettings.tsx` (terminal de amostra ao vivo, controles de FR-152 só por seleção (FR-158a: galeria de esquemas com prévia, lista de fontes desenhadas na própria fonte, controles deslizantes/opções, cursor ilustrado), editor de esquema com seletores de cor, importar/exportar/duplicar, aviso ao reduzir opacidade) acessível pelas configurações e pela paleta
 - [X] T074 [US4] Criar `frontend/src/features/terminal/profile.ts`: perfil efetivo aplicado a `term.options` + `fit()`, reação a `profiles:changed` em todas as abas, zoom Ctrl+=/−/0 só no `fontSize` efetivo da aba, `allowTransparency` só com opacidade < 1
 - [X] T075 [US4] Override por host em `HostForm.tsx` ("Perfil de terminal próprio" abre `TerminalSettings` no escopo do host)
-- [X] T076 [US4] E2E `frontend/tests/e2e/personalization.spec.ts`: com 3 abas, fonte/tamanho/esquema aplicados em < 1 s com o mesmo `sessionId` (sem reconexão); importar WT e `.itermcolors` via `SHELLVAULT_TEST_DIALOG_PATH`; exportar e reimportar; override de host só na aba desse host
+- [ ] T076 [US4] E2E `frontend/tests/e2e/personalization.spec.ts`: com 3 abas, fonte/tamanho/esquema aplicados em < 1 s com o mesmo `sessionId` (sem reconexão); importar WT e `.itermcolors` via `SHELLVAULT_TEST_DIALOG_PATH`; exportar e reimportar; override de host só na aba desse host
 
 **Checkpoint**: personalização completa
 
