@@ -6,6 +6,7 @@ o que é embutido como **conteúdo** (ícones, fontes, esquemas de cores), com o
 | Item | Origem | Licença | Uso |
 |---|---|---|---|
 | Lucide (`lucide-react` 1.52.0) | https://lucide.dev | ISC | todos os ícones da interface (FR-169) |
+| Simple Icons 16.36.0 (só os caminhos usados, em `frontend/src/ui/osIcons.gen.ts`) | https://simpleicons.org | CC0-1.0 | logos de sistema no avatar do host (FR-178); as marcas são dos respectivos donos e servem só para identificar o sistema |
 | JetBrains Mono (Fontsource 5.3.0, `woff2` latim) | https://github.com/JetBrains/JetBrainsMono | OFL-1.1 | fonte embutida do terminal (`frontend/src/assets/fonts/`) |
 | Cascadia Code (Fontsource 5.3.0, `woff2` latim e caixas) | https://github.com/microsoft/cascadia-code | OFL-1.1 | fonte embutida do terminal (`frontend/src/assets/fonts/`) |
 | OpenHost Dark | tokens próprios em `frontend/src/theme/tokens.ts` | licença do projeto | preset de cores padrão |
