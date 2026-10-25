@@ -12,9 +12,11 @@ const devCsp: Plugin = {
     html.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"),
 };
 
-const { version } = JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as {
-  version: string;
-};
+// A versão do produto vive no wails.json (a mesma do instalador e do executável).
+const { info } = JSON.parse(
+  readFileSync(resolve(import.meta.dirname, '..', 'wails.json'), 'utf8'),
+) as { info: { productVersion: string } };
+const version = info.productVersion;
 
 export default defineConfig({
   plugins: [react(), devCsp],
