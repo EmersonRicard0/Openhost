@@ -13,6 +13,7 @@ const ALLOWED = new Set([
   'Unlicense',
 ]);
 const root = process.cwd();
+const frontend = join(root, 'frontend');
 
 function readPkg(dir) {
   return JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'));
@@ -56,12 +57,44 @@ function walk(name, fromDir) {
 }
 
 for (const dep of Object.keys(readPkg(root).dependencies ?? {})) walk(dep, root);
+const frontendDirect = [];
+for (const dep of Object.keys(readPkg(frontend).dependencies ?? {})) {
+  const installed = readPkg(join(frontend, 'node_modules', dep));
+  frontendDirect.push(`${installed.name}@${installed.version}`);
+  walk(dep, frontend);
+}
 
 const rows = [...seen].sort(([a], [b]) => a.localeCompare(b));
 const bad = rows.filter(([, lic]) => !isAllowed(lic));
 for (const [name, lic] of rows) console.log(`${isAllowed(lic) ? 'ok ' : 'BAD'} ${name} ${lic}`);
-if (bad.length > 0) {
-  console.error(`\n${bad.length} dependência(s) com licença não permitida.`);
+const documentation = readFileSync(join(root, 'docs', 'licenses.md'), 'utf8');
+const undocumented = frontendDirect.filter((entry) => {
+  const separator = entry.lastIndexOf('@');
+  const name = entry.slice(0, separator);
+  const version = entry.slice(separator + 1);
+  return !documentation.includes(`| \`${name}\` ${version} |`);
+});
+const requiredContent = [
+  'JetBrains Mono',
+  'Cascadia Code',
+  'OpenConnect Dark',
+  'Dracula',
+  'Nord',
+  'Solarized Dark',
+  'Solarized Light',
+  'One Dark',
+  'Tokyo Night',
+  'Catppuccin Mocha',
+];
+const missingContent = requiredContent.filter((item) => !documentation.includes(`| ${item} |`));
+for (const entry of undocumented) console.error(`DOC ausente: ${entry}`);
+for (const item of missingContent) console.error(`CONTEÚDO ausente: ${item}`);
+if (bad.length > 0 || undocumented.length > 0 || missingContent.length > 0) {
+  console.error(
+    `\nFalhas: ${bad.length} licença(s), ${undocumented.length} dependência(s) npm sem documentação, ${missingContent.length} conteúdo(s) sem origem.`,
+  );
   process.exit(1);
 }
-console.log(`\n${rows.length} dependências de produção verificadas.`);
+console.log(
+  `\n${rows.length} dependências de produção verificadas; ${frontendDirect.length} dependências diretas do frontend documentadas.`,
+);
