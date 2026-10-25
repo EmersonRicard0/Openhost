@@ -47,7 +47,7 @@
 
 .item[aria-selected='true'] {
   background: var(--selected);
-  box-shadow: inset 0 0 0 1px var(--accent-soft);
+  box-shadow: var(--inset-accent-soft);
 }
 
 .itemIcon {
@@ -117,7 +117,7 @@
 }
 
 .mono {
-  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-secondary);
   overflow: hidden;
@@ -195,7 +195,7 @@
 }
 
 .dropRoot {
-  box-shadow: inset 0 0 0 2px var(--accent);
+  box-shadow: var(--inset-accent);
   border-radius: 8px;
 }
 
@@ -227,7 +227,7 @@
 
 .searchInput:focus {
   border-color: var(--focus);
-  box-shadow: 0 0 0 3px var(--accent-soft);
+  box-shadow: var(--ring-focus);
 }
 
 .searchInput::-webkit-search-cancel-button {

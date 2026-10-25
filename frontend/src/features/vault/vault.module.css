@@ -95,7 +95,7 @@
   border-radius: 10px;
   background: var(--accent-gradient);
   color: var(--accent-text);
-  box-shadow: 0 4px 14px var(--accent-soft);
+  box-shadow: var(--shadow-accent);
 }
 
 .linkButton {

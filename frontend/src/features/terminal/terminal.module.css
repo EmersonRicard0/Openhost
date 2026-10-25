@@ -35,7 +35,7 @@
   border-color: var(--border);
   background: var(--surface-raised);
   color: var(--text-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: var(--shadow-small);
 }
 
 .tabActive:hover {
@@ -70,7 +70,7 @@
 
 .dot[data-state='connected'] {
   background: var(--success);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--success) 22%, transparent);
+  box-shadow: var(--ring-success);
 }
 
 .dot[data-state='connecting'],
@@ -97,7 +97,7 @@
 }
 
 .dropBefore {
-  box-shadow: inset 2px 0 0 var(--accent);
+  box-shadow: var(--inset-accent-left);
 }
 
 .newTab {
@@ -146,7 +146,7 @@
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--input-background);
-  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   user-select: text;
   word-break: break-all;
@@ -246,7 +246,7 @@
   border: 1px solid var(--border);
   border-radius: 9px;
   background: var(--input-background);
-  font-family: 'Cascadia Mono', Consolas, monospace;
+  font-family: var(--font-mono);
   font-size: 12px;
   line-height: 1.5;
   white-space: pre;

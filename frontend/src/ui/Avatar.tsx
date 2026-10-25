@@ -1,3 +1,4 @@
+import { avatarFill } from '../theme/avatar';
 import s from './ui.module.css';
 
 /** Matiz estável derivado do texto, para cada host ter sempre a mesma cor. */
@@ -20,7 +21,13 @@ export function Avatar({ text, size = 28 }: { text: string; size?: number }) {
     <span
       className={s.avatar}
       aria-hidden="true"
-      style={{ '--hue': hueOf(text), width: size, height: size } as React.CSSProperties}
+      style={
+        {
+          '--avatar-fill': avatarFill(hueOf(text)),
+          width: size,
+          height: size,
+        } as React.CSSProperties
+      }
     >
       {initialsOf(text)}
     </span>

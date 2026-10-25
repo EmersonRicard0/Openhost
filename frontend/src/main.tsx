@@ -10,6 +10,7 @@ import { subscribeSessions } from './stores/sessions';
 import { subscribeTransfers } from './stores/transfers';
 import { loadUi } from './stores/ui';
 import './styles/fonts.css';
+import './theme/base.css';
 import './styles/global.css';
 
 async function start(): Promise<void> {

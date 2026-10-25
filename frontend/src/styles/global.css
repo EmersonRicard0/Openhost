@@ -39,7 +39,7 @@ body {
      BrowserWindow tem cor de fundo opaca. */
   background: transparent;
   color: var(--text-primary);
-  font-family: 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  font-family: var(--font-ui);
   font-size: 13px;
   line-height: 1.4;
   -webkit-font-smoothing: antialiased;
@@ -111,8 +111,8 @@ textarea {
   padding: 1px;
   background: var(--glass-edge);
   -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
+    linear-gradient(black 0 0) content-box,
+    linear-gradient(black 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   pointer-events: none;
