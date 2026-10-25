@@ -427,8 +427,11 @@ textarea.input {
   animation: slide-in var(--motion-base) var(--ease-standard);
 }
 
-.toastError {
-  border-left: 3px solid var(--danger);
+/* Sem borda: o erro se distingue pelo ícone. */
+.toastErrorIcon {
+  flex: none;
+  margin-top: 1px;
+  color: var(--danger);
 }
 
 /* Sem contorno: só o alto contraste precisa separar o toast do fundo. */

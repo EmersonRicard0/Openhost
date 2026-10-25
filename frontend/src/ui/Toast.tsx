@@ -5,7 +5,7 @@ import { create } from 'zustand';
 import type { AppError } from '@shared/ipc/errors';
 import { ERROR_CAUSES, errorDetails } from '../i18n/errors';
 import { t } from '../i18n/pt-BR';
-import { CheckIcon, CloseIcon, CopyIcon } from './icons';
+import { CheckIcon, CloseIcon, CopyIcon, WarningIcon } from './icons';
 import s from './ui.module.css';
 
 interface ToastItem {
@@ -103,7 +103,7 @@ export function Toasts() {
         <div
           key={item.id}
           role={item.kind === 'error' ? 'alert' : undefined}
-          className={`${s.toast} ${item.kind === 'error' ? s.toastError : ''} raised`}
+          className={`${s.toast} raised`}
           onMouseEnter={() => {
             hold(item.id, true);
           }}
@@ -111,6 +111,7 @@ export function Toasts() {
             hold(item.id, false);
           }}
         >
+          {item.kind === 'error' && <WarningIcon className={s.toastErrorIcon} />}
           <span className={s.toastBody}>
             <span className={item.error ? s.toastTitle : undefined}>{item.text}</span>
             {item.error && <ErrorExtra error={item.error} at={item.at} />}
