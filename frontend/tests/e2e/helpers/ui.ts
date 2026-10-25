@@ -193,7 +193,7 @@ export async function acceptHostKey(page: Page): Promise<void> {
 /** Abre uma aba local pelo menu "+" e devolve o id da sessão. */
 export async function openLocalTab(page: Page, shell: 'PowerShell' | 'Prompt de Comando') {
   await page.getByRole('button', { name: 'Novo terminal local' }).click();
-  await page.getByRole('menuitem', { name: shell }).click();
+  await page.getByRole('menuitem', { name: shell, exact: true }).click();
   await expect(tab(page, shell)).toBeVisible();
   return sessionIdOf(page, shell);
 }

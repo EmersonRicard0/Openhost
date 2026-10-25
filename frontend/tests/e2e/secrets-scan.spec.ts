@@ -129,10 +129,17 @@ test('nenhum segredo legível no diretório de dados após o fluxo completo', as
     }
     expect(found, 'segredos legíveis encontrados').toEqual([]);
 
-    // Sem despejos de falha nem logs.
-    const dumps = files.filter(
-      (f) => /\.(dmp|log)$/i.test(f) || /Crashpad[\\/]reports[\\/]/i.test(f),
-    );
+    // Sem despejos de falha nem logs do app. Os .log do WebView2 são diários do LevelDB e
+    // diagnósticos do Chromium; o conteúdo deles já passou pela varredura acima.
+    const webview = /^webview[\\/]/i;
+    const dumps = files.filter((f) => {
+      const rel = relative(dataDir, f);
+      return (
+        /\.dmp$/i.test(rel) ||
+        /Crashpad[\\/]reports[\\/]/i.test(rel) ||
+        (/\.log$/i.test(rel) && !webview.test(rel))
+      );
+    });
     expect(dumps.map((f) => `${relative(dataDir, f)} (${String(statSync(f).size)} B)`)).toEqual(
       [],
     );
