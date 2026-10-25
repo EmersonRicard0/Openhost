@@ -6,8 +6,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net"
 	"os"
+	"regexp"
+	"runtime"
 	"strings"
 )
 
@@ -90,6 +93,8 @@ var Messages = map[Code]string{
 type Error struct {
 	Code    Code   `json:"code"`
 	Message string `json:"message"`
+	Op      string `json:"op"`
+	Detail  string `json:"detail"`
 }
 
 func (e *Error) Error() string {
@@ -103,15 +108,90 @@ func New(code Code) *Error {
 	if !ok {
 		code, msg = Internal, Messages[Internal]
 	}
-	return &Error{Code: code, Message: msg}
+	return &Error{Code: code, Message: msg, Op: bridgeOperation()}
 }
 
-// Sanitize converte qualquer erro em *Error sem carregar texto do original.
+// Sanitize converte qualquer erro em *Error. A mensagem continua fixa; o texto técnico fica
+// isolado em Detail depois de remover padrões que possam conter segredos.
 func Sanitize(err error) error {
 	if err == nil {
 		return nil
 	}
-	return New(CodeOf(err))
+	var appErr *Error
+	if errors.As(err, &appErr) {
+		result := *appErr
+		if result.Op == "" {
+			result.Op = bridgeOperation()
+		}
+		result.Detail = redact(result.Detail)
+		if err != appErr && result.Detail == "" {
+			result.Detail = redact(err.Error())
+		}
+		return &result
+	}
+	result := New(CodeOf(err))
+	result.Detail = redact(err.Error())
+	return result
+}
+
+// Panic converte o valor recuperado de um panic no mesmo envelope seguro usado pelos erros.
+func Panic(op string, value any) *Error {
+	return &Error{Code: Internal, Message: Messages[Internal], Op: op, Detail: redact(fmt.Sprint(value))}
+}
+
+// Recover deve ser usado em defer por fronteiras que executam callbacks potencialmente falhos.
+func Recover(op string, target *error) {
+	if value := recover(); value != nil {
+		*target = Panic(op, value)
+	}
+}
+
+var (
+	secretAssignment = regexp.MustCompile(`(?i)(password|passphrase|senha|secret|token|private[_ -]?key|chave privada)(\s*[:=]\s*)("[^"]*"|'[^']*'|[^\s,;\]}]+)`)
+	secretValue      = regexp.MustCompile(`(?i)\b(?:password|passphrase|senha|secret|token|private[_-]?key)[_-][^\s,;\]}]+`)
+	privateKeyBlock  = regexp.MustCompile(`(?is)-----BEGIN[^\r\n]*PRIVATE KEY-----.*?-----END[^\r\n]*PRIVATE KEY-----`)
+)
+
+func redact(detail string) string {
+	if detail == "" {
+		return ""
+	}
+	detail = privateKeyBlock.ReplaceAllString(detail, "[REDACTED PRIVATE KEY]")
+	detail = secretAssignment.ReplaceAllString(detail, "$1$2[REDACTED]")
+	detail = secretValue.ReplaceAllString(detail, "[REDACTED]")
+	runes := []rune(strings.TrimSpace(detail))
+	if len(runes) > 2048 {
+		detail = string(runes[:2048]) + "…"
+	} else {
+		detail = string(runes)
+	}
+	return detail
+}
+
+func bridgeOperation() string {
+	callers := make([]uintptr, 32)
+	n := runtime.Callers(3, callers)
+	frames := runtime.CallersFrames(callers[:n])
+	for {
+		frame, more := frames.Next()
+		const marker = "/internal/bridge.(*"
+		if index := strings.Index(frame.Function, marker); index >= 0 {
+			rest := frame.Function[index+len(marker):]
+			if split := strings.Index(rest, ")."); split > 0 {
+				receiver, method := rest[:split], rest[split+2:]
+				if dot := strings.IndexByte(method, '.'); dot >= 0 {
+					method = method[:dot]
+				}
+				method = strings.TrimSuffix(method, "-fm")
+				if strings.HasSuffix(receiver, "Service") && method != "" {
+					return receiver + "." + method
+				}
+			}
+		}
+		if !more {
+			return ""
+		}
+	}
 }
 
 // CodeOf classifica um erro: códigos do app, cancelamento, rede, sistema de arquivos e SSH.

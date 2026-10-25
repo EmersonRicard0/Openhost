@@ -31,7 +31,10 @@ func TestMain(m *testing.M) {
 
 // --- servidor SSH em processo ----------------------------------------------------------------
 
-type ptyReq struct{ cols, rows uint32 }
+type ptyReq struct {
+	term       string
+	cols, rows uint32
+}
 
 type server struct {
 	t       *testing.T
@@ -170,15 +173,16 @@ func (s *server) session(ch ssh.Channel, reqs <-chan *ssh.Request) {
 		case "pty-req":
 			// string term, uint32 cols, uint32 rows, ...
 			n := binary.BigEndian.Uint32(r.Payload)
+			term := string(r.Payload[4 : 4+n])
 			p := r.Payload[4+n:]
 			s.mu.Lock()
-			s.ptys = append(s.ptys, ptyReq{binary.BigEndian.Uint32(p), binary.BigEndian.Uint32(p[4:])})
+			s.ptys = append(s.ptys, ptyReq{term, binary.BigEndian.Uint32(p), binary.BigEndian.Uint32(p[4:])})
 			s.mu.Unlock()
 			hadPty = true
 			_ = r.Reply(true, nil)
 		case "window-change":
 			s.mu.Lock()
-			s.resizes = append(s.resizes, ptyReq{binary.BigEndian.Uint32(r.Payload), binary.BigEndian.Uint32(r.Payload[4:])})
+			s.resizes = append(s.resizes, ptyReq{"", binary.BigEndian.Uint32(r.Payload), binary.BigEndian.Uint32(r.Payload[4:])})
 			s.mu.Unlock()
 		case "shell":
 			s.mu.Lock()
@@ -536,7 +540,9 @@ func (l *lockedBuf) String() string {
 
 func TestTerminalPtyBeforeShellAndResize(t *testing.T) {
 	s := startServer(t, nil)
-	c, err := dial(t, opts(s, newKnown(), Auth{Method: model.AuthPassword, Password: "pw"}), &fakeIx{acceptKey: true})
+	o := opts(s, newKnown(), Auth{Method: model.AuthPassword, Password: "pw"})
+	o.Term = "linux"
+	c, err := dial(t, o, &fakeIx{acceptKey: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -568,10 +574,10 @@ func TestTerminalPtyBeforeShellAndResize(t *testing.T) {
 	_ = term.Close()
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if len(s.ptys) != 1 || s.ptys[0] != (ptyReq{120, 40}) || !s.shellAfter {
+	if len(s.ptys) != 1 || s.ptys[0] != (ptyReq{"linux", 120, 40}) || !s.shellAfter {
 		t.Fatalf("pty %v shellDepois=%v", s.ptys, s.shellAfter)
 	}
-	if len(s.resizes) != 1 || s.resizes[0] != (ptyReq{100, 30}) {
+	if len(s.resizes) != 1 || s.resizes[0] != (ptyReq{"", 100, 30}) {
 		t.Fatalf("resizes %v", s.resizes)
 	}
 }

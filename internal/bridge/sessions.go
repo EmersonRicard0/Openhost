@@ -28,8 +28,10 @@ type ActiveSummary struct {
 }
 
 type SessionService struct {
-	store    *vault.Store
-	sessions *session.Manager
+	store         *vault.Store
+	sessions      *session.Manager
+	sftpDial      func(sessionID, hostID string) session.Dialer
+	transferCount func() int
 }
 
 func newSessionService(store *vault.Store, sessions *session.Manager) *SessionService {
@@ -83,13 +85,25 @@ func (s *SessionService) Reconnect(sessionID string) error {
 	if err != nil {
 		return clean(err)
 	}
-	if current.Kind != session.KindSSH || current.HostID == nil {
+	if current.HostID == nil {
 		return apperr.New(apperr.InvalidInput)
 	}
 	if _, err := s.optionsForHost(*current.HostID); err != nil {
 		return clean(err)
 	}
-	return clean(s.sessions.Reconnect(sessionID, s.dialHost(*current.HostID)))
+	var dial session.Dialer
+	switch current.Kind {
+	case session.KindSSH:
+		dial = s.dialHost(*current.HostID)
+	case session.KindSFTP:
+		if s.sftpDial == nil {
+			return apperr.New(apperr.InvalidInput)
+		}
+		dial = s.sftpDial(sessionID, *current.HostID)
+	default:
+		return apperr.New(apperr.InvalidInput)
+	}
+	return clean(s.sessions.Reconnect(sessionID, dial))
 }
 
 func (s *SessionService) Close(sessionID string) error {
@@ -122,7 +136,11 @@ func (s *SessionService) AnswerPrompt(sessionID string, answers []string) error 
 }
 
 func (s *SessionService) ActiveSummary() (ActiveSummary, error) {
-	return ActiveSummary{Sessions: s.sessions.ActiveCount()}, nil
+	transfers := 0
+	if s.transferCount != nil {
+		transfers = s.transferCount()
+	}
+	return ActiveSummary{Sessions: s.sessions.ActiveCount(), Transfers: transfers}, nil
 }
 
 func (s *SessionService) SendKeys(sessionID, combo string) error {
@@ -167,6 +185,7 @@ func (s *SessionService) optionsForHost(hostID string) (sshx.Options, error) {
 		ConnectTimeout:   time.Duration(content.Settings.ConnectTimeoutSeconds) * time.Second,
 		Keepalive:        time.Duration(content.Settings.KeepaliveSeconds) * time.Second,
 		LegacyAlgorithms: host.LegacyAlgorithms,
+		Term:             content.Settings.Term,
 		KnownHosts:       storeKnownHosts{s.store},
 	}
 	if host.CredentialID == nil {

@@ -192,7 +192,7 @@ func TestSFTPIntegrationBrowserOperations(t *testing.T) {
 		t.Fatalf("upload: ids=%v err=%v", ids, err)
 	}
 	if transfer := waitTransfer(t, recorder, ids[0], 30*time.Second); transfer.State != TransferCompleted {
-		t.Fatalf("upload terminou em %q: %s", transfer.State, transfer.Reason)
+		t.Fatalf("upload terminou em %q: %v", transfer.State, transfer.Reason)
 	}
 
 	entries, err := endpoint.List(work)
@@ -249,7 +249,7 @@ func TestSFTPIntegrationListsDirectoriesFirstByName(t *testing.T) {
 		t.Fatalf("upload: ids=%v err=%v", ids, err)
 	}
 	if transfer := waitTransfer(t, recorder, ids[0], 30*time.Second); transfer.State != TransferCompleted {
-		t.Fatalf("upload terminou em %q: %s", transfer.State, transfer.Reason)
+		t.Fatalf("upload terminou em %q: %v", transfer.State, transfer.Reason)
 	}
 	if err := endpoint.Mkdir(dir + "/b"); err != nil {
 		t.Fatal(err)

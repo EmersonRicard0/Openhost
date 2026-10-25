@@ -101,6 +101,7 @@ func TestUnlockLockAndReopen(t *testing.T) {
 		t.Fatalf("conteúdo após reabrir: %+v, %v", c, err)
 	}
 	if c.Settings.KeepaliveSeconds != 30 || c.Settings.ConnectTimeoutSeconds != 15 ||
+		c.Settings.LegacyDefault || c.Settings.Term != model.DefaultTerm ||
 		c.Settings.AutoLockMinutes == nil || *c.Settings.AutoLockMinutes != 15 {
 		t.Fatalf("configurações padrão erradas: %+v", c.Settings)
 	}

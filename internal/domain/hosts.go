@@ -1,6 +1,7 @@
 package domain
 
 import (
+	"encoding/json"
 	"net"
 	"regexp"
 	"strings"
@@ -27,6 +28,42 @@ type HostInput struct {
 	CredentialID     *string          `json:"credentialId"`
 	GroupID          *string          `json:"groupId"`
 	LegacyAlgorithms bool             `json:"legacyAlgorithms"`
+	legacySpecified  bool
+}
+
+func (in *HostInput) UnmarshalJSON(data []byte) error {
+	type wireInput struct {
+		Label            string           `json:"label"`
+		Address          string           `json:"address"`
+		Port             int              `json:"port"`
+		Username         string           `json:"username"`
+		AuthMethod       model.AuthMethod `json:"authMethod"`
+		CredentialID     *string          `json:"credentialId"`
+		GroupID          *string          `json:"groupId"`
+		LegacyAlgorithms *bool            `json:"legacyAlgorithms"`
+	}
+	var wire wireInput
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+	*in = HostInput{
+		Label: wire.Label, Address: wire.Address, Port: wire.Port, Username: wire.Username,
+		AuthMethod: wire.AuthMethod, CredentialID: wire.CredentialID, GroupID: wire.GroupID,
+	}
+	if wire.LegacyAlgorithms != nil {
+		in.LegacyAlgorithms = *wire.LegacyAlgorithms
+		in.legacySpecified = true
+	}
+	return nil
+}
+
+// WithLegacyDefault aplica o padrão somente quando o JSON de criação omitiu o campo. Valores
+// true construídos diretamente em Go continuam sendo tratados como explícitos.
+func (in HostInput) WithLegacyDefault(value bool) HostInput {
+	if !in.legacySpecified && !in.LegacyAlgorithms {
+		in.LegacyAlgorithms = value
+	}
+	return in
 }
 
 type HostView struct {

@@ -27,6 +27,7 @@ func (s *HostService) Create(input domain.HostInput) (domain.HostView, error) {
 	var created model.Host
 	err := s.store.Mutate(func(content *model.Content) error {
 		var err error
+		input = input.WithLegacyDefault(content.Settings.LegacyDefault)
 		created, err = domain.CreateHost(content, input, domain.Now())
 		return err
 	})

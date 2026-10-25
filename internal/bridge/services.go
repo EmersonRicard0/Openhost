@@ -13,12 +13,13 @@ import (
 	"shellvault/internal/appwin"
 	"shellvault/internal/forwarding"
 	"shellvault/internal/session"
+	"shellvault/internal/sftpx"
 	"shellvault/internal/sshx"
 	"shellvault/internal/vault"
 )
 
 // allServicesWired passa a true quando os 8 serviços do contrato estiverem ligados (T094).
-const allServicesWired = false
+const allServicesWired = true
 
 // Services agrupa os serviços ligados ao Wails e o estado compartilhado entre eles.
 type Services struct {
@@ -27,15 +28,17 @@ type Services struct {
 	ctxMu sync.RWMutex
 	ctx   context.Context
 
-	store    *vault.Store
-	autoLock *vault.AutoLock
-	sessions *session.Manager
-	forwards *forwarding.Manager
+	store     *vault.Store
+	autoLock  *vault.AutoLock
+	sessions  *session.Manager
+	forwards  *forwarding.Manager
+	transfers *sftpx.TransferManager
 
 	vaultService      *VaultService
 	hostService       *HostService
 	credentialService *CredentialService
 	sessionService    *SessionService
+	sftpService       *SftpService
 	forwardService    *ForwardService
 	profileService    *ProfileService
 	appService        *AppService
@@ -58,6 +61,15 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.hostService = newHostService(store)
 	s.credentialService = newCredentialService(store, s.Context)
 	s.sessionService = newSessionService(store, s.sessions)
+	s.transfers = sftpx.NewTransferManager(sftpx.TransferEvents{
+		Transfer: func(transfer sftpx.Transfer) { s.emit("sftp:transfer", transfer) },
+		Conflict: func(conflict sftpx.ConflictEvent) { s.emit("sftp:conflict", conflict) },
+	}, sftpx.TransferManagerOptions{})
+	s.sftpService = newSftpService(s.sessions, s.sessionService, s.transfers, s.Context)
+	s.sessionService.sftpDial = func(sessionID, hostID string) session.Dialer {
+		return s.sftpService.dial(sessionID, hostID, nil)
+	}
+	s.sessionService.transferCount = s.transfers.ActiveCount
 	s.forwards = forwarding.NewManager(func(hostID string) (forwarding.Client, error) {
 		options, err := s.sessionService.optionsForHost(hostID)
 		if err != nil {
@@ -76,7 +88,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 		func(value appwin.Appearance) { s.emit("app:appearance", value) })
 	s.closeGuard = appwin.NewCloseGuard(
 		func() appwin.ActiveSummary {
-			return appwin.ActiveSummary{Sessions: s.sessions.ActiveCount(), Forwards: s.forwards.ActiveCount()}
+			return appwin.ActiveSummary{Sessions: s.sessions.ActiveCount(), Transfers: s.transfers.ActiveCount(), Forwards: s.forwards.ActiveCount()}
 		},
 		func(summary appwin.ActiveSummary) { s.emit("app:close-requested", summary) },
 		func() {
@@ -92,7 +104,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
 func (s *Services) Bound() []any {
-	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.forwardService, s.profileService, s.appService}
+	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService}
 }
 
 // Context é o contexto do Wails, disponível depois de Startup.
@@ -151,4 +163,14 @@ func (s *Services) TestSessions() SessionStats {
 
 func clean(err error) error {
 	return apperr.Sanitize(err)
+}
+
+// FormatError mantém o formato textual esperado pelo adaptador web, mas garante que até erros
+// residuais do dispatcher atravessem somente no envelope seguro do app.
+func FormatError(err error) any {
+	safe := apperr.Sanitize(err)
+	if safe == nil {
+		return nil
+	}
+	return safe.Error()
 }

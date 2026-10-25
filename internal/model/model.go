@@ -84,6 +84,21 @@ type VaultSettings struct {
 	ConnectTimeoutSeconds int `json:"connectTimeoutSeconds"`
 	// 10–300; padrão 30 (FR-120).
 	KeepaliveSeconds int `json:"keepaliveSeconds"`
+	// Padrão aplicado a hosts novos que omitirem legacyAlgorithms.
+	LegacyDefault bool `json:"legacyDefault"`
+	// Valor de TERM enviado ao servidor no pedido de PTY.
+	Term string `json:"term"`
+}
+
+const DefaultTerm = "xterm-256color"
+
+func ValidTerm(term string) bool {
+	switch term {
+	case "xterm-256color", "xterm", "vt100", "linux":
+		return true
+	default:
+		return false
+	}
 }
 
 type CursorStyle string
@@ -136,7 +151,24 @@ type ColorScheme struct {
 
 func DefaultVaultSettings() VaultSettings {
 	autoLock := 15
-	return VaultSettings{AutoLockMinutes: &autoLock, ConnectTimeoutSeconds: 15, KeepaliveSeconds: 30}
+	return VaultSettings{
+		AutoLockMinutes: &autoLock, ConnectTimeoutSeconds: 15, KeepaliveSeconds: 30,
+		LegacyDefault: false, Term: DefaultTerm,
+	}
+}
+
+func NormalizeVaultSettings(settings VaultSettings) VaultSettings {
+	defaults := DefaultVaultSettings()
+	if settings.ConnectTimeoutSeconds < 5 || settings.ConnectTimeoutSeconds > 120 {
+		settings.ConnectTimeoutSeconds = defaults.ConnectTimeoutSeconds
+	}
+	if settings.KeepaliveSeconds < 10 || settings.KeepaliveSeconds > 300 {
+		settings.KeepaliveSeconds = defaults.KeepaliveSeconds
+	}
+	if !ValidTerm(settings.Term) {
+		settings.Term = defaults.Term
+	}
+	return settings
 }
 
 // Content é o cofre decifrado em memória (decifrado inteiro no desbloqueio, data-model.md).

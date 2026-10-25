@@ -39,7 +39,7 @@ func (t *Terminal) Start(cols, rows int, out io.Writer) error {
 	}
 	sess.Stdout, sess.Stderr = out, out
 	modes := ssh.TerminalModes{ssh.ECHO: 1, ssh.TTY_OP_ISPEED: 14400, ssh.TTY_OP_OSPEED: 14400}
-	if err := sess.RequestPty("xterm-256color", rows, cols, modes); err != nil {
+	if err := sess.RequestPty(t.client.term, rows, cols, modes); err != nil {
 		_ = sess.Close()
 		return err
 	}

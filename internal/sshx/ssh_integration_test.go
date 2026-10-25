@@ -116,6 +116,31 @@ func TestIntegrationLegacyServer(t *testing.T) {
 	_ = c.Close()
 }
 
+func TestIntegrationConfiguredTerm(t *testing.T) {
+	o := integrationOpts(sshdPort, "pwuser", newKnown(), Auth{Method: model.AuthPassword, Password: "pw-test-123"})
+	o.Term = "vt100"
+	client, err := Dial(context.Background(), o, &fakeIx{acceptKey: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal := NewTerminal(client)
+	var output lockedBuf
+	if err := terminal.Start(80, 24, &output); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = terminal.Close() })
+	if err := terminal.Write([]byte("printf '__TERM__%s\\n' \"$TERM\"\nexit\n")); err != nil {
+		t.Fatal(err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for !strings.Contains(output.String(), "__TERM__vt100") {
+		if time.Now().After(deadline) {
+			t.Fatalf("TERM escolhido não apareceu na saída: %q", output.String())
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 type collector struct {
 	mu   sync.Mutex
 	data strings.Builder
