@@ -176,7 +176,7 @@ opções e esperar a resposta; as demais tarefas podem seguir em paralelo.
 - [X] T073 [US4] Criar `frontend/src/features/settings/TerminalSettings.tsx` (terminal de amostra ao vivo, controles de FR-152 só por seleção (FR-158a: galeria de esquemas com prévia, lista de fontes desenhadas na própria fonte, controles deslizantes/opções, cursor ilustrado), editor de esquema com seletores de cor, importar/exportar/duplicar, aviso ao reduzir opacidade) acessível pelas configurações e pela paleta
 - [X] T074 [US4] Criar `frontend/src/features/terminal/profile.ts`: perfil efetivo aplicado a `term.options` + `fit()`, reação a `profiles:changed` em todas as abas, zoom Ctrl+=/−/0 só no `fontSize` efetivo da aba, `allowTransparency` só com opacidade < 1
 - [X] T075 [US4] Override por host em `HostForm.tsx` ("Perfil de terminal próprio" abre `TerminalSettings` no escopo do host)
-- [ ] T076 [US4] E2E `frontend/tests/e2e/personalization.spec.ts`: com 3 abas, fonte/tamanho/esquema aplicados em < 1 s com o mesmo `sessionId` (sem reconexão); importar WT e `.itermcolors` via `SHELLVAULT_TEST_DIALOG_PATH`; exportar e reimportar; override de host só na aba desse host
+- [X] T076 [US4] E2E `frontend/tests/e2e/personalization.spec.ts`: com 3 abas, fonte/tamanho/esquema aplicados em < 1 s com o mesmo `sessionId` (sem reconexão); importar WT e `.itermcolors` via `SHELLVAULT_TEST_DIALOG_PATH`; exportar e reimportar; override de host só na aba desse host
 
 **Checkpoint**: personalização completa
 
@@ -261,7 +261,7 @@ frontend com o Claude.
 ## Phase 9: Polish & Cross-Cutting Concerns
 
 - [ ] T098 E2E `frontend/tests/e2e/secrets-scan.spec.ts` (SC-108): fluxo completo e varredura recursiva do diretório de dados (incluindo `.db`, `-wal`, pasta do WebView2) por senha mestra, senhas, passphrase e trechos da chave em UTF-8, UTF-16LE e base64 → 0 ocorrências; nenhum `*.dmp`, `*.log` nem `Crashpad/reports` com arquivos
-- [ ] T099 [P] E2E `frontend/tests/e2e/performance.spec.ts` (SC-112): 20 abas, uma com `yes` contínuo, troca de aba < 100 ms; busca em 1.000 hosts < 200 ms
+- [X] T099 [P] E2E `frontend/tests/e2e/performance.spec.ts` (SC-112): 20 abas, uma com `yes` contínuo, troca de aba < 100 ms; busca em 1.000 hosts < 200 ms
 - [ ] T100 [P] Criar `scripts/measure.ps1` (SC-109): tamanho do instalador e soma do *private working set* do app + processos WebView2 após 2 min ocioso com 1 aba; registrar em `specs/002-wails-migration/validation.md`; se > 150 MB, aplicar mitigações de research R19 e registrar números
 - [ ] T101 Revisão de segurança em `docs/security-review-002.md` conferindo cada linha da tabela do plan.md contra o código e corrigindo achados
 - [X] T102 [P] `docs/licenses.md`: dependências Go (`go-licenses report`), npm do frontend, fontes OFL e origem dos presets de cor
