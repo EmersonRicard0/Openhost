@@ -34,6 +34,9 @@ const LABELS: Record<OsId, string> = {
   openwrt: 'OpenWrt',
 };
 
+/** O Go grava `osIcon` a partir do T126; até lá o seletor fica escondido para não perder a escolha. */
+export const OS_ICON_EDITABLE = false as boolean;
+
 export const osLabel = (id: OsId): string => LABELS[id];
 
 export const OS_OPTIONS = OS_IDS.map((id) => ({ id, label: LABELS[id] })).sort((a, b) =>
