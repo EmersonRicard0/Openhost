@@ -224,6 +224,8 @@ function AccentSelect({ value }: { value: string }) {
 }
 
 function AppearanceSection({ settings }: { settings: Settings }) {
+  // Linux: janela com fundo sólido, sem transparência do sistema (specs/004, FR-412).
+  const glassAvailable = useUi((u) => u.platform) !== 'linux';
   return (
     <Group>
       <Select
@@ -233,12 +235,14 @@ function AppearanceSection({ settings }: { settings: Settings }) {
         onChange={(theme) => void saveUi({ theme })}
       />
       <AccentSelect value={settings.accent} />
-      <Checkbox
-        label={t.settings.glass}
-        hint={t.settings.glassHint}
-        checked={settings.glassEnabled}
-        onChange={(e) => void saveUi({ glassEnabled: e.target.checked })}
-      />
+      {glassAvailable && (
+        <Checkbox
+          label={t.settings.glass}
+          hint={t.settings.glassHint}
+          checked={settings.glassEnabled}
+          onChange={(e) => void saveUi({ glassEnabled: e.target.checked })}
+        />
+      )}
     </Group>
   );
 }
