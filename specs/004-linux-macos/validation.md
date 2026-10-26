@@ -32,7 +32,29 @@ No Windows, com um `Smoke.Ready()` provisório (o definitivo é a T013 do Codex)
 `node scripts/smoke.mjs` abriu o app, criou cofre, host com senha e chave com passphrase e saiu
 com 0 em 2 s; 152 arquivos no diretório de dados sem nenhum segredo legível.
 
+## Linux em Docker (T020)
+
+`scripts/linux-docker-check.sh 0.4.0`, 2026-10-26:
+
+- Build no `ubuntu:22.04` com `-tags webkit2_41` (release e smoke); `go vet ./...` limpo e
+  `go test ./internal/...` verde nos 17 pacotes (PTY com bash, agente por `SSH_AUTH_SOCK`,
+  permissões 0600/0700 do cofre).
+- Pacotes: `openhost_0.4.0_amd64.deb` (7,6 MB), `openhost-0.4.0-1.x86_64.rpm` (7,8 MB),
+  `OpenHost-0.4.0-x86_64.AppImage` (7,9 MB), todos abaixo de 40 MB (SC-406).
+
+| Sistema | Pacote | Abre (smoke) | Segredos legíveis | Desinstalar mantém o cofre |
+|---|---|---|---|---|
+| Ubuntu 22.04 | `.deb` | ok, 2,6 s | nenhum | ok |
+| Ubuntu 24.04 | `.deb` | ok, 2,3 s | nenhum | ok |
+| Fedora 39 | `.rpm` | ok, 3,3 s | nenhum | ok |
+| Ubuntu 22.04 | AppImage | ok, 2,7 s (sem WebKitGTK: mensagem e saída 1) | nenhum | — |
+
+Em cada um, o binário de release instalado não tem biblioteca faltando (`ldd`) e o `.desktop`,
+o ícone e o `copyright` estão nos caminhos de `contracts/release.md`.
+
 ## Pendências
 
-- T020: rodar `scripts/linux-docker-check.sh` depois dos cartões 54–56.
-- macOS: CI `macos-14` (`quality` e `smoke`) e `.dmg` pelo `release.yml` (T031).
+- macOS: CI `macos-14` (`quality` e `smoke`) e `.dmg` pelo `release.yml` (T031), na
+  pré-release `v0.4.0-rc.1` (T034, com confirmação do usuário).
+- Cenários manuais do usuário: fechar com sessões no macOS (acima) e uso do app com interface
+  no Linux (terminal local, SSH, SFTP).

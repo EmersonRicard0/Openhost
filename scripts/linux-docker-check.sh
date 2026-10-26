@@ -31,7 +31,8 @@ NODE_SETUP="curl -fsSL https://nodejs.org/dist/v${NODE_VERSION}/node-v${NODE_VER
 log() { printf '\n== %s ==\n' "$*"; }
 
 log "build no ubuntu:22.04 (Go ${GO_VERSION}, Wails ${WAILS_VERSION})"
-docker run --rm -v "${HOST_ROOT}:/src:ro" -v "${HOST_ROOT}/${OUT}:/out" ubuntu:22.04 bash -euo pipefail -c "
+# Volumes nomeados guardam módulos do Go e cache de build entre execuções.
+docker run --rm -v "${HOST_ROOT}:/src:ro" -v "${HOST_ROOT}/${OUT}:/out"   -v openhost-gomod:/root/go/pkg/mod -v openhost-gocache:/root/.cache ubuntu:22.04 bash -euo pipefail -c "
   export DEBIAN_FRONTEND=noninteractive
   apt-get update -qq
   apt-get install -y -qq curl xz-utils git build-essential pkg-config file libgtk-3-dev libwebkit2gtk-4.1-dev >/dev/null
@@ -45,13 +46,14 @@ docker run --rm -v "${HOST_ROOT}:/src:ro" -v "${HOST_ROOT}/${OUT}:/out" ubuntu:2
 
   # Cópia sem node_modules, binários e saídas do Windows.
   mkdir /work && cd /src
+  git config --global --add safe.directory /src
   git ls-files -z --cached --others --exclude-standard | xargs -0 -I{} cp --parents {} /work/ 2>/dev/null || true
   cd /work
 
-  go vet -tags webkit2_41 ./...
-  go test -tags webkit2_41 ./internal/... 2>&1 | tail -40
-
+  # O main.go embute frontend/dist: vet e testes só depois do build.
   wails build -tags webkit2_41 -trimpath -ldflags '-s -w'
+  go vet -tags webkit2_41 ./...
+  go test -tags webkit2_41 ./internal/... 2>&1 | grep -v 'no test files'
   VITE_SMOKE=1 wails build -tags 'smoke webkit2_41' -o shellvault-smoke
 
   BIN=build/bin/shellvault scripts/package-linux.sh ${VERSION} amd64

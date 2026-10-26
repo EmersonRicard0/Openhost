@@ -128,7 +128,7 @@ Fazer o mesmo no `fedora:39` com o `.rpm`.
   - `build/linux/nfpm.yaml`, com conteúdo e metadados exatos de `contracts/release.md` e sem scripts de remoção;
   - `build/linux/AppRun`: confere `libwebkit2gtk-4.1.so.0` via `ldconfig -p`; se faltar, mostra a mensagem com `zenity`, `kdialog` ou `stderr` e sai com 1;
   - `scripts/package-linux.sh <versão> <arch>`, que gera `openhost_<v>_<arch>.deb`, `openhost-<v>-1.<arch>.rpm` e `OpenHost-<v>-<arch>.AppImage` a partir de `build/bin/openhost`.
-- [ ] T020 [US1] Validar o Linux em Docker (`scripts/linux-docker-check.sh`):
+- [X] T020 [US1] Validar o Linux em Docker (`scripts/linux-docker-check.sh`):
   - build no `ubuntu:22.04` com `-tags webkit2_41`;
   - `.deb` instalado no `ubuntu:22.04` e no `ubuntu:24.04`, e `.rpm` no `fedora:39`, cada um com `xvfb-run node scripts/smoke.mjs` usando o binário instalado;
   - `dpkg -r openhost` não apaga `~/.config/ShellVault`;
