@@ -1,7 +1,8 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { t } from '../../i18n/pt-BR';
-import type { SendKeysCombo } from '@shared/model/types';
+import type { Platform, SendKeysCombo } from '@shared/model/types';
 import { closeTab, isLive, useSessions, type Tab } from '../../stores/sessions';
+import { useUi } from '../../stores/ui';
 import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
 import { useSlidingIndicator } from '../../ui/motion';
@@ -62,12 +63,15 @@ const SEND_KEYS: [SendKeysCombo, string][] = [
   ['ctrl+b', 'Ctrl+B'],
 ];
 
-function tabMenu(tab: Tab, startRename: () => void): MenuItem[] {
+/** No macOS o app só captura ⌃Tab; as outras combinações com ⌃ já chegam ao terminal. */
+const SEND_KEYS_MAC: [SendKeysCombo, string][] = [['ctrl+tab', '⌃Tab']];
+
+function tabMenu(tab: Tab, platform: Platform, startRename: () => void): MenuItem[] {
   const items: MenuItem[] = [
     { label: t.terminal.renameTab, icon: <RenameIcon />, onSelect: startRename },
   ];
   if (tab.kind !== 'sftp' && isLive(tab.state))
-    for (const [combo, label] of SEND_KEYS)
+    for (const [combo, label] of platform === 'darwin' ? SEND_KEYS_MAC : SEND_KEYS)
       items.push({
         label: t.terminal.sendKeys(label),
         icon: <KeyboardIcon />,
@@ -93,6 +97,7 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
   const [editing, setEditing] = useState(false);
   const [dropTarget, setDropTarget] = useState(false);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  const platform = useUi((u) => u.platform);
 
   return (
     <div
@@ -173,7 +178,7 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
       {menuAt && (
         <Menu
           anchor={menuAt}
-          items={tabMenu(tab, () => {
+          items={tabMenu(tab, platform, () => {
             setEditing(true);
           })}
           onClose={() => {

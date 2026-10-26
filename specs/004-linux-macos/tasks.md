@@ -53,7 +53,7 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
   - sem `/etc/shells`, cai em `bash`, `zsh`, `fish` e `sh` do `PATH`;
   - id do Windows salvo (`powershell`) resolve para o padrão com aviso;
   - `args` = `["-l"]`.
-- [ ] T006 Go: `internal/localpty/shells_unix.go` (`//go:build !windows`) conforme `data-model.md` (Shell local) e R2. Em `pty.go`, no Unix, `cmd.Env` recebe `TERM=xterm-256color`, e o comentário do pacote passa a citar o PTY Unix.
+- [ ] T006 Go: `internal/localpty/shells_unix.go` (`//go:build !windows`) conforme `data-model.md` (Shell local) e R2. Em `pty.go`, no Unix, `cmd.Env` recebe `TERM=xterm-256color`, e o comentário do pacote passa a citar o PTY Unix. Shell padrão por sistema: `localpty.DefaultShellID()` (`powershell` no Windows; no Unix o id do shell de login) passa a ser o padrão de `DefaultShell` em `internal/appwin/preferences.go` e o substituto em `internal/bridge/app.go` (`GetPreferences`), no lugar do `PowerShell` fixo; `ValidShellID` aceita os ids do Unix.
 - [ ] T007 [P] Go: testes de aparência com leitor falso, nos três arquivos abaixo. Valores fora do domínio esperado viram o padrão.
   - `internal/appwin/appearance_linux_test.go` (portal):
     - `color-scheme` 1 → escuro, 2 → claro, 0 → claro;
@@ -149,14 +149,14 @@ Fazer o mesmo no `fedora:39` com o `.rpm`.
 
 Os cenários 4–7 do quickstart ficam com o usuário.
 
-- [ ] T021 [P] [US2] Interface: testes em `frontend/src/app/shortcuts.test.ts` para a tabela do macOS de `contracts/platform.md`:
+- [X] T021 [P] [US2] Interface: testes em `frontend/src/app/shortcuts.test.ts` para a tabela do macOS de `contracts/platform.md`:
   - ⌘T, ⌘W, ⇧⌘], ⇧⌘[, ⇧⌘P, ⌘F, ⌘B, ⌘= / ⌘- / ⌘0;
   - ⌃Tab continua;
   - nenhum combo com ⌃ é capturado, exceto ⌃Tab;
   - exibição `⇧⌘T` sem `+`;
   - overrides gravados `Ctrl+…` continuam literais.
-- [ ] T022 [US2] Interface: `frontend/src/app/shortcuts.ts` e `useShortcuts.ts` com `DEFAULT_SHORTCUTS` por plataforma e formatação com símbolos `⌃ ⌥ ⇧ ⌘`. `ShortcutsEditor.tsx`, `CommandPalette.tsx`, `TabBar.tsx` e `Sidebar.tsx` usam o formatador. O rótulo de `newPowerShell` vira "Novo terminal (shell padrão)" em `frontend/src/i18n/pt-BR.ts`, com o id mantido.
-- [ ] T023 [US2] Interface: em `frontend/src/features/terminal/TerminalView.tsx`, no macOS:
+- [X] T022 [US2] Interface: `frontend/src/app/shortcuts.ts` e `useShortcuts.ts` com `DEFAULT_SHORTCUTS` por plataforma e formatação com símbolos `⌃ ⌥ ⇧ ⌘`. `ShortcutsEditor.tsx`, `CommandPalette.tsx`, `TabBar.tsx` e `Sidebar.tsx` usam o formatador. A ação `newPowerShell` só aparece no Windows (`actionsFor(platform)`); o id continua para não invalidar overrides gravados.
+- [X] T023 [US2] Interface: em `frontend/src/features/terminal/TerminalView.tsx`, no macOS:
   - ⌘C copia a seleção;
   - ⌘V cola pela confirmação de várias linhas já existente;
   - Ctrl+Shift+C/V não são tratados;

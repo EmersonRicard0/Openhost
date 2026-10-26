@@ -1,6 +1,7 @@
 // Ações do espaço de trabalho usadas pelos atalhos (FR-140) e pela paleta (FR-141).
 import type { ShortcutAction } from '../../app/shortcuts';
 import { closeTab, isLive, useSessions } from '../../stores/sessions';
+import { useShells } from '../../stores/shells';
 import { useUi } from '../../stores/ui';
 import { useWorkspace } from '../../stores/workspace';
 import { toastError } from '../../ui/Toast';
@@ -86,7 +87,12 @@ export function runShortcut(action: ShortcutAction, repeat: boolean): void {
   if (dialogOpen() || workspace.paletteOpen) return;
   switch (action) {
     case 'newTab':
-      if (!repeat) void openLocal(useUi.getState().settings?.defaultShell ?? 'powershell');
+      if (!repeat)
+        void openLocal(
+          useUi.getState().settings?.defaultShell ??
+            useShells.getState().shells[0]?.id ??
+            'powershell',
+        );
       break;
     case 'newPowerShell':
       if (!repeat) void openLocal('powershell');

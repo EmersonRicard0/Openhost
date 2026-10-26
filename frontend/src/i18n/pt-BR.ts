@@ -127,7 +127,7 @@ export const t = {
       'Transparência com desfoque na barra lateral, nas abas e nos menus. Fica opaco em alto contraste ou com a transparência do sistema desligada.',
     behavior: 'Comportamento',
     copyOnSelect: 'Copiar ao selecionar',
-    copyOnSelectHint: 'O texto selecionado vai para a área de transferência sem Ctrl+Shift+C.',
+    copyOnSelectHint: 'O texto selecionado vai direto para a área de transferência.',
     rightClickPaste: 'Colar com o botão direito',
     bell: 'Sino do terminal',
     bellOptions: { off: 'Desligado', sound: 'Som', visual: 'Piscar a tela' },
@@ -138,6 +138,8 @@ export const t = {
       'Se a conexão SSH cair, tenta de novo após 1, 2, 4, 8, 16 e 30 s. Fica parado com o cofre bloqueado.',
     shortcutsIntro:
       'Os atalhos usam Ctrl+Shift para não roubar teclas do terminal (Ctrl+W, Ctrl+K, Ctrl+T e o Ctrl+B do tmux continuam indo para o servidor). Clique em uma combinação para trocá-la.',
+    shortcutsIntroMac:
+      'Os atalhos usam ⌘, que nunca chega ao terminal: toda combinação com ⌃ (⌃C, ⌃R, ⌃W, o ⌃B do tmux) continua indo para o servidor. Clique em uma combinação para trocá-la.',
     shortcutKeys: 'Teclas',
     shortcutAction: 'Ação',
     shortcutActions: {
@@ -161,6 +163,7 @@ export const t = {
     shortcutRecording: 'Pressione a combinação… (Esc cancela)',
     shortcutConflict: (action: string) => `Já usado por "${action}".`,
     shortcutNeedsModifier: 'Use Ctrl ou Alt com a tecla, ou uma tecla F.',
+    shortcutNeedsModifierMac: 'Use ⌘, ⌃ ou ⌥ com a tecla, ou uma tecla F.',
     shortcutSteals: (combo: string) =>
       `${combo} deixa de chegar ao terminal (no bash, Ctrl+letra apaga, move ou é prefixo do tmux).`,
     shortcutUseAnyway: 'Usar mesmo assim',
@@ -169,6 +172,11 @@ export const t = {
       ['Ctrl+Shift+C', 'Copiar a seleção'],
       ['Ctrl+Shift+V', 'Colar'],
       ['Ctrl+clique', 'Abrir link do terminal'],
+    ] as const,
+    shortcutFixedMac: [
+      ['⌘C', 'Copiar a seleção'],
+      ['⌘V', 'Colar'],
+      ['⌘-clique', 'Abrir link do terminal'],
     ] as const,
     aboutDescription: 'Cliente SSH, SFTP e encaminhamento de portas para Windows, Linux e macOS.',
     version: (v: string) => `Versão ${v}`,
