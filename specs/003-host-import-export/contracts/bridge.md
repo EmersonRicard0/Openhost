@@ -31,7 +31,7 @@ contrato: `ImportService` e `ExportService`. Tipos em [data-model.md](../data-mo
 | Método | Entrada | Saída | Notas |
 |---|---|---|---|
 | `Count(scope)` | `scope` | `{hosts, groups, keys}` | para o resumo do diálogo antes de salvar |
-| `Export(request)` | `ExportRequest` | `{path: string, hosts: number, keys: number} \| null` | abre o diálogo de salvar com extensão do formato; `null` = cancelado; `includeKeys` sem `masterPassword` correta → `VAULT_BAD_PASSWORD`; `filePassword` fraca → `WEAK_PASSWORD`; destino existente pede confirmação no próprio diálogo do sistema; destino = `~/.ssh/config` do usuário exige `sshConfigMode` (`INVALID_INPUT` sem ele) |
+| `Export(request)` | `ExportRequest` | `{path: string, hosts: number, keys: number} \| null` | abre o diálogo de salvar com extensão do formato; `null` = cancelado; `includeKeys` sem `masterPassword` correta → `VAULT_BAD_PASSWORD`; `filePassword` fraca → `WEAK_PASSWORD`; destino existente pede confirmação no próprio diálogo do sistema; a interface sempre envia `sshConfigMode` no formato `openssh` (ela não sabe o destino antes do diálogo); o Go só o aplica quando o destino escolhido é o `~/.ssh/config` do usuário |
 
 `path` volta só para exibir "Salvo em …"; não é segredo.
 
