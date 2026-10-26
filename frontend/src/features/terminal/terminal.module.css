@@ -1,12 +1,51 @@
-.tabBar {
-  position: relative;
+.tabStrip {
   display: flex;
   align-items: center;
   gap: 4px;
   height: 42px;
   padding: 0 2px;
+}
+
+/* Só as abas rolam; setas, lista e + ficam fixos ao lado. */
+.tabBar {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  height: 100%;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+/* Abas cortadas na borda somem aos poucos, indicando que há mais para rolar. */
+.tabBar[data-fade-start] {
+  mask-image: linear-gradient(to right, transparent, #000 32px);
+}
+
+.tabBar[data-fade-end] {
+  mask-image: linear-gradient(to left, transparent, #000 32px);
+}
+
+.tabBar[data-fade-start][data-fade-end] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 32px,
+    #000 calc(100% - 32px),
+    transparent
+  );
+}
+
+.tabScroll {
+  flex: none;
+  width: 26px;
+  height: 26px;
+}
+
+.tab {
+  flex: none;
 }
 
 /* A pílula da aba ativa desliza entre as abas (FR-166); sem medida, a própria aba a desenha. */

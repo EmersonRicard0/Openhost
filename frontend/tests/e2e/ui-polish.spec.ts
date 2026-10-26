@@ -179,3 +179,48 @@ test('com "reduzir movimento" as durações computadas são 0 (FR-170)', async (
     await app.close();
   }
 });
+
+test('muitas abas: roda do mouse, setas e lista de abas mostram as escondidas', async () => {
+  const app = await launchApp();
+  try {
+    const { page } = app;
+    await createVault(page);
+    await page.setViewportSize({ width: 900, height: 700 });
+    const tabs = page.getByRole('tab');
+    for (let i = 1; i <= 12; i++) {
+      await page.getByRole('button', { name: 'Novo terminal local' }).click();
+      await page.getByRole('menuitem', { name: 'Prompt de Comando', exact: true }).click();
+      await expect(tabs).toHaveCount(i);
+    }
+    const bar = page.getByRole('tablist');
+    const scrollLeft = () => bar.evaluate((el) => el.scrollLeft);
+    const left = page.getByRole('button', { name: 'Rolar abas para a esquerda' });
+    const right = page.getByRole('button', { name: 'Rolar abas para a direita' });
+
+    // A última aba aberta é a ativa e fica à vista: a barra está no fim.
+    await expect(right).toBeDisabled();
+    await expect(left).toBeEnabled();
+    await expect(tabs.last()).toBeInViewport();
+
+    // Roda do mouse (vertical) rola as abas na horizontal.
+    await bar.hover();
+    await page.mouse.wheel(0, -100_000);
+    await expect.poll(scrollLeft).toBe(0);
+    await expect(left).toBeDisabled();
+    await expect(tabs.first()).toBeInViewport();
+
+    // Seta para a direita avança.
+    await right.click();
+    await expect.poll(scrollLeft).toBeGreaterThan(0);
+
+    // Lista de abas ativa uma escondida e a traz para a vista. A roda vale também sobre a seta.
+    await page.mouse.wheel(0, -100_000);
+    await expect.poll(scrollLeft).toBe(0);
+    await page.getByRole('button', { name: 'Todas as abas' }).click();
+    await page.getByRole('menuitem').last().click();
+    await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
+    await expect(tabs.last()).toBeInViewport();
+  } finally {
+    await app.close();
+  }
+});

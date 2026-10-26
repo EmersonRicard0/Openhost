@@ -1,4 +1,12 @@
-import { useRef, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import { t } from '../../i18n/pt-BR';
 import type { Platform, SendKeysCombo } from '@shared/model/types';
 import { closeTab, isLive, useSessions, type Tab } from '../../stores/sessions';
@@ -7,6 +15,9 @@ import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
 import { useSlidingIndicator } from '../../ui/motion';
 import {
+  ChevronDownIcon,
+  ChevronIcon,
+  ChevronLeftIcon,
   CloseIcon,
   ConnectedIcon,
   ConnectingIcon,
@@ -196,32 +207,169 @@ export interface TabBarProps {
   trailing?: ReactNode;
 }
 
+/** Distância da borda (px) em que arrastar uma aba rola a barra, e o passo de cada evento. */
+const EDGE = 48;
+const EDGE_STEP = 14;
+
+function revealActive(bar: HTMLElement | null) {
+  bar
+    ?.querySelector<HTMLElement>('[aria-selected="true"]')
+    ?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+}
+
+/** Rolagem horizontal da barra: o que sobra de cada lado e a aba ativa sempre à vista. */
+function useTabScroll(barRef: RefObject<HTMLDivElement | null>, activeId: string | null) {
+  const [overflow, setOverflow] = useState({ start: false, end: false });
+
+  useLayoutEffect(() => {
+    const bar = barRef.current;
+    if (!bar) return;
+    const measure = () => {
+      const max = bar.scrollWidth - bar.clientWidth;
+      const start = bar.scrollLeft > 1;
+      const end = bar.scrollLeft < max - 1;
+      setOverflow((cur) => (cur.start === start && cur.end === end ? cur : { start, end }));
+    };
+    measure();
+    // A roda vertical do mouse, em qualquer ponto da faixa (setas inclusive), rola as abas na
+    // horizontal; precisa de listener não passivo.
+    const strip = bar.parentElement ?? bar;
+    const onWheel = (e: WheelEvent) => {
+      if (bar.scrollWidth <= bar.clientWidth) return;
+      const delta = Math.abs(e.deltaY) > Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+      if (delta === 0) return;
+      e.preventDefault();
+      bar.scrollLeft += e.deltaMode === WheelEvent.DOM_DELTA_LINE ? delta * 32 : delta;
+    };
+    const observer = new ResizeObserver(measure);
+    observer.observe(bar);
+    for (const child of Array.from(bar.children)) observer.observe(child);
+    bar.addEventListener('scroll', measure, { passive: true });
+    strip.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      observer.disconnect();
+      bar.removeEventListener('scroll', measure);
+      strip.removeEventListener('wheel', onWheel);
+    };
+  });
+
+  // Atalho, nova sessão ou a lista de abas: a ativa sempre fica visível.
+  useEffect(() => {
+    revealActive(barRef.current);
+  }, [barRef, activeId]);
+
+  return overflow;
+}
+
+/** Arrastar com o botão esquerdo no fundo da barra desliza as abas. */
+function startPan(bar: HTMLDivElement, e: ReactPointerEvent) {
+  if (e.button !== 0 || e.target !== bar) return;
+  const startX = e.clientX;
+  const startScroll = bar.scrollLeft;
+  bar.setPointerCapture(e.pointerId);
+  const move = (ev: PointerEvent) => {
+    bar.scrollLeft = startScroll - (ev.clientX - startX);
+  };
+  const end = () => {
+    bar.removeEventListener('pointermove', move);
+    bar.removeEventListener('pointerup', end);
+    bar.removeEventListener('pointercancel', end);
+  };
+  bar.addEventListener('pointermove', move);
+  bar.addEventListener('pointerup', end);
+  bar.addEventListener('pointercancel', end);
+}
+
+function scrollByPage(bar: HTMLDivElement | null, dir: -1 | 1) {
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  bar?.scrollBy({ left: dir * bar.clientWidth * 0.8, behavior: reduce ? 'auto' : 'smooth' });
+}
+
 export function TabBar({ newTabItems, trailing }: TabBarProps) {
-  const { tabs, activeId, reorder } = useSessions();
+  const { tabs, activeId, activate, reorder } = useSessions();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const [listAnchor, setListAnchor] = useState<HTMLElement | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   // Ordem e títulos mudam a posição da aba ativa sem trocar o id: entram na chave.
   const layoutKey = `${activeId ?? ''}|${tabs.map((tb) => `${tb.id}:${tb.title}`).join('|')}`;
   const indicator = useSlidingIndicator(barRef, layoutKey, 'x');
+  const overflow = useTabScroll(barRef, activeId);
+  const overflowing = overflow.start || overflow.end;
 
   return (
-    <div
-      ref={barRef}
-      className={s.tabBar}
-      role="tablist"
-      style={indicator ?? undefined}
-      data-indicator={indicator ? '' : undefined}
-      onDragOver={(e) => {
-        if (e.dataTransfer.types.includes('application/x-shellvault-tab')) e.preventDefault();
-      }}
-      onDrop={(e) => {
-        const id = e.dataTransfer.getData('application/x-shellvault-tab');
-        if (id && e.target === e.currentTarget) reorder(id, null);
-      }}
-    >
-      {tabs.map((tab) => (
-        <TabItem key={tab.id} tab={tab} active={tab.id === activeId} />
-      ))}
+    <div className={s.tabStrip}>
+      {overflowing && (
+        <Button
+          variant="ghost"
+          iconOnly
+          className={`${s.tabScroll} no-drag`}
+          aria-label={t.terminal.scrollTabsLeft}
+          disabled={!overflow.start}
+          onClick={() => {
+            scrollByPage(barRef.current, -1);
+          }}
+        >
+          <ChevronLeftIcon />
+        </Button>
+      )}
+      <div
+        ref={barRef}
+        className={s.tabBar}
+        role="tablist"
+        style={indicator ?? undefined}
+        data-indicator={indicator ? '' : undefined}
+        data-fade-start={overflow.start ? '' : undefined}
+        data-fade-end={overflow.end ? '' : undefined}
+        onPointerDown={(e) => {
+          startPan(e.currentTarget, e);
+        }}
+        onDragOver={(e) => {
+          if (!e.dataTransfer.types.includes('application/x-shellvault-tab')) return;
+          e.preventDefault();
+          // Levar a aba até a borda rola a barra e mostra as que estão escondidas.
+          const box = e.currentTarget.getBoundingClientRect();
+          if (e.clientX < box.left + EDGE) e.currentTarget.scrollLeft -= EDGE_STEP;
+          else if (e.clientX > box.right - EDGE) e.currentTarget.scrollLeft += EDGE_STEP;
+        }}
+        onDrop={(e) => {
+          const id = e.dataTransfer.getData('application/x-shellvault-tab');
+          if (id && e.target === e.currentTarget) reorder(id, null);
+        }}
+      >
+        {tabs.map((tab) => (
+          <TabItem key={tab.id} tab={tab} active={tab.id === activeId} />
+        ))}
+      </div>
+      {overflowing && (
+        <>
+          <Button
+            variant="ghost"
+            iconOnly
+            className={`${s.tabScroll} no-drag`}
+            aria-label={t.terminal.scrollTabsRight}
+            disabled={!overflow.end}
+            onClick={() => {
+              scrollByPage(barRef.current, 1);
+            }}
+          >
+            <ChevronIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            iconOnly
+            className={`${s.tabScroll} no-drag`}
+            aria-label={t.terminal.allTabs}
+            aria-haspopup="menu"
+            aria-expanded={listAnchor !== null}
+            onClick={(e) => {
+              const el = e.currentTarget;
+              setListAnchor((cur) => (cur ? null : el));
+            }}
+          >
+            <ChevronDownIcon />
+          </Button>
+        </>
+      )}
       {newTabItems.length > 0 && (
         <Button
           variant="ghost"
@@ -245,6 +393,26 @@ export function TabBar({ newTabItems, trailing }: TabBarProps) {
           items={newTabItems}
           onClose={() => {
             setMenuAnchor(null);
+          }}
+        />
+      )}
+      {listAnchor && (
+        <Menu
+          anchor={listAnchor}
+          items={tabs.map((tab) => ({
+            label: tab.title,
+            icon: <StateIcon state={tab.state} />,
+            onSelect: () => {
+              activate(tab.id);
+              useWorkspace.getState().setView('terminal');
+              // Já ativa, a aba não muda o id e o efeito não roda: revela depois do render.
+              requestAnimationFrame(() => {
+                revealActive(barRef.current);
+              });
+            },
+          }))}
+          onClose={() => {
+            setListAnchor(null);
           }}
         />
       )}
