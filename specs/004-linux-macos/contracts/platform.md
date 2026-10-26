@@ -32,7 +32,7 @@ nenhum método novo no build normal. O que varia por sistema está aqui.
 | search | Ctrl+Shift+F | ⌘F |
 | toggleSidebar | Ctrl+Shift+B | ⌘B |
 | zoomIn / zoomOut / zoomReset | Ctrl+= / Ctrl+- / Ctrl+0 | ⌘= / ⌘- / ⌘0 |
-| configurações | (paleta) | ⌘, (menu do app) |
+| openSettings | Ctrl+, | ⌘, |
 | sair | Alt+F4 (sistema) | ⌘Q (menu do app, passa pelo `OnBeforeClose`) |
 | copiar / colar no terminal | Ctrl+Shift+C / Ctrl+Shift+V | ⌘C / ⌘V |
 

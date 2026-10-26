@@ -144,3 +144,14 @@ describe('macOS (specs/004, contracts/platform.md)', () => {
     expect(conflictOf('Meta+F', 'palette', {})).toBeNull();
   });
 });
+
+describe('abrir as configurações', () => {
+  it('Ctrl+, no Windows e no Linux; ⌘, no macOS', () => {
+    expect(matchShortcut(key('Comma'))).toBe('openSettings');
+    const mac = buildKeymap({}, 'darwin');
+    expect(matchShortcut(key('Comma', { ctrlKey: false, metaKey: true }), mac)).toBe(
+      'openSettings',
+    );
+    expect(comboLabel('Meta+Comma', 'darwin')).toBe('⌘,');
+  });
+});

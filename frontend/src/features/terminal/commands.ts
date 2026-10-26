@@ -112,6 +112,9 @@ export function runShortcut(action: ShortcutAction, repeat: boolean): void {
     case 'toggleSidebar':
       if (!repeat) toggleSidebar();
       break;
+    case 'openSettings':
+      if (!repeat) workspace.setView('settings');
+      break;
     case 'zoomIn':
       zoom(1);
       break;

@@ -13,6 +13,8 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/logger"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+	"github.com/wailsapp/wails/v2/pkg/options/linux"
+	"github.com/wailsapp/wails/v2/pkg/options/mac"
 	"github.com/wailsapp/wails/v2/pkg/options/windows"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -22,6 +24,11 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+// Ícone da janela no Linux e da caixa "Sobre" no macOS.
+//
+//go:embed build/appicon.png
+var appIcon []byte
 
 // Preenchidos só pelo build de testes (main_e2e.go, tag e2e).
 var (
@@ -64,7 +71,8 @@ func run() error {
 		Height:             800,
 		MinWidth:           800,
 		MinHeight:          500,
-		Frameless:          true,
+		Frameless:          frameless,
+		Menu:               appMenu(),
 		BackgroundColour:   &options.RGBA{R: 0, G: 0, B: 0, A: 0},
 		AssetServer:        &assetserver.Options{Assets: assets},
 		LogLevel:           logger.ERROR,
@@ -95,6 +103,26 @@ func run() error {
 			BackdropType:         windows.Mica,
 			Theme:                windows.SystemDefault,
 			WebviewUserDataPath:  appwin.WebViewDir(dataDir),
+		},
+		Mac: &mac.Options{
+			TitleBar:             mac.TitleBarHiddenInset(),
+			WebviewIsTransparent: true,
+			WindowIsTranslucent:  true,
+			About: &mac.AboutInfo{
+				Title:   "OpenHost",
+				Message: "Cliente SSH local-first com cofre criptografado.",
+				Icon:    appIcon,
+			},
+		},
+		Linux: &linux.Options{
+			Icon:        appIcon,
+			ProgramName: "openhost",
+			// Fundo sólido: transparência depende do compositor (FR-412).
+			WindowIsTranslucent: false,
+			WebviewGpuPolicy:    linux.WebviewGpuPolicyOnDemand,
+			Messages: &linux.Messages{
+				WebKit2GTKMinRequired: "O OpenHost precisa do WebKitGTK %s ou mais novo (pacote libwebkit2gtk-4.1).",
+			},
 		},
 	})
 }

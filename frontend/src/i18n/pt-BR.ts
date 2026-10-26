@@ -151,6 +151,7 @@ export const t = {
       palette: 'Paleta de comandos',
       search: 'Buscar no terminal',
       toggleSidebar: 'Recolher / expandir a barra lateral',
+      openSettings: 'Abrir as configurações',
       zoomIn: 'Aumentar a fonte',
       zoomOut: 'Diminuir a fonte',
       zoomReset: 'Tamanho padrão da fonte',

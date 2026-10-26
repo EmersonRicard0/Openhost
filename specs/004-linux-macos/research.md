@@ -119,8 +119,8 @@ Levantamento do código atual (compilação cruzada `GOOS=linux|darwin go vet` p
 - **Decisão**:
   - **Menu**: `options.App.Menu` só no darwin, com `menu.AppMenu()` (Sobre, Ocultar, Sair com
     Cmd+Q) e `menu.EditMenu()` (copiar, colar e desfazer nos campos de texto: sem ele o
-    WKWebView não recebe Cmd+C/V), mais o item "Configurações…" com Cmd+, que emite o mesmo
-    evento da paleta.
+    WKWebView não recebe Cmd+C/V) e `menu.WindowMenu()`. O papel `AppMenu` do Wails v2 não aceita
+    itens próprios, então Cmd+, é uma ação de atalho do app (`openSettings`, Ctrl+, nos outros).
   - **Cmd+Q e o botão vermelho** passam pelo `OnBeforeClose` já existente (confirmação com
     sessões ativas, FR-414).
   - **Fechar a janela encerra o app**, como no Windows (`HideWindowOnClose: false`). Clicar no

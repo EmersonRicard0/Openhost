@@ -76,11 +76,11 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
   - `internal/appwin/datadir_unix.go`: `DataDir` corrige para `0700` um diretório existente mais aberto;
   - o cofre (`internal/vault`) e as preferências criam arquivos com `0600`;
   - teste `datadir_unix_test.go` e teste no `vault` (`//go:build !windows`): `shellvault.db`, `-wal`, `-shm` e preferências com modo `0600` mesmo com `umask 000`.
-- [ ] T011 Opções de janela por sistema (R4, R6):
-  - `main.go` chama `platformOptions(dataDir, services)`, implementada em `main_windows.go` (opções atuais, `Frameless: true`, Mica), `main_darwin.go` e `main_linux.go`.
+- [X] T011 Opções de janela por sistema (R4, R6):
+  - `main.go` preenche `Windows`, `Mac` e `Linux` (os tipos de opção do Wails compilam em todos os sistemas); só `frameless` e `appMenu()` ficam em `main_windows.go`, `main_darwin.go` e `main_linux.go`.
   - `main_darwin.go`:
     - `Frameless: false` e `mac.Options{TitleBar: mac.TitleBarHiddenInset(), WebviewIsTransparent: true, WindowIsTranslucent: true, About: …}`;
-    - `Menu` com `menu.AppMenu()`, `menu.EditMenu()` e "Configurações…" (`keys.CmdOrCtrl(",")`), que emite o evento `app:openSettings`.
+    - `Menu` com `menu.AppMenu()`, `menu.EditMenu()` e `menu.WindowMenu()`. O papel `AppMenu` do Wails não aceita itens próprios, então ⌘, virou a ação de atalho `openSettings` do app (Ctrl+, no Windows e no Linux).
   - `main_linux.go`: `Frameless: false`, `linux.Options{ProgramName: "openhost", WindowIsTranslucent: false}`.
   - A tag `webkit2_41` fica documentada no README e no CI.
 - [X] T012 [P] Interface: `useUi.platform` em `frontend/src/stores/ui.ts`, lido em `frontend/src/main.tsx` com `Environment()` do runtime do Wails antes do primeiro render. O padrão em testes é `'windows'`. Teste em `ui.test.ts`.
@@ -162,7 +162,7 @@ Os cenários 4–7 do quickstart ficam com o usuário.
   - Ctrl+Shift+C/V não são tratados;
   - toda combinação com Ctrl vai para o xterm.
   - Testes no `TerminalView.test.tsx` ou extraídos para uma função pura.
-- [ ] T024 [P] [US2] Interface: no macOS, `TitleBar.tsx` reserva 76 px à esquerda, sem botões próprios e com `--wails-draggable: drag` no cabeçalho (os botões e campos ficam `no-drag`). `App.tsx` escuta o evento `app:openSettings` (menu ⌘,) e abre as configurações. Teste Vitest.
+- [X] T024 [P] [US2] Interface: no macOS, `TitleBar.tsx` reserva 76 px à esquerda, sem botões próprios e com `--wails-draggable: drag` no cabeçalho (os botões e campos ficam `no-drag`). ⌘, abre as configurações pela ação de atalho `openSettings` (T011). Teste Vitest.
 - [ ] T025 [US2] `scripts/package-macos.sh <versão>`:
   - a partir de `build/bin/OpenHost.app` (universal), monta pasta temporária com o `.app`, o link `Applications` e o `LEIA-ME`;
   - `hdiutil create -volname OpenHost -format UDZO` gera `OpenHost-<v>-macos-universal.dmg`;

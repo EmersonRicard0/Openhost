@@ -16,7 +16,8 @@ export type ShortcutAction =
   | 'zoomIn'
   | 'zoomOut'
   | 'zoomReset'
-  | 'toggleSidebar';
+  | 'toggleSidebar'
+  | 'openSettings';
 
 export interface KeyLike {
   code: string;
@@ -41,6 +42,7 @@ export const ACTIONS: readonly ShortcutAction[] = [
   'palette',
   'search',
   'toggleSidebar',
+  'openSettings',
   'zoomIn',
   'zoomOut',
   'zoomReset',
@@ -61,6 +63,7 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, readonly Combo[]> = {
   palette: ['Ctrl+Shift+P'],
   search: ['Ctrl+Shift+F'],
   toggleSidebar: ['Ctrl+Shift+B'],
+  openSettings: ['Ctrl+Comma'],
   // Ctrl+Shift+= para teclados em que o + exige Shift.
   zoomIn: ['Ctrl+Equal', 'Ctrl+NumpadAdd', 'Ctrl+Shift+Equal'],
   zoomOut: ['Ctrl+Minus', 'Ctrl+NumpadSubtract'],
@@ -77,6 +80,7 @@ export const MAC_DEFAULT_SHORTCUTS: Record<ShortcutAction, readonly Combo[]> = {
   palette: ['Shift+Meta+P'],
   search: ['Meta+F'],
   toggleSidebar: ['Meta+B'],
+  openSettings: ['Meta+Comma'],
   zoomIn: ['Meta+Equal', 'Shift+Meta+Equal', 'Meta+NumpadAdd'],
   zoomOut: ['Meta+Minus', 'Meta+NumpadSubtract'],
   zoomReset: ['Meta+Digit0', 'Meta+Numpad0'],
