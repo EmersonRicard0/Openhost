@@ -18,7 +18,7 @@ import (
 	"shellvault/internal/vault"
 )
 
-// allServicesWired passa a true quando os 8 serviços do contrato estiverem ligados (T094).
+// allServicesWired indica que todos os serviços atuais do contrato estão ligados.
 const allServicesWired = true
 
 // Services agrupa os serviços ligados ao Wails e o estado compartilhado entre eles.
@@ -43,6 +43,7 @@ type Services struct {
 	forwardService    *ForwardService
 	profileService    *ProfileService
 	appService        *AppService
+	importService     *ImportService
 	closeGuard        *appwin.CloseGuard
 }
 
@@ -92,7 +93,13 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 		},
 	)
 	s.appService = newAppService(preferences, appearance, s.closeGuard, s.Context)
-	store.OnStatus(func(status vault.Status) { s.emit("vault:state", status) })
+	s.importService = newImportService(store, s.Context)
+	store.OnStatus(func(status vault.Status) {
+		if status.State != vault.StateUnlocked {
+			s.importService.coordinator.Clear()
+		}
+		s.emit("vault:state", status)
+	})
 	return s, nil
 }
 
@@ -112,7 +119,7 @@ func (s *Services) connectForward(hostID string) (forwarding.Client, error) {
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
 func (s *Services) Bound() []any {
-	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService}
+	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService}
 }
 
 // Context é o contexto do Wails, disponível depois de Startup.
