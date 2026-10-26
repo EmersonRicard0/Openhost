@@ -21,19 +21,19 @@
 
 /* Abas cortadas na borda somem aos poucos, indicando que há mais para rolar. */
 .tabBar[data-fade-start] {
-  mask-image: linear-gradient(to right, transparent, #000 32px);
+  mask-image: linear-gradient(to right, transparent, black 32px);
 }
 
 .tabBar[data-fade-end] {
-  mask-image: linear-gradient(to left, transparent, #000 32px);
+  mask-image: linear-gradient(to left, transparent, black 32px);
 }
 
 .tabBar[data-fade-start][data-fade-end] {
   mask-image: linear-gradient(
     to right,
     transparent,
-    #000 32px,
-    #000 calc(100% - 32px),
+    black 32px,
+    black calc(100% - 32px),
     transparent
   );
 }

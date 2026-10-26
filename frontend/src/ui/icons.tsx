@@ -34,8 +34,6 @@ import {
   Lock,
   LockOpen,
   Minus,
-  PanelLeftClose,
-  PanelLeftOpen,
   Plus,
   RefreshCw,
   Search,
@@ -80,8 +78,6 @@ export const ChevronLeftIcon = icon(ChevronLeft);
 export const MinimiseIcon = icon(Minus);
 export const MaximiseIcon = icon(Square);
 export const RestoreIcon = icon(Copy);
-export const SidebarCollapseIcon = icon(PanelLeftClose);
-export const SidebarExpandIcon = icon(PanelLeftOpen);
 export const CaseSensitiveIcon = icon(CaseSensitive);
 export const RegexIcon = icon(Regex);
 export const ChevronUpIcon = icon(ChevronUp);
