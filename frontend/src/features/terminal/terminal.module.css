@@ -192,6 +192,11 @@
   display: none;
 }
 
+/* Painel de um grupo (specs/006): posição vem de `rects()` no estilo inline. */
+.pane {
+  inset: auto;
+}
+
 /* Espaçamento e fundo vêm do perfil (FR-152). */
 .frame {
   position: relative;

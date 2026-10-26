@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { installShortcuts } from '../../app/shortcuts';
 import { currentKeymap, useShortcutLabel } from '../../app/useShortcuts';
 import { t } from '../../i18n/pt-BR';
-import { closeTab, useSessions, type Tab } from '../../stores/sessions';
+import { closeTab, groupOf, useSessions, type Tab } from '../../stores/sessions';
 import { useShells } from '../../stores/shells';
 import { useUi } from '../../stores/ui';
 import { useWorkspace } from '../../stores/workspace';
@@ -16,6 +16,7 @@ import { SftpView } from '../sftp/SftpView';
 import { MAX_ATTEMPTS, stopAutoReconnect, useAutoReconnect } from './autoReconnect';
 import { runShortcut } from './commands';
 import { HostKeyDialog } from './HostKeyDialog';
+import { rects, type Rect } from './layout';
 import { openLocal } from './openLocal';
 import { reconnect } from './reconnect';
 import { PasteConfirmDialog } from './PasteConfirmDialog';
@@ -38,6 +39,24 @@ function useSecondsUntil(at: number | undefined): number {
     };
   }, [at]);
   return at === undefined ? 0 : Math.max(0, Math.ceil((at - now) / 1_000));
+}
+
+/** Metade da divisória de 1 px (research R3): cada painel recua meio pixel nas bordas internas. */
+const HALF_GAP = 0.5;
+
+/** Posição de um painel em porcentagem da área, descontando a divisória nas bordas internas. */
+function paneStyle(r: Rect): CSSProperties {
+  const edge = (start: number, size: number) => {
+    const before = start > 0 ? HALF_GAP : 0;
+    const after = start + size < 1 ? HALF_GAP : 0;
+    return {
+      at: `calc(${String(start * 100)}% + ${String(before)}px)`,
+      size: `calc(${String(size * 100)}% - ${String(before + after)}px)`,
+    };
+  };
+  const x = edge(r.x, r.w);
+  const y = edge(r.y, r.h);
+  return { left: x.at, width: x.size, top: y.at, height: y.size };
 }
 
 function BannerIcon({ state }: { state: Tab['state'] }) {
@@ -123,7 +142,10 @@ function CloseTabConfirm() {
 }
 
 export function Workspace() {
-  const { tabs, activeId } = useSessions();
+  const { tabs, activeId, groups, activate } = useSessions();
+  // Aba ativa que é grupo: seus membros ficam visíveis lado a lado (specs/006, research R3).
+  const activeGroup = activeId ? groupOf(groups, activeId) : undefined;
+  const panes = useMemo(() => (activeGroup ? rects(activeGroup.root).panes : {}), [activeGroup]);
   const settings = useWorkspace((w) => w.view === 'settings');
   const newTabShortcut = useShortcutLabel('newTab');
   const shells = useShells((s) => s.shells);
@@ -167,18 +189,28 @@ export function Workspace() {
               )}
             </div>
           )}
-          {tabs.map((tab) =>
-            tab.kind === 'sftp' ? (
-              <SftpView key={tab.id} tab={tab} active={tab.id === activeId} />
-            ) : (
+          {tabs.map((tab) => {
+            if (tab.kind === 'sftp')
+              return <SftpView key={tab.id} tab={tab} active={tab.id === activeId} />;
+            const rect = panes[tab.id];
+            return (
               <TerminalView
                 key={tab.id}
                 tab={tab}
-                active={tab.id === activeId}
+                visible={tab.id === activeId || rect !== undefined}
+                focused={tab.id === activeId}
+                pane={
+                  rect && {
+                    style: paneStyle(rect),
+                    onActivate: () => {
+                      if (useSessions.getState().activeId !== tab.id) activate(tab.id);
+                    },
+                  }
+                }
                 banner={<Banner tab={tab} />}
               />
-            ),
-          )}
+            );
+          })}
         </div>
         {settings && <SettingsPage />}
       </div>
