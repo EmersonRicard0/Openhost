@@ -13,6 +13,13 @@ func TestValidateShortcuts(t *testing.T) {
 		{"closeTab": "Ctrl+Shift+W", "palette": ""},
 		{"newTab": "Ctrl+Alt+T", "nextTab": "Ctrl+Tab", "search": "F5"},
 		{"zoomIn": "Alt+Equal", "zoomOut": "Ctrl+Minus", "zoomReset": "Ctrl+Digit0"},
+		{
+			"openSettings": "Ctrl+Comma",
+			"focusLeft":    "Alt+ArrowLeft",
+			"focusRight":   "Alt+ArrowRight",
+			"focusUp":      "Alt+ArrowUp",
+			"focusDown":    "Alt+ArrowDown",
+		},
 	}
 	for _, shortcuts := range valid {
 		if err := ValidateShortcuts(shortcuts); err != nil {

@@ -18,7 +18,8 @@ var accentID = regexp.MustCompile(`^[a-z][a-z0-9-]{0,31}$`)
 var shortcutActions = map[string]struct{}{
 	"newTab": {}, "newPowerShell": {}, "closeTab": {}, "nextTab": {}, "prevTab": {},
 	"search": {}, "palette": {}, "zoomIn": {}, "zoomOut": {}, "zoomReset": {},
-	"toggleSidebar": {},
+	"toggleSidebar": {}, "openSettings": {},
+	"focusLeft": {}, "focusRight": {}, "focusUp": {}, "focusDown": {},
 }
 
 var (
