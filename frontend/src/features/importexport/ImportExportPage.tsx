@@ -177,6 +177,15 @@ export function ImportExportPage() {
     void loadSources();
   }, [loadSources]);
 
+  // Sair da tela depois de concluir volta às origens; uma prévia em revisão continua onde estava.
+  useEffect(
+    () => () => {
+      const st = useImportExport.getState();
+      if (st.step === 'summary') st.reset();
+    },
+    [],
+  );
+
   return (
     <div className={s.page}>
       {step === 'preview' && preview ? (

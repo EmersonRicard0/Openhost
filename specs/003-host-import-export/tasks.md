@@ -54,8 +54,8 @@ antes do código, falhando primeiro.
 - [X] T017 [P] [US1] Fixtures em `internal/importer/testdata/openssh/`: config simples, `Host *` e `Host *.interno` com padrões, `Host a b c`, `!negação`, `Include config.d/*` (com ciclo), `Match`, `ProxyJump`/`LocalForward`, `IdentityFile` com `~`, `%h`, `%u` e caminho inexistente, `chave=valor` e aspas
 - [X] T018 [P] [US1] Go: testes em `internal/importer/openssh_test.go` — casos de R4: "primeiro valor obtido vence", padrões não viram host mas aplicam opções, um host por nome concreto, `Include` até 8 níveis sem repetir, `Match` ignorado com aviso, opções sem equivalente → `OPTION_IGNORED`, token não suportado → `TOKEN_UNSUPPORTED`, `origin` = arquivo:linha
 - [X] T019 [US1] Go: `internal/importer/openssh.go` e registro `openssh` em `ImportService` (`useDefault` lê `%USERPROFILE%\.ssh\config`; `defaultFound` em `Sources`)
-- [ ] T020 [US1] Interface: cartão "Configuração do OpenSSH" com "Usar ~/.ssh/config" e "Escolher arquivo…", ícones de aviso por código na `PreviewTable`
-- [ ] T021 [US1] E2E `frontend/tests/e2e/import-export.spec.ts`: importar config de fixture (via `SetDialogPath`) com `IdentityFile` de chave de teste gerada por `scripts/gen-test-keys.mjs`, conferir prévia (curinga ignorado, aviso de chave inexistente), confirmar, conectar ao sshd pela chave; reimportar → todos duplicados com "Pular" e nada criado (SC-305); "Desfazer" remove o lote
+- [X] T020 [US1] Interface: cartão "Configuração do OpenSSH" com "Usar ~/.ssh/config" e "Escolher arquivo…", ícones de aviso por código na `PreviewTable`
+- [X] T021 [US1] E2E `frontend/tests/e2e/import-export.spec.ts`: importar config de fixture (via `SetDialogPath`) com `IdentityFile` de chave de teste gerada por `scripts/gen-test-keys.mjs`, conferir prévia (curinga ignorado, aviso de chave inexistente), confirmar, conectar ao sshd pela chave; reimportar → todos duplicados com "Pular" e nada criado (SC-305); "Desfazer" remove o lote
 
 **Checkpoint**: MVP utilizável.
 

@@ -630,6 +630,7 @@ export const t = {
     duplicateOfHost: 'Já existe no cofre',
     duplicateOfRow: 'Repetido neste arquivo',
     columns: {
+      select: 'Importar',
       label: 'Rótulo',
       address: 'Endereço',
       port: 'Porta',

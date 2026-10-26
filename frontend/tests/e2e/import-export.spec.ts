@@ -25,6 +25,7 @@ function sshConfig(dir: string): string {
       'Host sem-chave',
       `  HostName ${SSHD.host}`,
       `  Port ${String(SSHD.port)}`,
+      '  User pwuser',
       '  IdentityFile C:/nao/existe/id_rsa',
       '  ProxyJump bastiao',
       '',
@@ -62,8 +63,7 @@ test.beforeAll(async () => {
   await up();
 });
 
-// Liga quando o Go entregar ImportService e a origem OpenSSH (cartões 46 e 47).
-test.fixme('importa o ~/.ssh/config com prévia, conecta pela chave, ignora duplicados e desfaz', async () => {
+test('importa o ~/.ssh/config com prévia, conecta pela chave, ignora duplicados e desfaz', async () => {
   const app = await launchApp();
   const dir = mkdtempSync(join(tmpdir(), 'openhost-import-'));
   const config = sshConfig(dir);

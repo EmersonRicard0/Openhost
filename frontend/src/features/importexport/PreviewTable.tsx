@@ -90,19 +90,32 @@ export function PreviewTable({ rows, keys, onUpdate, emptyText }: PreviewTablePr
 
   if (rows.length === 0) return <p className={s.emptyTable}>{emptyText}</p>;
 
+  // Coluna "Grupo" só quando a origem traz grupos: o espaço vai para os avisos.
+  const showGroup = rows.some((row) => row.groupPath.length > 0);
+
   return (
     <div className={s.tableWrap}>
       <table className={s.table}>
+        <colgroup>
+          <col className={s.colCheck} />
+          <col className={s.colLabel} />
+          <col className={s.colAddress} />
+          <col className={s.colPort} />
+          <col className={s.colUser} />
+          {showGroup && <col className={s.colGroup} />}
+          <col className={s.colKey} />
+          <col />
+        </colgroup>
         <thead>
           <tr>
             <th className={s.colCheck}>
-              <span className={s.visuallyHidden}>{ie.columns.status}</span>
+              <span className={s.visuallyHidden}>{ie.columns.select}</span>
             </th>
             <th>{ie.columns.label}</th>
             <th>{ie.columns.address}</th>
             <th className={s.colPort}>{ie.columns.port}</th>
             <th>{ie.columns.username}</th>
-            <th>{ie.columns.group}</th>
+            {showGroup && <th>{ie.columns.group}</th>}
             <th>{ie.columns.key}</th>
             <th>{ie.columns.status}</th>
           </tr>
@@ -179,41 +192,51 @@ export function PreviewTable({ rows, keys, onUpdate, emptyText }: PreviewTablePr
                     }}
                   />
                 </td>
-                <td className={s.muted}>{row.groupPath.join(' / ')}</td>
-                <td className={s.keyCell} data-nokey={row.keyRef ? undefined : ''}>
+                {showGroup && (
+                  <td className={s.muted} title={row.groupPath.join(' / ')}>
+                    {row.groupPath.join(' / ')}
+                  </td>
+                )}
+                <td
+                  className={s.keyCell}
+                  data-nokey={row.keyRef ? undefined : ''}
+                  title={keyText(row, keyMap)}
+                >
                   {row.keyRef && <KeyIcon className={s.inlineIcon} />}
                   {keyText(row, keyMap)}
                 </td>
-                <td className={s.status}>
-                  {row.state === 'duplicate' && (
-                    <button
-                      type="button"
-                      className={s.dupButton}
-                      aria-haspopup="menu"
-                      aria-label={`${ie.duplicateAction(name)}: ${ie.duplicateActions[row.duplicateAction]}`}
-                      onClick={(e) => {
-                        openActions(e.currentTarget, row);
-                      }}
-                    >
-                      <span className={s.dupKind}>
-                        {row.duplicateOf?.hostId ? ie.duplicateOfHost : ie.duplicateOfRow}
+                <td>
+                  <div className={s.status}>
+                    {row.state === 'duplicate' && (
+                      <button
+                        type="button"
+                        className={s.dupButton}
+                        aria-haspopup="menu"
+                        aria-label={`${ie.duplicateAction(name)}: ${ie.duplicateActions[row.duplicateAction]}`}
+                        onClick={(e) => {
+                          openActions(e.currentTarget, row);
+                        }}
+                      >
+                        <span className={s.dupKind}>
+                          {row.duplicateOf?.hostId ? ie.duplicateOfHost : ie.duplicateOfRow}
+                        </span>
+                        {ie.duplicateActions[row.duplicateAction]}
+                        <ChevronDownIcon className={s.inlineIcon} />
+                      </button>
+                    )}
+                    {row.warnings.map((w, i) => (
+                      <span
+                        key={`${w.code}-${String(i)}`}
+                        className={s.warning}
+                        data-blocking={
+                          w.code === 'INVALID_PORT' || w.code === 'MISSING_ADDRESS' || undefined
+                        }
+                      >
+                        <WarningIcon className={s.inlineIcon} />
+                        {warningText(w)}
                       </span>
-                      {ie.duplicateActions[row.duplicateAction]}
-                      <ChevronDownIcon className={s.inlineIcon} />
-                    </button>
-                  )}
-                  {row.warnings.map((w, i) => (
-                    <span
-                      key={`${w.code}-${String(i)}`}
-                      className={s.warning}
-                      data-blocking={
-                        w.code === 'INVALID_PORT' || w.code === 'MISSING_ADDRESS' || undefined
-                      }
-                    >
-                      <WarningIcon className={s.inlineIcon} />
-                      {warningText(w)}
-                    </span>
-                  ))}
+                    ))}
+                  </div>
                 </td>
               </tr>
             );
