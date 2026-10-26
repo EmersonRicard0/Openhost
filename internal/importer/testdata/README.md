@@ -16,8 +16,8 @@ Regras:
 | `ppk/` | chaves do PuTTY | `puttygen` (comandos no cartão 49) |
 | `putty/` | sessões do KiTTY portátil | sintético |
 | `csv/` | planilhas | sintético, no formato que o Excel pt-BR grava (UTF-8 com BOM e `;`, Windows-1252); `.gitattributes` mantém os bytes |
-| `mobaxterm/` | `.mxtsessions`, `MobaXterm.ini` | sintético (validar com arquivo real no quickstart) |
-| `securecrt/` | XML de Export Settings | sintético (validar com arquivo real no quickstart) |
+| `mobaxterm/` | `.mxtsessions`, `MobaXterm.ini` | sintético conforme R8; cobre pastas, SSH com chave, campo de chave deslocado, RDP, Telnet e `[Passwords]` fictício (validar com arquivo real no quickstart) |
+| `securecrt/` | XML de Export Settings | sintético conforme R9; cobre pastas aninhadas, SSH2 com chave, Telnet, Serial e `Password V2` fictício (validar com arquivo real no quickstart) |
 
 As fixtures `openssh/` foram anonimizadas a partir de estruturas reais de operação:
 domínios usam `.test`, caminhos de chaves não existem e nenhum segredo foi incluído. O

@@ -2,6 +2,7 @@ package importer
 
 import (
 	"bytes"
+	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -112,6 +113,49 @@ func hostileLoaders(home string) map[string]func(string) (*ImportPreview, error)
 		"openssh": func(path string) (*ImportPreview, error) {
 			return LoadOpenSSH(path, OpenSSHOptions{HomeDir: home, LocalUser: "local"}, model.EmptyContent())
 		},
+		"mobaxterm": func(path string) (*ImportPreview, error) {
+			return LoadMobaXterm(path, model.EmptyContent())
+		},
+		"securecrt": func(path string) (*ImportPreview, error) {
+			return LoadSecureCRT(path, model.EmptyContent())
+		},
+	}
+}
+
+// XML hostil no SecureCRT (T047): entidades em cascata, entidade externa apontando para um
+// arquivo local e aninhamento profundo. Nada pode expandir, ler o arquivo nem estourar a pilha.
+func TestHostileSecureCRTXML(t *testing.T) {
+	dir := t.TempDir()
+	secret := filepath.Join(dir, "segredo.txt")
+	if err := os.WriteFile(secret, []byte("NAO-PODE-APARECER"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	session := `<key name="Sessions"><key name="s"><string name="Protocol Name">SSH2</string>` +
+		`<string name="Hostname">%s</string></key></key>`
+	laughs := `<?xml version="1.0"?><!DOCTYPE VanDyke [<!ENTITY a "hahahahahahahahahaha">` +
+		`<!ENTITY b "&a;&a;&a;&a;&a;&a;&a;&a;&a;&a;"><!ENTITY c "&b;&b;&b;&b;&b;&b;&b;&b;&b;&b;">` +
+		`<!ENTITY d "&c;&c;&c;&c;&c;&c;&c;&c;&c;&c;">]><VanDyke>` + fmt.Sprintf(session, "&d;") + `</VanDyke>`
+	external := `<?xml version="1.0"?><!DOCTYPE VanDyke [<!ENTITY x SYSTEM "file:///` +
+		filepath.ToSlash(secret) + `">]><VanDyke>` + fmt.Sprintf(session, "&x;") + `</VanDyke>`
+	depth := 2_000_000 // 10 MB de <key>: sem limite, a recursão do decodificador estoura a pilha
+	deep := "<VanDyke>" + strings.Repeat("<key>", depth) + strings.Repeat("</key>", depth) + "</VanDyke>"
+	for name, data := range map[string]string{"entidades": laughs, "externa": external, "profundo": deep} {
+		path := filepath.Join(dir, name+".xml")
+		if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		p, err := LoadSecureCRT(path, model.EmptyContent())
+		if err != nil && !importErrors[apperr.CodeOf(err)] {
+			t.Errorf("%s: erro inesperado %v", name, err)
+		}
+		if p != nil {
+			for _, row := range p.View().Rows {
+				if strings.Contains(row.Address, "haha") || strings.Contains(row.Address, "NAO-PODE") {
+					t.Errorf("%s: entidade expandida no endereço %q", name, row.Address)
+				}
+			}
+			p.Zero()
+		}
 	}
 }
 

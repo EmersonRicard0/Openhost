@@ -110,9 +110,9 @@ antes do código, falhando primeiro.
 
 **Independent Test**: arquivos gerados por cada programa com pastas e sessões não SSH.
 
-- [ ] T038 [P] [US5] Fixtures em `internal/importer/testdata/mobaxterm/` (`.mxtsessions` e `MobaXterm.ini` gerados pelo MobaXterm, com pastas aninhadas, SSH com chave, RDP, Telnet, seção `[Passwords]` com valor fictício) e `testdata/securecrt/` (XML de "Export Settings" com pastas, SSH2 com `Identity Filename V2`, Telnet, Serial, `Password V2` fictício)
-- [ ] T039 [P] [US5] Go: testes em `internal/importer/mobaxterm_test.go` e `securecrt_test.go` — só SSH viram hosts, pastas viram `groupPath`, protocolos ignorados com nome, chave lida quando presente (aviso "chave não lida" quando o campo não bate), `[Passwords]`/`Password V2` nunca lidos (o valor fictício não aparece em nenhuma estrutura), UTF-8 com BOM e Windows-1252
-- [ ] T040 [US5] Go: `internal/importer/mobaxterm.go` (R8) e `internal/importer/securecrt.go` (R9); origens `mobaxterm` e `securecrt`
+- [X] T038 [P] [US5] Fixtures em `internal/importer/testdata/mobaxterm/` (`.mxtsessions` e `MobaXterm.ini` gerados pelo MobaXterm, com pastas aninhadas, SSH com chave, RDP, Telnet, seção `[Passwords]` com valor fictício) e `testdata/securecrt/` (XML de "Export Settings" com pastas, SSH2 com `Identity Filename V2`, Telnet, Serial, `Password V2` fictício)
+- [X] T039 [P] [US5] Go: testes em `internal/importer/mobaxterm_test.go` e `securecrt_test.go` — só SSH viram hosts, pastas viram `groupPath`, protocolos ignorados com nome, chave lida quando presente (aviso "chave não lida" quando o campo não bate), `[Passwords]`/`Password V2` nunca lidos (o valor fictício não aparece em nenhuma estrutura), UTF-8 com BOM e Windows-1252
+- [X] T040 [US5] Go: `internal/importer/mobaxterm.go` (R8) e `internal/importer/securecrt.go` (R9); origens `mobaxterm` e `securecrt`
 - [ ] T041 [US5] Interface: cartões "MobaXterm" e "SecureCRT" com a dica de onde achar o arquivo; resumo final avisa que senhas precisarão ser digitadas na primeira conexão
 
 ---

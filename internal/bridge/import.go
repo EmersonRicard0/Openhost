@@ -72,7 +72,23 @@ func newImportService(store *vault.Store, contextFn func() context.Context) *Imp
 		},
 	}
 	s.registerPutty()
+	s.registerThirdPartyClients()
 	return s
+}
+
+func (s *ImportService) registerThirdPartyClients() {
+	s.sources[importer.SourceMobaXterm] = sourceLoader{
+		source: ImportSource{Kind: importer.SourceMobaXterm, Available: true},
+		load: func(path string, _ PreviewOptions, content *model.Content) (*importer.ImportPreview, error) {
+			return importer.LoadMobaXterm(path, content)
+		},
+	}
+	s.sources[importer.SourceSecureCRT] = sourceLoader{
+		source: ImportSource{Kind: importer.SourceSecureCRT, Available: true},
+		load: func(path string, _ PreviewOptions, content *model.Content) (*importer.ImportPreview, error) {
+			return importer.LoadSecureCRT(path, content)
+		},
+	}
 }
 
 func (s *ImportService) registerPutty() {

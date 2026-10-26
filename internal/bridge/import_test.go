@@ -95,7 +95,8 @@ func TestImportServiceOpenSSHSourceAndDefault(t *testing.T) {
 		byKind[source.Kind] = source
 	}
 	if err != nil || !byKind[importer.SourceOpenHost].Available || !byKind[importer.SourceOpenSSH].Available || !byKind[importer.SourceOpenSSH].DefaultFound ||
-		!byKind[importer.SourcePuTTY].Available || !byKind[importer.SourceKiTTY].Available || !byKind[importer.SourceKiTTYPortable].Available {
+		!byKind[importer.SourcePuTTY].Available || !byKind[importer.SourceKiTTY].Available || !byKind[importer.SourceKiTTYPortable].Available ||
+		!byKind[importer.SourceMobaXterm].Available || !byKind[importer.SourceSecureCRT].Available {
 		t.Fatalf("Sources = %+v, %v", sources, err)
 	}
 	view, err := services.importService.Preview(importer.SourceOpenSSH, PreviewOptions{UseDefault: true})
@@ -112,6 +113,30 @@ func TestImportServiceOpenSSHSourceAndDefault(t *testing.T) {
 	view, err = services.importService.Preview(importer.SourceOpenSSH, PreviewOptions{})
 	if err != nil || view == nil || view.Rows[0].Label != "chosen" {
 		t.Fatalf("Preview escolhido = %+v, %v", view, err)
+	}
+}
+
+func TestImportServiceMobaXtermAndSecureCRTPreview(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	tests := []struct {
+		kind importer.SourceKind
+		path string
+	}{
+		{kind: importer.SourceMobaXterm, path: filepath.Join("..", "importer", "testdata", "mobaxterm", "sessions.mxtsessions")},
+		{kind: importer.SourceSecureCRT, path: filepath.Join("..", "importer", "testdata", "securecrt", "export-settings.xml")},
+	}
+	for _, test := range tests {
+		t.Run(string(test.kind), func(t *testing.T) {
+			services.importService.pickFile = func(context.Context, importer.SourceKind) (string, error) { return test.path, nil }
+			view, err := services.importService.Preview(test.kind, PreviewOptions{})
+			if err != nil || view == nil || len(view.Rows) == 0 {
+				t.Fatalf("Preview(%s) = %+v, %v", test.kind, view, err)
+			}
+			services.importService.Discard(view.ID)
+		})
 	}
 }
 
