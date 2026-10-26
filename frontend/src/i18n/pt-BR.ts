@@ -1,5 +1,10 @@
 // Todos os textos da interface (FR-029). Identificadores em inglês, conteúdo em pt-BR.
 
+const countFmt = new Intl.NumberFormat('pt-BR');
+
+/** Contagens com separador de milhar: 1.000 hosts. */
+const count = (n: number): string => countFmt.format(n);
+
 export const t = {
   window: {
     minimise: 'Minimizar',
@@ -81,6 +86,7 @@ export const t = {
       connection: 'Conexão (SSH)',
       vault: 'Cofre e segurança',
       shortcuts: 'Atalhos',
+      importExport: 'Importar e exportar',
       about: 'Sobre',
     },
     defaultShell: 'Shell da nova aba',
@@ -109,19 +115,19 @@ export const t = {
     eraseVault: 'Apagar cofre…',
     eraseHint: 'Apaga hosts, credenciais e chaves deste computador. Não dá para desfazer.',
     theme: 'Tema',
-    themeSystem: 'Seguir o Windows',
+    themeSystem: 'Seguir o sistema',
     themeLight: 'Claro',
     themeDark: 'Escuro',
     accent: 'Cor de destaque',
     accentHint:
-      'Botões principais, foco e seleção. A cor do Windows é ajustada para continuar legível.',
-    accentSystem: 'Cor do Windows',
+      'Botões principais, foco e seleção. A cor do sistema é ajustada para continuar legível.',
+    accentSystem: 'Cor do sistema',
     glass: 'Efeito de vidro',
     glassHint:
-      'Transparência com desfoque na barra lateral, nas abas e nos menus. Fica opaco em alto contraste ou com a transparência do Windows desligada.',
+      'Transparência com desfoque na barra lateral, nas abas e nos menus. Fica opaco em alto contraste ou com a transparência do sistema desligada.',
     behavior: 'Comportamento',
     copyOnSelect: 'Copiar ao selecionar',
-    copyOnSelectHint: 'O texto selecionado vai para a área de transferência sem Ctrl+Shift+C.',
+    copyOnSelectHint: 'O texto selecionado vai direto para a área de transferência.',
     rightClickPaste: 'Colar com o botão direito',
     bell: 'Sino do terminal',
     bellOptions: { off: 'Desligado', sound: 'Som', visual: 'Piscar a tela' },
@@ -132,6 +138,8 @@ export const t = {
       'Se a conexão SSH cair, tenta de novo após 1, 2, 4, 8, 16 e 30 s. Fica parado com o cofre bloqueado.',
     shortcutsIntro:
       'Os atalhos usam Ctrl+Shift para não roubar teclas do terminal (Ctrl+W, Ctrl+K, Ctrl+T e o Ctrl+B do tmux continuam indo para o servidor). Clique em uma combinação para trocá-la.',
+    shortcutsIntroMac:
+      'Os atalhos usam ⌘, que nunca chega ao terminal: toda combinação com ⌃ (⌃C, ⌃R, ⌃W, o ⌃B do tmux) continua indo para o servidor. Clique em uma combinação para trocá-la.',
     shortcutKeys: 'Teclas',
     shortcutAction: 'Ação',
     shortcutActions: {
@@ -143,6 +151,7 @@ export const t = {
       palette: 'Paleta de comandos',
       search: 'Buscar no terminal',
       toggleSidebar: 'Recolher / expandir a barra lateral',
+      openSettings: 'Abrir as configurações',
       zoomIn: 'Aumentar a fonte',
       zoomOut: 'Diminuir a fonte',
       zoomReset: 'Tamanho padrão da fonte',
@@ -155,6 +164,7 @@ export const t = {
     shortcutRecording: 'Pressione a combinação… (Esc cancela)',
     shortcutConflict: (action: string) => `Já usado por "${action}".`,
     shortcutNeedsModifier: 'Use Ctrl ou Alt com a tecla, ou uma tecla F.',
+    shortcutNeedsModifierMac: 'Use ⌘, ⌃ ou ⌥ com a tecla, ou uma tecla F.',
     shortcutSteals: (combo: string) =>
       `${combo} deixa de chegar ao terminal (no bash, Ctrl+letra apaga, move ou é prefixo do tmux).`,
     shortcutUseAnyway: 'Usar mesmo assim',
@@ -164,7 +174,12 @@ export const t = {
       ['Ctrl+Shift+V', 'Colar'],
       ['Ctrl+clique', 'Abrir link do terminal'],
     ] as const,
-    aboutDescription: 'Cliente SSH, SFTP e encaminhamento de portas para Windows.',
+    shortcutFixedMac: [
+      ['⌘C', 'Copiar a seleção'],
+      ['⌘V', 'Colar'],
+      ['⌘-clique', 'Abrir link do terminal'],
+    ] as const,
+    aboutDescription: 'Cliente SSH, SFTP e encaminhamento de portas para Windows, Linux e macOS.',
     version: (v: string) => `Versão ${v}`,
     aboutOffline:
       'Funciona sem internet: hosts, senhas e chaves ficam criptografados neste computador.',
@@ -187,9 +202,8 @@ export const t = {
     authPassword: 'Senha',
     authKey: 'Chave privada',
     authAsk: 'Perguntar ao conectar',
-    authAgent: 'Agente SSH do Windows',
-    authAgentHint:
-      'Usa as chaves carregadas no agente do OpenSSH (serviço ssh-agent). Nenhuma chave fica no cofre.',
+    authAgent: 'Agente SSH',
+    authAgentHint: 'Usa as chaves carregadas no ssh-agent do sistema. Nenhuma chave fica no cofre.',
     legacy: 'Algoritmos legados (inseguros)',
     terminalProfile: 'Perfil de terminal',
     terminalProfileGlobal: 'Usa o perfil global das configurações.',
@@ -273,6 +287,9 @@ export const t = {
       code === null ? 'Processo encerrado' : `Processo encerrado (código ${code})`,
     closeTab: 'Fechar aba',
     renameTab: 'Renomear aba',
+    scrollTabsLeft: 'Rolar abas para a esquerda',
+    scrollTabsRight: 'Rolar abas para a direita',
+    allTabs: 'Todas as abas',
     copy: 'Copiar',
     paste: 'Colar',
     unlockToReconnect: 'Desbloqueie o cofre para reconectar.',
@@ -410,19 +427,6 @@ export const t = {
   },
   status: {
     label: 'Barra de status',
-    noTab: 'Nenhuma aba aberta',
-    states: {
-      connecting: 'Conectando',
-      awaitingHostKey: 'Aguardando confirmação da host key',
-      authenticating: 'Autenticando',
-      awaitingPrompt: 'Aguardando resposta',
-      connected: 'Conectado',
-      disconnected: 'Desconectado',
-      error: 'Erro de conexão',
-      closed: 'Encerrado',
-    },
-    running: 'Em execução',
-    reconnect: 'Clique para reconectar',
     latency: (ms: number) => `${String(ms)} ms`,
     latencyTitle: 'Latência medida pelo keepalive SSH',
     forwards: (n: number) => (n === 1 ? '1 túnel' : `${String(n)} túneis`),
@@ -441,6 +445,7 @@ export const t = {
     sftp: (host: string) => `Abrir SFTP em ${host}`,
     newLocal: (shell: string) => `Novo terminal ${shell}`,
     settings: 'Abrir configurações',
+    importExport: 'Importar ou exportar hosts',
     lock: 'Bloquear o cofre',
     toggleTheme: 'Alternar tema claro/escuro',
     search: 'Buscar no terminal',
@@ -544,6 +549,216 @@ export const t = {
     forwards: (n: number) =>
       n === 1 ? '1 encaminhamento ativo' : `${String(n)} encaminhamentos ativos`,
     confirm: 'Fechar mesmo assim',
+  },
+  importExport: {
+    open: 'Importar e exportar',
+    importTitle: 'Importar hosts',
+    importIntro:
+      'Traga hosts, grupos e chaves de outro programa. Você revisa tudo antes de gravar; senhas nunca são importadas.',
+    exportTitle: 'Exportar hosts',
+    exportIntro:
+      'Leve seus hosts para outro computador ou use-os em outro programa. Senhas nunca são exportadas.',
+    exportAction: 'Exportar…',
+    chooseFile: 'Escolher arquivo…',
+    chooseFolder: 'Escolher pasta…',
+    noSessions: 'Nenhuma sessão encontrada neste computador.',
+    sources: {
+      openssh: {
+        title: 'Configuração do OpenSSH',
+        description: 'Arquivo ~/.ssh/config, com Include e chaves (IdentityFile).',
+        useDefault: 'Usar ~/.ssh/config',
+      },
+      putty: {
+        title: 'PuTTY',
+        description: 'Sessões SSH salvas no PuTTY, com chaves .ppk.',
+        useDefault: 'Ler sessões do PuTTY',
+      },
+      kitty: {
+        title: 'KiTTY',
+        description: 'Sessões SSH salvas no KiTTY (registro ou pasta portátil).',
+        useDefault: 'Ler sessões do KiTTY',
+      },
+      kittyPortable: {
+        title: 'KiTTY portátil',
+        description: 'Pasta Sessions do KiTTY portátil.',
+        useDefault: '',
+      },
+      csv: {
+        title: 'Planilha (CSV)',
+        description:
+          'Colunas nome, endereço, porta, usuário, grupo e chave. Grupos com "/" viram subgrupos.',
+        useDefault: '',
+      },
+      mobaxterm: {
+        title: 'MobaXterm',
+        description: 'Arquivo .mxtsessions ou MobaXterm.ini; pastas viram grupos.',
+        where:
+          'No MobaXterm, clique com o botão direito em "User sessions" › "Export all sessions to file". O MobaXterm.ini fica ao lado do programa portátil.',
+        useDefault: '',
+      },
+      securecrt: {
+        title: 'SecureCRT',
+        description: 'XML gerado em Tools › Export Settings; pastas viram grupos.',
+        where: 'No SecureCRT, abra Tools › Export Settings… e marque Sessions.',
+        useDefault: '',
+      },
+      openhost: {
+        title: 'Arquivo do OpenHost',
+        description: 'Backup exportado por este app, com ou sem chaves.',
+        useDefault: '',
+      },
+    },
+    csvTemplate: 'Baixar modelo',
+    csvTemplateSaved: 'Modelo salvo.',
+    reading: 'Lendo…',
+    importing: 'Importando…',
+    previewTitle: (source: string) => `Revisar importação — ${source}`,
+    counts: (selected: number, total: number) =>
+      `${count(selected)} de ${count(total)} ${total === 1 ? 'host marcado' : 'hosts marcados'}`,
+    countInvalid: (n: number) => (n === 1 ? '1 inválido' : `${count(n)} inválidos`),
+    countDuplicate: (n: number) => (n === 1 ? '1 duplicado' : `${count(n)} duplicados`),
+    countWarnings: (n: number) => (n === 1 ? '1 com aviso' : `${count(n)} com aviso`),
+    target: 'Grupo de destino',
+    targetRoot: 'Raiz (sem grupo)',
+    targetHint: 'Os grupos da origem são criados dentro dele.',
+    filter: 'Mostrar',
+    filterAll: 'Todos',
+    filterAttention: 'Precisam de atenção',
+    selectAll: 'Marcar todos',
+    selectNone: 'Desmarcar todos',
+    duplicatesAll: 'Duplicados',
+    duplicateActions: {
+      skip: 'Pular',
+      replace: 'Substituir',
+      keepBoth: 'Manter os dois',
+    },
+    duplicateAction: (label: string) => `O que fazer com ${label}`,
+    duplicateOfHost: 'Já existe no cofre',
+    duplicateOfRow: 'Repetido neste arquivo',
+    columns: {
+      select: 'Importar',
+      label: 'Rótulo',
+      address: 'Endereço',
+      port: 'Porta',
+      username: 'Usuário',
+      group: 'Grupo',
+      key: 'Chave',
+      status: 'Situação',
+    },
+    rowSelect: (label: string) => `Importar ${label}`,
+    rowInvalidHint: 'Corrija a linha para poder importar.',
+    noKey: 'senha',
+    keyStatus: {
+      ready: 'pronta',
+      needsPassphrase: 'pede passphrase',
+      skipped: 'pulada',
+      notFound: 'não encontrada',
+      unsupported: 'formato não suportado',
+      existing: 'já no cofre',
+    },
+    warnings: {
+      INVALID_PORT: 'Porta inválida (1–65535)',
+      MISSING_ADDRESS: 'Sem endereço',
+      KEY_NOT_FOUND: 'Chave não encontrada; vai pedir senha',
+      KEY_UNSUPPORTED: 'Chave em formato não suportado; vai pedir senha',
+      OPTION_IGNORED: (name: string) => `${name} não é importado`,
+      LABEL_REPEATED: 'Rótulo repetido',
+      TOKEN_UNSUPPORTED: (name: string) => `${name} não é suportado no caminho da chave`,
+      LINE_UNREADABLE: (line: number) => `Linha ${String(line)} não pôde ser lida`,
+    },
+    ignoredTitle: (n: number) => (n === 1 ? '1 item ignorado' : `${count(n)} itens ignorados`),
+    fileWarningsTitle: (n: number) =>
+      n === 1 ? '1 linha não pôde ser lida' : `${count(n)} linhas não puderam ser lidas`,
+    empty: 'Nenhum host encontrado.',
+    emptyAttention: 'Nenhum host precisa de atenção.',
+    mappingTitle: 'Quais colunas são quais?',
+    mappingIntro: 'Não reconhecemos todas as colunas do arquivo. Diga onde está cada informação.',
+    mappingNone: '— não tem —',
+    mappingApply: 'Aplicar',
+    mappingFields: {
+      nome: 'Rótulo',
+      endereco: 'Endereço (obrigatório)',
+      porta: 'Porta',
+      usuario: 'Usuário',
+      grupo: 'Grupo',
+      chave: 'Chave',
+    },
+    confirm: (n: number) => (n === 1 ? 'Importar 1 host' : `Importar ${count(n)} hosts`),
+    passphraseTitle: (name: string) => `Passphrase da chave ${name}`,
+    passphraseIntro: (n: number) =>
+      n === 1 ? 'Usada por 1 host.' : `Usada por ${count(n)} hosts.`,
+    passphrase: 'Passphrase',
+    skipKey: 'Pular chave',
+    unlockKey: 'Usar chave',
+    filePasswordTitle: 'Arquivo protegido',
+    filePasswordIntro: 'Digite a senha definida quando o arquivo foi exportado.',
+    filePassword: 'Senha do arquivo',
+    openFile: 'Abrir',
+    summaryTitle: 'Importação concluída',
+    summary: {
+      created: (n: number) => (n === 1 ? '1 host criado' : `${count(n)} hosts criados`),
+      replaced: (n: number) => (n === 1 ? '1 substituído' : `${count(n)} substituídos`),
+      skipped: (n: number) => (n === 1 ? '1 pulado' : `${count(n)} pulados`),
+      ignored: (n: number) => (n === 1 ? '1 ignorado' : `${count(n)} ignorados`),
+      keys: (stored: number, reused: number) =>
+        `${count(stored)} ${stored === 1 ? 'chave guardada' : 'chaves guardadas'} no cofre` +
+        (reused > 0 ? `, ${count(reused)} já existia${reused === 1 ? '' : 'm'}` : ''),
+      askPassword: (n: number) =>
+        n === 1
+          ? '1 host vai pedir a senha na primeira conexão.'
+          : `${count(n)} hosts vão pedir a senha na primeira conexão.`,
+      passwordsNotImported: (source: string) =>
+        `Senhas salvas no ${source} não são importadas: digite-as na primeira conexão.`,
+    },
+    undo: 'Desfazer importação',
+    undone: (removed: number, kept: number) =>
+      kept > 0
+        ? `Importação desfeita. ${String(kept)} ${kept === 1 ? 'host editado depois foi mantido' : 'hosts editados depois foram mantidos'}.`
+        : `Importação desfeita (${String(removed)} ${removed === 1 ? 'item removido' : 'itens removidos'}).`,
+    importMore: 'Importar mais',
+    done: 'Concluir',
+    exportDialog: {
+      title: 'Exportar hosts',
+      format: 'Formato',
+      formats: {
+        openhost: 'OpenHost',
+        openssh: 'OpenSSH',
+        csv: 'CSV',
+      },
+      formatHints: {
+        openhost: 'Arquivo para reimportar em outro computador; mantém grupos e todas as opções.',
+        openssh: 'Blocos Host para o ~/.ssh/config; chaves não são incluídas.',
+        csv: 'Planilha no mesmo modelo da importação.',
+      },
+      scope: 'O que exportar',
+      scopeAll: 'Todos os hosts',
+      scopeGroup: 'Um grupo',
+      scopeHosts: (n: number) => (n === 1 ? 'Este host' : `${count(n)} hosts selecionados`),
+      group: 'Grupo',
+      count: (hosts: number, groups: number) => {
+        const h = `${count(hosts)} ${hosts === 1 ? 'host' : 'hosts'}`;
+        return groups === 0 ? h : `${h} em ${count(groups)} ${groups === 1 ? 'grupo' : 'grupos'}`;
+      },
+      includeKeys: 'Incluir chaves privadas',
+      includeKeysHint: (n: number) =>
+        `${n === 1 ? '1 chave' : `${count(n)} chaves`}. O arquivo inteiro fica criptografado com uma senha sua.`,
+      plainWarning:
+        'Sem chaves o arquivo não é criptografado: endereços e usuários ficam legíveis. Guarde-o com cuidado.',
+      masterPassword: 'Senha mestra do cofre',
+      filePassword: 'Senha do arquivo',
+      filePasswordConfirm: 'Repita a senha do arquivo',
+      mismatch: 'As senhas não coincidem.',
+      strength: ['', 'Força: fraca', 'Força: razoável', 'Força: boa', 'Força: forte'] as const,
+      sshConfigMode: 'Se o destino for o ~/.ssh/config',
+      sshNewFile: 'Salvar como novo arquivo',
+      sshAppend: 'Acrescentar ao final',
+      sshAppendHint:
+        'Os hosts entram entre marcadores do OpenHost e uma cópia de segurança do arquivo é criada antes.',
+      sshConfigProtected:
+        'O ~/.ssh/config não é substituído. Salve com outro nome ou escolha "Acrescentar ao final".',
+      submit: 'Exportar',
+      saved: (path: string) => `Salvo em ${path}`,
+    },
   },
   errors: {
     unexpected: 'Ocorreu um erro inesperado.',

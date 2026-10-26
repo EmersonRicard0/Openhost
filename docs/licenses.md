@@ -79,8 +79,16 @@ Versões e licenças conferidas no `go.mod` e nos arquivos de licença dos módu
 | `golang.org/x/image` 0.41.0 | https://cs.opensource.google/go/x/image | BSD-3-Clause | leitura de metadados de fontes |
 | `golang.org/x/net` 0.60.0 | https://cs.opensource.google/go/x/net | BSD-3-Clause | protocolos de rede |
 | `golang.org/x/sys` 0.49.0 | https://cs.opensource.google/go/x/sys | BSD-3-Clause | chamadas de sistema |
-| `golang.org/x/text` 0.43.0 | https://cs.opensource.google/go/x/text | BSD-3-Clause | suporte Unicode |
+| `golang.org/x/text` 0.43.0 | https://cs.opensource.google/go/x/text | BSD-3-Clause | decodificação Windows-1252 e normalização de texto importado |
 | `modernc.org/libc` 1.79.0 | https://gitlab.com/cznic/libc | BSD-3-Clause | runtime C em Go |
 | `modernc.org/mathutil` 1.7.1 | https://gitlab.com/cznic/mathutil | BSD-3-Clause | utilitários matemáticos |
 | `modernc.org/memory` 1.12.1 | https://gitlab.com/cznic/memory | BSD-3-Clause | alocação de memória |
 | `modernc.org/sqlite` 1.61.0 | https://gitlab.com/cznic/sqlite | BSD-3-Clause | banco de dados SQLite |
+
+## Ferramentas de empacotamento (só no CI, não embutidas no app)
+
+| Item | Origem | Licença | Uso |
+|---|---|---|---|
+| nfpm | https://github.com/goreleaser/nfpm | MIT | gera os pacotes `.deb` e `.rpm` do Linux |
+| appimagetool | https://github.com/AppImage/appimagetool | MIT | gera o AppImage do Linux |
+| `hdiutil` | ferramenta do macOS | do sistema | gera o `.dmg` |

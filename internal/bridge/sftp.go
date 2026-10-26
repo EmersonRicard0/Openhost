@@ -76,8 +76,10 @@ func newSftpService(
 	return service
 }
 
+// splitDialogPaths separa a lista de SHELLVAULT_TEST_DIALOG_PATH pelo separador de listas do
+// sistema (`;` no Windows, `:` no Unix), como o PATH.
 func splitDialogPaths(value string) []string {
-	parts := strings.FieldsFunc(value, func(r rune) bool { return r == ';' || r == os.PathListSeparator })
+	parts := strings.Split(value, string(os.PathListSeparator))
 	out := make([]string, 0, len(parts))
 	for _, item := range parts {
 		if clean := strings.TrimSpace(item); clean != "" {

@@ -29,9 +29,13 @@ type Host struct {
 	GroupID          *string    `json:"groupId"`
 	LegacyAlgorithms bool       `json:"legacyAlgorithms"`
 	ProfileID        *string    `json:"profileId"`
+	DetectedOS       *string    `json:"detectedOs"`
+	OSIcon           string     `json:"osIcon"`
 	CreatedAt        string     `json:"createdAt"`
 	UpdatedAt        string     `json:"updatedAt"`
 }
+
+const OSIconAuto = "auto"
 
 type CredentialKind string
 
@@ -211,6 +215,7 @@ func (c *Content) Clone() *Content {
 		h.CredentialID = clonePtr(h.CredentialID)
 		h.GroupID = clonePtr(h.GroupID)
 		h.ProfileID = clonePtr(h.ProfileID)
+		h.DetectedOS = clonePtr(h.DetectedOS)
 		out.Hosts[i] = h
 	}
 	for i, cr := range c.Credentials {

@@ -152,6 +152,9 @@ export interface ActiveForward extends ForwardRuleStatus {
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+/** Sistema em que o app roda (`runtime.Environment()` do Wails; specs/004). */
+export type Platform = 'windows' | 'linux' | 'darwin';
+
 export interface WindowBounds {
   width: number;
   height: number;
@@ -255,6 +258,12 @@ export interface SchemeImportResult {
   completed: string[];
 }
 
+/** O Go gravou um novo sistema detectado para o host (FR-178). */
+export interface HostsChangedEvent {
+  hostId: string;
+  detectedOs: OsId | null;
+}
+
 export interface ProfilesChangedEvent {
   scope: 'global' | 'host';
   hostId?: string;
@@ -263,10 +272,13 @@ export interface ProfilesChangedEvent {
 // --- Sessões (só em memória) ------------------------------------------------
 
 export type SessionKind = 'ssh' | 'local' | 'sftp';
-/** Id estável de shell local: `powershell`, `pwsh`, `cmd`, `gitbash` ou `wsl:<distro>`. */
+/**
+ * Id estável de shell local: no Windows `powershell`, `pwsh`, `cmd`, `gitbash` ou `wsl:<distro>`;
+ * no Linux e no macOS o nome do shell (`bash`, `zsh`, `fish`…).
+ */
 export type LocalShell = string;
 
-export type LocalShellKind = 'powershell' | 'pwsh' | 'cmd' | 'gitbash' | 'wsl';
+export type LocalShellKind = 'powershell' | 'pwsh' | 'cmd' | 'gitbash' | 'wsl' | 'unix';
 
 /** Shell detectado na máquina (o caminho do executável fica no Go). */
 export interface LocalShellInfo {
@@ -362,4 +374,140 @@ export interface ConflictEvent {
   name: string;
   existingSize: number;
   existingModifiedAt: string;
+}
+
+// --- Importar e exportar (specs/003-host-import-export/data-model.md) --------
+
+export type SourceKind =
+  'openssh' | 'putty' | 'kitty' | 'kittyPortable' | 'csv' | 'mobaxterm' | 'securecrt' | 'openhost';
+
+export interface ImportSource {
+  kind: SourceKind;
+  available: boolean;
+  /** `~/.ssh/config` existe ou há sessões no registro. */
+  defaultFound: boolean;
+}
+
+export type CsvField = 'nome' | 'endereco' | 'porta' | 'usuario' | 'grupo' | 'chave';
+export type CsvMapping = Record<CsvField, number | null>;
+
+export interface PreviewOptions {
+  useDefault?: boolean;
+  filePassword?: string;
+  csvMapping?: CsvMapping;
+}
+
+export type ImportWarningCode =
+  | 'INVALID_PORT'
+  | 'MISSING_ADDRESS'
+  | 'KEY_NOT_FOUND'
+  | 'KEY_UNSUPPORTED'
+  | 'OPTION_IGNORED'
+  | 'LABEL_REPEATED'
+  | 'TOKEN_UNSUPPORTED'
+  | 'LINE_UNREADABLE';
+
+export interface ImportWarning {
+  code: ImportWarningCode;
+  /** Opção ou token envolvido (ex.: `ProxyJump`). */
+  name?: string;
+  /** Linha no arquivo de origem. */
+  line?: number;
+}
+
+export type RowState = 'ok' | 'invalid' | 'duplicate';
+export type DuplicateAction = 'skip' | 'replace' | 'keepBoth';
+
+export interface PreviewRow {
+  rowId: string;
+  label: string;
+  address: string;
+  port: number;
+  username: string;
+  groupPath: string[];
+  keyRef: string | null;
+  /** Arquivo:linha, nome da sessão ou linha do CSV. */
+  origin: string;
+  warnings: ImportWarning[];
+  state: RowState;
+  duplicateOf: { hostId?: string; rowId?: string } | null;
+  selected: boolean;
+  duplicateAction: DuplicateAction;
+}
+
+export type PreviewKeyStatus =
+  'ready' | 'needsPassphrase' | 'skipped' | 'notFound' | 'unsupported' | 'existing';
+
+/** Chave referenciada pela origem; o conteúdo fica só no Go. */
+export interface PreviewKey {
+  ref: string;
+  name: string;
+  path: string;
+  status: PreviewKeyStatus;
+  fingerprint: string | null;
+  usedBy: number;
+}
+
+export interface PreviewView {
+  id: string;
+  kind: SourceKind;
+  sourceLabel: string;
+  rows: PreviewRow[];
+  keys: PreviewKey[];
+  ignored: { name: string; reason: string }[];
+  fileWarnings: ImportWarning[];
+  csv: { columns: string[]; mapping: CsvMapping; needsMapping: boolean } | null;
+}
+
+export interface RowPatch {
+  label?: string;
+  address?: string;
+  port?: number;
+  username?: string;
+  selected?: boolean;
+  duplicateAction?: DuplicateAction;
+}
+
+export interface ImportResult {
+  batchId: string;
+  created: number;
+  replaced: number;
+  skipped: number;
+  ignored: number;
+  keysStored: number;
+  keysReused: number;
+  /** Hosts sem chave que vão pedir a senha na primeira conexão. */
+  askPassword: number;
+}
+
+export interface UndoResult {
+  removed: number;
+  restored: number;
+  /** Hosts editados depois da importação, mantidos como estão. */
+  keptEdited: number;
+}
+
+export type ExportFormat = 'openhost' | 'openssh' | 'csv';
+export type ExportScope =
+  { kind: 'all' } | { kind: 'group'; groupId: string } | { kind: 'hosts'; hostIds: string[] };
+
+export interface ExportRequest {
+  format: ExportFormat;
+  scope: ExportScope;
+  includeKeys: boolean;
+  masterPassword?: string;
+  filePassword?: string;
+  sshConfigMode?: 'newFile' | 'append';
+}
+
+export interface ExportCount {
+  hosts: number;
+  groups: number;
+  keys: number;
+}
+
+export interface ExportResult {
+  path: string;
+  hosts: number;
+  keys: number;
 }

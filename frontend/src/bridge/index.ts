@@ -4,7 +4,7 @@
 import type { ShellVaultApi, Unsubscribe } from '@shared/ipc/api';
 import { ERROR_CODES, type AppError, type ErrorCode } from '@shared/ipc/errors';
 import type { Result } from '@shared/ipc/result';
-import { EventsOn, WindowIsMaximised } from '../../wailsjs/runtime/runtime';
+import { Environment, EventsOn, WindowIsMaximised } from '../../wailsjs/runtime/runtime';
 
 type GoMethod = (...args: unknown[]) => Promise<unknown>;
 type GoServices = Record<string, Record<string, GoMethod | undefined> | undefined>;
@@ -80,8 +80,8 @@ export const EVENT_NAMES = [
   'sftp:conflict',
   'forwards:status',
   'profiles:changed',
+  'hosts:changed',
   'app:appearance',
-  'profiles:changed',
   'app:close-requested',
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
@@ -120,6 +120,8 @@ function createApi(): ShellVaultApi {
   const W = 'ForwardService';
   const A = 'AppService';
   const P = 'ProfileService';
+  const I = 'ImportService';
+  const E = 'ExportService';
   return {
     vault: {
       getStatus: () => call(V, 'GetStatus'),
@@ -141,6 +143,7 @@ function createApi(): ShellVaultApi {
       duplicate: (id) => call(H, 'Duplicate', id),
       remove: (id) => call(H, 'Remove', id),
       move: (id, groupId) => call(H, 'Move', id, groupId),
+      onChanged: ev('hosts:changed'),
     },
     groups: {
       list: () => call(H, 'ListGroups'),
@@ -215,7 +218,39 @@ function createApi(): ShellVaultApi {
       listFonts: () => call(P, 'ListFonts'),
       onChanged: ev('profiles:changed'),
     },
+    imports: {
+      sources: () => call(I, 'Sources'),
+      preview: (kind, options) => call(I, 'Preview', kind, options),
+      remapCsv: (previewId, mapping) => call(I, 'RemapCsv', previewId, mapping),
+      updateRow: (previewId, rowId, patch) => call(I, 'UpdateRow', previewId, rowId, patch),
+      selectAll: (previewId, selected, groupPath) =>
+        call(I, 'SelectAll', previewId, selected, groupPath),
+      setDuplicateAction: (previewId, action) => call(I, 'SetDuplicateAction', previewId, action),
+      unlockKey: (previewId, keyRef, passphrase) =>
+        call(I, 'UnlockKey', previewId, keyRef, passphrase),
+      skipKey: (previewId, keyRef) => call(I, 'SkipKey', previewId, keyRef),
+      commit: (previewId, targetGroupId) => call(I, 'Commit', previewId, targetGroupId),
+      undo: (batchId) => call(I, 'Undo', batchId),
+      discard: (previewId) => call(I, 'Discard', previewId),
+      saveCsvTemplate: () => call(I, 'SaveCsvTemplate'),
+    },
+    exports: {
+      count: (scope) => call(E, 'Count', scope),
+      export: (request) => call(E, 'Export', request),
+    },
     app: {
+      getPlatform: async () => {
+        try {
+          const { platform } = await Environment();
+          // Qualquer outro valor (não esperado no Wails v2) cai no comportamento do Windows.
+          return {
+            ok: true,
+            value: platform === 'linux' || platform === 'darwin' ? platform : 'windows',
+          };
+        } catch {
+          return { ok: false, error: INTERNAL };
+        }
+      },
       getAppearance: () => call(A, 'GetAppearance'),
       getUiSettings: () => call(A, 'GetPreferences'),
       listLocalShells: () => call(A, 'ListLocalShells'),

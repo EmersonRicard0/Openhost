@@ -116,6 +116,10 @@
   max-width: 920px;
 }
 
+.content.full {
+  max-width: 1280px;
+}
+
 .content.medium {
   max-width: 720px;
 }

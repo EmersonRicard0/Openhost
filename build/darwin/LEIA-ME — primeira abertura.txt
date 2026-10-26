@@ -1,0 +1,21 @@
+OpenHost — como abrir na primeira vez
+
+O OpenHost ainda não tem assinatura da Apple. Por isso, na primeira vez, o macOS avisa que o
+app é de um desenvolvedor não identificado. Depois de liberado uma vez, ele abre normalmente.
+
+1. Arraste o OpenHost para a pasta Aplicativos (o atalho está nesta janela).
+
+2. Abra a pasta Aplicativos, clique com o botão direito (ou Control + clique) no OpenHost e
+   escolha "Abrir". No aviso, clique em "Abrir" de novo.
+
+3. Se o macOS não mostrar o botão "Abrir" (macOS 15 ou mais novo):
+   Ajustes do Sistema → Privacidade e Segurança → role até o aviso sobre o OpenHost →
+   "Abrir Mesmo Assim" → confirme com a sua senha.
+
+Alternativa pelo Terminal:
+
+   xattr -dr com.apple.quarantine /Applications/OpenHost.app
+
+Confira o arquivo baixado com o SHA256SUMS.txt publicado na página da versão:
+
+   shasum -a 256 OpenHost-*-macos-universal.dmg

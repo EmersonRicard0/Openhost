@@ -18,7 +18,7 @@ import (
 	"shellvault/internal/vault"
 )
 
-// allServicesWired passa a true quando os 8 serviços do contrato estiverem ligados (T094).
+// allServicesWired indica que todos os serviços atuais do contrato estão ligados.
 const allServicesWired = true
 
 // Services agrupa os serviços ligados ao Wails e o estado compartilhado entre eles.
@@ -43,6 +43,8 @@ type Services struct {
 	forwardService    *ForwardService
 	profileService    *ProfileService
 	appService        *AppService
+	importService     *ImportService
+	exportService     *ExportService
 	closeGuard        *appwin.CloseGuard
 }
 
@@ -61,7 +63,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.vaultService = newVaultService(store, s.autoLock)
 	s.hostService = newHostService(store)
 	s.credentialService = newCredentialService(store, s.Context)
-	s.sessionService = newSessionService(store, s.sessions)
+	s.sessionService = newSessionService(store, s.sessions, s.emit)
 	s.transfers = sftpx.NewTransferManager(sftpx.TransferEvents{
 		Transfer: func(transfer sftpx.Transfer) { s.emit("sftp:transfer", transfer) },
 		Conflict: func(conflict sftpx.ConflictEvent) { s.emit("sftp:conflict", conflict) },
@@ -78,7 +80,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.forwardService = newForwardService(store, s.forwards)
 	s.profileService = newProfileService(store, s.sessions, s.Context, s.emit)
 	preferences := appwin.NewPreferenceStore(store)
-	appearance := appwin.NewAppearanceMonitor(appwin.RegistryAppearanceReader{}, preferences.Get,
+	appearance := appwin.NewAppearanceMonitor(appwin.SystemAppearanceReader(), preferences.Get,
 		func(value appwin.Appearance) { s.emit("app:appearance", value) })
 	s.closeGuard = appwin.NewCloseGuard(
 		func() appwin.ActiveSummary {
@@ -92,7 +94,14 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 		},
 	)
 	s.appService = newAppService(preferences, appearance, s.closeGuard, s.Context)
-	store.OnStatus(func(status vault.Status) { s.emit("vault:state", status) })
+	s.importService = newImportService(store, s.Context)
+	s.exportService = newExportService(store, s.Context)
+	store.OnStatus(func(status vault.Status) {
+		if status.State != vault.StateUnlocked {
+			s.importService.coordinator.Clear()
+		}
+		s.emit("vault:state", status)
+	})
 	return s, nil
 }
 
@@ -112,7 +121,7 @@ func (s *Services) connectForward(hostID string) (forwarding.Client, error) {
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
 func (s *Services) Bound() []any {
-	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService}
+	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService, s.exportService}
 }
 
 // Context é o contexto do Wails, disponível depois de Startup.

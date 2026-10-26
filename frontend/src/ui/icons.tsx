@@ -14,6 +14,7 @@ import {
   CaseSensitive,
   Check,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   ChevronUp,
   ClipboardCopy,
@@ -33,8 +34,6 @@ import {
   Lock,
   LockOpen,
   Minus,
-  PanelLeftClose,
-  PanelLeftOpen,
   Plus,
   RefreshCw,
   Search,
@@ -46,6 +45,7 @@ import {
   Upload,
   Download,
   ArrowLeftRight,
+  ArrowDownUp,
   X,
 } from 'lucide-react';
 import { icon } from './Icon';
@@ -65,19 +65,19 @@ export const CloseIcon = icon(X);
 export const MoreIcon = icon(Ellipsis);
 export const KeyIcon = icon(KeyRound);
 export const ForwardIcon = icon(ArrowLeftRight);
+export const ImportExportIcon = icon(ArrowDownUp);
 export const SettingsIcon = icon(Settings);
 export const WarningIcon = icon(TriangleAlert);
 export const RefreshIcon = icon(RefreshCw);
 export const EyeIcon = icon(Eye);
 export const EyeOffIcon = icon(EyeOff);
 export const ChevronIcon = icon(ChevronRight);
+export const ChevronLeftIcon = icon(ChevronLeft);
 
 // Barra de título e barra lateral.
 export const MinimiseIcon = icon(Minus);
 export const MaximiseIcon = icon(Square);
 export const RestoreIcon = icon(Copy);
-export const SidebarCollapseIcon = icon(PanelLeftClose);
-export const SidebarExpandIcon = icon(PanelLeftOpen);
 export const CaseSensitiveIcon = icon(CaseSensitive);
 export const RegexIcon = icon(Regex);
 export const ChevronUpIcon = icon(ChevronUp);

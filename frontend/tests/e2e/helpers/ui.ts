@@ -27,7 +27,7 @@ export interface HostFields {
   password?: string;
   /** Nome de credencial já salva. */
   credential?: string;
-  method?: 'Senha' | 'Chave privada' | 'Perguntar ao conectar' | 'Agente SSH do Windows';
+  method?: 'Senha' | 'Chave privada' | 'Perguntar ao conectar' | 'Agente SSH';
   legacy?: boolean;
 }
 

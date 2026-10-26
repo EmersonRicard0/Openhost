@@ -27,15 +27,23 @@ type ActiveSummary struct {
 	Forwards  int `json:"forwards"`
 }
 
+const EventHostsChanged = "hosts:changed"
+
+type HostsChangedEvent struct {
+	HostID     string  `json:"hostId"`
+	DetectedOS *string `json:"detectedOs"`
+}
+
 type SessionService struct {
 	store         *vault.Store
 	sessions      *session.Manager
+	emit          session.Emitter
 	sftpDial      func(sessionID, hostID string) session.Dialer
 	transferCount func() int
 }
 
-func newSessionService(store *vault.Store, sessions *session.Manager) *SessionService {
-	return &SessionService{store: store, sessions: sessions}
+func newSessionService(store *vault.Store, sessions *session.Manager, emit session.Emitter) *SessionService {
+	return &SessionService{store: store, sessions: sessions, emit: emit}
 }
 
 func (s *SessionService) OpenSsh(hostID string) (OpenSessionResult, error) {
@@ -168,8 +176,28 @@ func (s *SessionService) dialHost(hostID string) session.Dialer {
 		if err != nil {
 			return nil, err
 		}
+		if detected := client.DetectOS(ctx); detected != "" {
+			_ = s.recordDetectedOS(hostID, detected)
+		}
 		return sshx.NewTerminal(client), nil
 	}
+}
+
+func (s *SessionService) recordDetectedOS(hostID, detected string) error {
+	var changed bool
+	value := model.Ptr(detected)
+	err := s.store.Mutate(func(content *model.Content) error {
+		var err error
+		changed, err = domain.SetDetectedOS(content, hostID, value, domain.Now())
+		return err
+	})
+	if err != nil {
+		return err
+	}
+	if changed && s.emit != nil {
+		s.emit(EventHostsChanged, HostsChangedEvent{HostID: hostID, DetectedOS: value})
+	}
+	return nil
 }
 
 func (s *SessionService) optionsForHost(hostID string) (sshx.Options, error) {

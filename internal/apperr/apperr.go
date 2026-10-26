@@ -45,6 +45,13 @@ const (
 	AlreadyExists           Code = "ALREADY_EXISTS"
 	InUse                   Code = "IN_USE"
 	Cancelled               Code = "CANCELLED"
+	ImportTooLarge          Code = "IMPORT_TOO_LARGE"
+	ImportUnreadable        Code = "IMPORT_UNREADABLE"
+	ImportFormatNewer       Code = "IMPORT_FORMAT_NEWER"
+	FilePasswordRequired    Code = "FILE_PASSWORD_REQUIRED"
+	FilePasswordWrong       Code = "FILE_PASSWORD_WRONG"
+	PreviewExpired          Code = "PREVIEW_EXPIRED"
+	UndoUnavailable         Code = "UNDO_UNAVAILABLE"
 	Internal                Code = "INTERNAL"
 )
 
@@ -54,7 +61,9 @@ var Codes = []Code{
 	VaultUnsupportedVersion, VaultMigrationFailed, WeakPassword, NotFound, GroupCycle,
 	KeyUnsupported, KeyBadPassphrase, ConnectTimeout, ConnectRefused, HostUnreachable,
 	AuthFailed, HostKeyRejected, NoCommonAlgorithm, AgentUnavailable, SessionClosed, SftpError,
-	PermissionDenied, PortInUse, SchemeInvalid, AlreadyExists, InUse, Cancelled, Internal,
+	PermissionDenied, PortInUse, SchemeInvalid, AlreadyExists, InUse, Cancelled,
+	ImportTooLarge, ImportUnreadable, ImportFormatNewer, FilePasswordRequired,
+	FilePasswordWrong, PreviewExpired, UndoUnavailable, Internal,
 }
 
 // Messages: texto pt-BR fixo por código (FR-005 da 001). Nunca contém dados do erro original.
@@ -78,7 +87,7 @@ var Messages = map[Code]string{
 	AuthFailed:              "A autenticação falhou.",
 	HostKeyRejected:         "A chave do servidor não foi aceita. Conexão cancelada.",
 	NoCommonAlgorithm:       "O servidor só aceita algoritmos antigos. Ative \"Algoritmos legados (inseguros)\" no host para conectar.",
-	AgentUnavailable:        "O agente SSH do Windows não está em execução.",
+	AgentUnavailable:        "O agente SSH não está em execução.",
 	SessionClosed:           "A sessão foi encerrada.",
 	SftpError:               "A operação de arquivo falhou no servidor.",
 	PermissionDenied:        "Permissão negada.",
@@ -87,6 +96,13 @@ var Messages = map[Code]string{
 	AlreadyExists:           "Já existe um item com esse nome.",
 	InUse:                   "O item está em uso e não pode ser excluído.",
 	Cancelled:               "Operação cancelada.",
+	ImportTooLarge:          "O arquivo é grande demais (até 10 MB e 5.000 hosts).",
+	ImportUnreadable:        "Não encontramos hosts nesse arquivo. Confira se ele é do formato escolhido.",
+	ImportFormatNewer:       "O arquivo foi criado por uma versão mais nova do OpenHost. Atualize o app.",
+	FilePasswordRequired:    "O arquivo é protegido por senha.",
+	FilePasswordWrong:       "Senha incorreta.",
+	PreviewExpired:          "A prévia expirou. Escolha a origem de novo.",
+	UndoUnavailable:         "Não há importação para desfazer.",
 	Internal:                "Ocorreu um erro inesperado.",
 }
 

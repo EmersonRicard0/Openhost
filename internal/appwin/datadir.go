@@ -9,7 +9,8 @@ import (
 )
 
 // DataDir devolve o diretório de dados do app, criando-o se preciso.
-// SHELLVAULT_DATA_DIR sobrescreve o padrão %APPDATA%\ShellVault (usado pelos testes).
+// O padrão é %APPDATA%\ShellVault no Windows, ~/.config/ShellVault no Linux e
+// ~/Library/Application Support/ShellVault no macOS; SHELLVAULT_DATA_DIR sobrescreve (testes).
 func DataDir() (string, error) {
 	dir := os.Getenv("SHELLVAULT_DATA_DIR")
 	if dir == "" {
@@ -23,6 +24,9 @@ func DataDir() (string, error) {
 		return "", errors.New("diretório de dados precisa ser absoluto")
 	}
 	if err := os.MkdirAll(dir, 0o700); err != nil {
+		return "", err
+	}
+	if err := restrictDir(dir); err != nil {
 		return "", err
 	}
 	return dir, nil

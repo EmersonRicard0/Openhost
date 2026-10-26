@@ -36,6 +36,7 @@ func sampleHost(id string) model.Host {
 	return model.Host{
 		ID: id, Label: "OLT-Rotulo-Unico", Address: "10.99.88.77", Port: 22,
 		Username: "usuario-unico-xyz", AuthMethod: model.AuthAsk,
+		OSIcon:    model.OSIconAuto,
 		CreatedAt: "2026-10-23T12:00:00.000Z", UpdatedAt: "2026-10-23T12:00:00.000Z",
 	}
 }

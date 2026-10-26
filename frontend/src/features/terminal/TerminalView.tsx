@@ -13,6 +13,7 @@ import { useVault } from '../../stores/vault';
 import { fontSizeOf, useWorkspace } from '../../stores/workspace';
 import { ringBell } from './bell';
 import { attach } from './dataBus';
+import { opensLink, terminalKeyAction } from './keys';
 import { needsConfirm } from './paste';
 import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from './profile';
 import { SearchBar } from './SearchBar';
@@ -81,10 +82,11 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     term.loadAddon(fit);
     const search = new SearchAddon();
     term.loadAddon(search);
-    // Ctrl+clique abre no navegador padrão; o app não faz a requisição (FR-145).
+    // Ctrl+clique (⌘-clique no macOS) abre no navegador padrão; o app não faz a requisição (FR-145).
     term.loadAddon(
       new WebLinksAddon((event, uri) => {
-        if (event.ctrlKey) void window.shellvault.app.openExternalUrl(uri);
+        if (opensLink(event, useUi.getState().platform))
+          void window.shellvault.app.openExternalUrl(uri);
       }),
     );
     term.loadAddon(new Unicode11Addon());
@@ -126,14 +128,13 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     });
 
     term.attachCustomKeyEventHandler((e) => {
-      if (e.type !== 'keydown' || !e.ctrlKey || !e.shiftKey) return true;
-      if (e.code === 'KeyC') {
+      const action = terminalKeyAction(e, useUi.getState().platform);
+      if (action === 'copy') {
         void copySelection(term);
         return false;
       }
-      // Ctrl+Shift+V: o xterm não trata a tecla; a colagem chega pelo evento `paste` abaixo.
-      if (e.code === 'KeyV') return false;
-      return true;
+      // Colar (Ctrl+Shift+V, ⌘V): o xterm não trata a tecla; a colagem chega pelo evento `paste`.
+      return action !== 'paste';
     });
     // Opções de FR-177 lidas na hora do evento: mudar nas configurações vale sem recriar o xterm.
     const behavior = () => useUi.getState().settings;
@@ -155,7 +156,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       });
     };
     container.addEventListener('contextmenu', onContextMenu);
-    // Toda colagem nativa (Ctrl+Shift+V, menu do sistema) passa pela confirmação antes do xterm.
+    // Toda colagem nativa (Ctrl+Shift+V, ⌘V, menu do sistema) passa pela confirmação antes do xterm.
     const onPaste = (e: ClipboardEvent) => {
       e.preventDefault();
       e.stopPropagation();

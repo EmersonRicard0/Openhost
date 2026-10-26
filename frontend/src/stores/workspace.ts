@@ -21,6 +21,8 @@ interface WorkspaceState {
   /** Diálogo de encaminhamentos ativos (barra de status). */
   forwardsOpen: boolean;
   view: MainView;
+  /** Seção a abrir na próxima vez que as configurações aparecerem. */
+  settingsSection: string | null;
   pendingPaste: PendingPaste | null;
   /** Aba esperando confirmação para fechar (Ctrl+W com conexão ativa). */
   confirmClose: string | null;
@@ -30,6 +32,7 @@ interface WorkspaceState {
   setPaletteOpen: (open: boolean) => void;
   setForwardsOpen: (open: boolean) => void;
   setView: (view: MainView) => void;
+  openSettings: (section: string) => void;
   setPendingPaste: (paste: PendingPaste | null) => void;
   setConfirmClose: (sessionId: string | null) => void;
 }
@@ -40,6 +43,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   paletteOpen: false,
   forwardsOpen: false,
   view: 'terminal',
+  settingsSection: null,
   pendingPaste: null,
   confirmClose: null,
   zoomBy(sessionId, delta, base) {
@@ -63,6 +67,9 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   },
   setView(view) {
     set({ view });
+  },
+  openSettings(section) {
+    set({ view: 'settings', settingsSection: section });
   },
   setPendingPaste(pendingPaste) {
     set({ pendingPaste });
