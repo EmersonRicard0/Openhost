@@ -120,6 +120,8 @@ function createApi(): ShellVaultApi {
   const W = 'ForwardService';
   const A = 'AppService';
   const P = 'ProfileService';
+  const I = 'ImportService';
+  const E = 'ExportService';
   return {
     vault: {
       getStatus: () => call(V, 'GetStatus'),
@@ -215,6 +217,26 @@ function createApi(): ShellVaultApi {
       exportScheme: (id) => call(P, 'ExportScheme', id),
       listFonts: () => call(P, 'ListFonts'),
       onChanged: ev('profiles:changed'),
+    },
+    imports: {
+      sources: () => call(I, 'Sources'),
+      preview: (kind, options) => call(I, 'Preview', kind, options),
+      remapCsv: (previewId, mapping) => call(I, 'RemapCsv', previewId, mapping),
+      updateRow: (previewId, rowId, patch) => call(I, 'UpdateRow', previewId, rowId, patch),
+      selectAll: (previewId, selected, groupPath) =>
+        call(I, 'SelectAll', previewId, selected, groupPath),
+      setDuplicateAction: (previewId, action) => call(I, 'SetDuplicateAction', previewId, action),
+      unlockKey: (previewId, keyRef, passphrase) =>
+        call(I, 'UnlockKey', previewId, keyRef, passphrase),
+      skipKey: (previewId, keyRef) => call(I, 'SkipKey', previewId, keyRef),
+      commit: (previewId, targetGroupId) => call(I, 'Commit', previewId, targetGroupId),
+      undo: (batchId) => call(I, 'Undo', batchId),
+      discard: (previewId) => call(I, 'Discard', previewId),
+      saveCsvTemplate: () => call(I, 'SaveCsvTemplate'),
+    },
+    exports: {
+      count: (scope) => call(E, 'Count', scope),
+      export: (request) => call(E, 'Export', request),
     },
     app: {
       getAppearance: () => call(A, 'GetAppearance'),

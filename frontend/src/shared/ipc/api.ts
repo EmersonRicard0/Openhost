@@ -1,6 +1,20 @@
 // Contrato da ponte `window.shellvault` (contracts/ipc-bridge.md).
 import type {
   ActiveForward,
+  CsvMapping,
+  DuplicateAction,
+  ExportCount,
+  ExportRequest,
+  ExportResult,
+  ExportScope,
+  ImportResult,
+  ImportSource,
+  PreviewKey,
+  PreviewOptions,
+  PreviewView,
+  RowPatch,
+  SourceKind,
+  UndoResult,
   ActiveSummary,
   Appearance,
   ColorScheme,
@@ -140,6 +154,28 @@ export interface ShellVaultApi {
     listFonts: () => R<FontInfo[]>;
     onChanged: On<ProfilesChangedEvent>;
   };
+  /** Importação com prévia (specs/003-host-import-export/contracts/bridge.md, ImportService). */
+  imports: {
+    sources: () => R<ImportSource[]>;
+    /** Sem `useDefault`, abre o diálogo nativo; null quando cancelado. */
+    preview: (kind: SourceKind, options: PreviewOptions) => R<PreviewView | null>;
+    remapCsv: (previewId: string, mapping: CsvMapping) => R<PreviewView>;
+    updateRow: (previewId: string, rowId: string, patch: RowPatch) => R<PreviewView>;
+    selectAll: (previewId: string, selected: boolean, groupPath: string[] | null) => R<PreviewView>;
+    setDuplicateAction: (previewId: string, action: DuplicateAction) => R<PreviewView>;
+    unlockKey: (previewId: string, keyRef: string, passphrase: string) => R<PreviewKey>;
+    skipKey: (previewId: string, keyRef: string) => R<PreviewKey>;
+    commit: (previewId: string, targetGroupId: string | null) => R<ImportResult>;
+    undo: (batchId: string) => R<UndoResult>;
+    discard: (previewId: string) => R<void>;
+    /** Diálogo de salvar; false quando cancelado. */
+    saveCsvTemplate: () => R<boolean>;
+  };
+  exports: {
+    count: (scope: ExportScope) => R<ExportCount>;
+    /** Diálogo de salvar; null quando cancelado. */
+    export: (request: ExportRequest) => R<ExportResult | null>;
+  };
   app: {
     getAppearance: () => R<Appearance>;
     getUiSettings: () => R<Settings>;
@@ -248,6 +284,24 @@ export const API_SHAPE = {
     ],
     events: ['onChanged'],
   },
+  imports: {
+    invoke: [
+      'sources',
+      'preview',
+      'remapCsv',
+      'updateRow',
+      'selectAll',
+      'setDuplicateAction',
+      'unlockKey',
+      'skipKey',
+      'commit',
+      'undo',
+      'discard',
+      'saveCsvTemplate',
+    ],
+    events: [],
+  },
+  exports: { invoke: ['count', 'export'], events: [] },
   app: {
     invoke: [
       'getAppearance',

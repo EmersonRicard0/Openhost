@@ -12,9 +12,9 @@ contrato: `ImportService` e `ExportService`. Tipos em [data-model.md](../data-mo
 | Método | Entrada | Saída | Notas |
 |---|---|---|---|
 | `Sources()` | — | `{kind, available: boolean, defaultFound: boolean}[]` | `putty`/`kitty` só no Windows; `defaultFound` indica `~/.ssh/config` ou sessões existentes no registro |
-| `Preview(kind, options)` | `kind: SourceKind`; `options: {useDefault?: boolean, filePassword?: string, csvMapping?: Record<Field, number\|null>}` | `PreviewView \| null` | sem `useDefault`, abre o diálogo nativo do tipo (arquivo, ou pasta para `kittyPortable`); `null` = usuário cancelou; descarta a prévia anterior; erros `IMPORT_TOO_LARGE`, `IMPORT_UNREADABLE`, `IMPORT_FORMAT_NEWER`, `FILE_PASSWORD_REQUIRED`, `FILE_PASSWORD_WRONG` |
+| `Preview(kind, options)` | `kind: SourceKind`; `options: {useDefault?: boolean, filePassword?: string, csvMapping?: Record<Field, number\|null>}` | `PreviewView \| null` | sem `useDefault`, abre o diálogo nativo do tipo (arquivo, ou pasta para `kittyPortable`); `null` = usuário cancelou; descarta a prévia anterior; depois de `FILE_PASSWORD_REQUIRED`/`FILE_PASSWORD_WRONG`, a chamada seguinte do mesmo `kind` com `filePassword` reaproveita o arquivo já escolhido, sem abrir o diálogo; erros `IMPORT_TOO_LARGE`, `IMPORT_UNREADABLE`, `IMPORT_FORMAT_NEWER`, `FILE_PASSWORD_REQUIRED`, `FILE_PASSWORD_WRONG` |
 | `RemapCsv(previewId, mapping)` | | `PreviewView` | reinterpreta o mesmo arquivo já lido |
-| `UpdateRow(previewId, rowId, patch)` | `patch: {label?, address?, port?, username?, selected?, duplicateAction?}` | `PreviewRow` | revalida e recalcula duplicados; `selected: true` em linha `invalid` → `INVALID_INPUT` |
+| `UpdateRow(previewId, rowId, patch)` | `patch: {label?, address?, port?, username?, selected?, duplicateAction?}` | `PreviewView` | revalida e recalcula duplicados de todas as linhas (corrigir uma pode mudar outra); `selected: true` em linha `invalid` → `INVALID_INPUT` |
 | `SelectAll(previewId, selected, groupPath?)` | | `PreviewView` | ignora linhas `invalid` |
 | `SetDuplicateAction(previewId, action)` | `"skip"\|"replace"\|"keepBoth"` | `PreviewView` | aplica a todos os duplicados |
 | `UnlockKey(previewId, keyRef, passphrase)` | | `PreviewKey` | `KEY_BAD_PASSPHRASE` se errada; passphrase fica no estado Go |

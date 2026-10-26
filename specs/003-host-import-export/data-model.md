@@ -21,7 +21,7 @@ memória no processo Go, exceto o arquivo de exportação.
 | `groups` | `PreviewGroup[]` | árvore da origem (caminho → nome); vazia para OpenSSH e PuTTY |
 | `keys` | `PreviewKey[]` | chaves distintas referenciadas |
 | `ignored` | `IgnoredItem[]` | `{name, reason}` — protocolo não SSH, "Default Settings", bloco `Match` |
-| `fileWarnings` | `Warning[]` | linhas ilegíveis do arquivo (`line`, código) |
+| `fileWarnings` | `Warning[]` | linhas ilegíveis do arquivo: `{code: "LINE_UNREADABLE", line}` |
 | `csv` | `{columns: string[], mapping: Record<Field, number \| null>, needsMapping: boolean} \| null` | só para CSV |
 
 ## PreviewRow
@@ -42,6 +42,8 @@ memória no processo Go, exceto o arquivo de exportação.
 | `selected` | bool | padrão: `true` se `ok`; `false` se `invalid` (não pode virar `true`) ou `duplicate` com ação `skip` |
 | `duplicateAction` | `"skip" \| "replace" \| "keepBoth"` | padrão `skip`; `replace` só com `duplicateOf.hostId` |
 | `extra` | objeto | só `openhost`: `legacyAlgorithms`, `osIcon`, `authMethod`, perfil e regras de encaminhamento |
+
+`Warning` = `{code, name?, line?}` (`name` = opção ou token, ex.: `ProxyJump`).
 
 Transições: a interface altera `label/address/port/username` (`UpdateRow`), `selected` e
 `duplicateAction`; o Go revalida e recalcula `state` e `duplicateOf` a cada alteração.
