@@ -1,0 +1,7 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_9.2p1 Debian-2+deb12u3
+# os-release: ID=debian
+Linux db-02 6.1.0-26-amd64 #1 SMP PREEMPT_DYNAMIC Debian 6.1.112-1 x86_64
+
+The programs included with the Debian GNU/Linux system are free software;
+root@db-02:~# 

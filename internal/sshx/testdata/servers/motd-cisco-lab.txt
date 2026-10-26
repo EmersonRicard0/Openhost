@@ -1,0 +1,6 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+# os-release: ID=ubuntu
+Bem-vindo ao jump do Lab Cisco e Huawei.
+Use ssh para os roteadores Cisco IOS do laboratório a partir daqui.
+noc@jump-01:~$ 

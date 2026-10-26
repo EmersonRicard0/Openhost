@@ -22,8 +22,8 @@ teste de integração.
 
 ## Phase 1: Setup
 
-- [ ] T001 [P] Amostras de fabricantes em `internal/sshx/testdata/vendors/<id>/*.txt`: pelo menos três por fabricante (huawei, zte, datacom, cisco, juniper, hillstone, fortinet, mikrotik, hpe), cada arquivo com cabeçalho `# fonte: banner|terminal` e o texto típico de boas-vindas/aviso/prompt (documentação pública ou captura do usuário), sem IPs, nomes reais ou senhas; incluir variações com cores ANSI e `\r\n`.
-- [ ] T002 [P] Amostras de servidores em `internal/sshx/testdata/servers/*.txt`: MOTD de Ubuntu, Debian, RHEL, Alpine, Windows OpenSSH e macOS, mais pelo menos quatro MOTDs que citam fabricantes por nome ("Lab Cisco", "jump para os Huawei", "backup Juniper", "Fortinet VPN") (SC-502).
+- [X] T001 [P] Amostras de fabricantes em `internal/sshx/testdata/vendors/<id>/*.txt`: pelo menos três por fabricante (huawei, zte, datacom, cisco, juniper, hillstone, fortinet, mikrotik, hpe), cada arquivo com cabeçalho `# fonte: banner|terminal` e o texto típico de boas-vindas/aviso/prompt (documentação pública ou captura do usuário), sem IPs, nomes reais ou senhas; incluir variações com cores ANSI e `\r\n`.
+- [X] T002 [P] Amostras de servidores em `internal/sshx/testdata/servers/*.txt`: MOTD de Ubuntu, Debian, RHEL, Alpine, Windows OpenSSH e macOS, mais pelo menos quatro MOTDs que citam fabricantes por nome ("Lab Cisco", "jump para os Huawei", "backup Juniper", "Fortinet VPN") (SC-502).
 
 ---
 
@@ -45,7 +45,7 @@ teste de integração.
 
 **Independent Test**: `go test ./internal/sshx -run 'TestVendorSamples|TestServerSamplesAreNotNetwork'` e conexão manual a um equipamento de cada fabricante (quickstart §1 e §5).
 
-- [ ] T008 [US1] **Go** `TestVendorSamples` e `TestServerSamplesAreNotNetwork` em `internal/sshx/vendors_samples_test.go`: percorrem `testdata/vendors` (taxa por fabricante ≥ 90%, SC-501) e `testdata/servers` (nenhum `IsNetworkOS`, SC-502), usando a fonte declarada no cabeçalho de cada amostra.
+- [ ] T008 [US1] **Go** `TestVendorSamples` e `TestServerSamplesAreNotNetwork` em `internal/sshx/vendors_samples_test.go`: percorrem `testdata/vendors` (taxa por fabricante ≥ 90%, SC-501) e `testdata/servers` (nenhum `IsNetworkOS`, SC-502), montando `Signals` pelos cabeçalhos de cada amostra (`fonte`, `versao`, `os-release`; formato em `testdata/README.md`) e chamando `ResolveOS`.
 - [ ] T009 [US1] **Go** `BannerCallback` em `internal/sshx/dial.go` guardando a mensagem pré-login (≤ 8 KiB, truncada) em `Client.preAuthBanner`, exposta por `Client.PreAuthBanner()`; o callback sempre devolve `nil`. Teste de integração em `internal/sshx/ssh_integration_test.go` com servidor de teste que envia banner: o texto chega e a autenticação segue igual.
 - [ ] T010 [US1] **Go** Observador da saída em `internal/sshx/terminal.go`: `Terminal.Start` envolve `out` num `vendorSniffer` que copia para memória só os primeiros 8 KiB ou 5 s e depois só repassa; `Terminal.InitialOutput(ctx) []byte` espera a janela fechar (ou a sessão fechar, ou ctx) e devolve a cópia uma vez, descartando-a em seguida. Teste unitário em `internal/sshx/terminal_sniffer_test.go`: repassa todos os bytes sem alteração, corta em 8 KiB, fecha por tempo, escritas depois da janela não alocam.
 - [ ] T011 [US1] **Go** Detecção em segundo plano em `internal/bridge/sessions.go`: `dialHost` cria o terminal e devolve; uma goroutine reúne versão, `PreAuthBanner`, `InitialOutput` e, quando permitido (T014), o os-release; chama `ResolveOS` e grava com `recordDetectedOS` só se o resultado não for vazio (FR-510). A goroutine termina quando a sessão fecha. Nenhum texto em log ou erro (FR-508).
