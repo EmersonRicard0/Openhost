@@ -28,7 +28,10 @@ func ClassifyServerVersion(version string) (string, bool) {
 		{[]string{"huawei"}, domain.OSHuawei},
 		{[]string{"junos", "juniper"}, domain.OSJuniper},
 		{[]string{"comware", "aruba", "procurve"}, domain.OSHPE},
-		{[]string{"fortigate", "fortinet"}, domain.OSFortinet},
+		{[]string{"fortigate", "fortinet", "fortissh"}, domain.OSFortinet},
+		{[]string{"zte"}, domain.OSZTE},
+		{[]string{"datacom", "dmos"}, domain.OSDatacom},
+		{[]string{"hillstone", "stoneos"}, domain.OSHillstone},
 	}
 	for _, candidate := range network {
 		for _, needle := range candidate.needles {
@@ -59,6 +62,28 @@ func ClassifyServerVersion(version string) (string, bool) {
 		return "", true
 	}
 	return "", false
+}
+
+type Signals struct {
+	Version        string
+	Banner         string
+	Terminal       []byte
+	OSRelease      string
+	ProbeOSRelease bool
+}
+
+// ResolveOS aplica a ordem de confiança dos sinais sem reter nem expor o texto recebido.
+func ResolveOS(signals Signals) string {
+	if id, _ := ClassifyServerVersion(signals.Version); id != "" {
+		return id
+	}
+	if id := ClassifyBanner(signals.Banner); id != "" {
+		return id
+	}
+	if id := ClassifyOSRelease([]byte(signals.OSRelease)); id != "" {
+		return id
+	}
+	return ClassifyTerminal(signals.Terminal)
 }
 
 func osReleaseID(value string) string {

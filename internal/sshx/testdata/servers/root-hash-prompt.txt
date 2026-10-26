@@ -1,0 +1,5 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+# os-release: ID=debian
+Last login: Mon Oct 20 10:00:00 2026
+root@edge-01:~# 

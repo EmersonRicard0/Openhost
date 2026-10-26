@@ -172,15 +172,72 @@ func (s *SessionService) dialHost(hostID string) session.Dialer {
 		if err != nil {
 			return nil, err
 		}
+		currentDetectedOS, err := s.detectedOSForHost(hostID)
+		if err != nil {
+			return nil, err
+		}
 		client, err := sshx.Dial(ctx, options, interactor)
 		if err != nil {
 			return nil, err
 		}
-		if detected := client.DetectOS(ctx); detected != "" {
-			_ = s.recordDetectedOS(hostID, detected)
-		}
-		return sshx.NewTerminal(client), nil
+		terminal := sshx.NewTerminal(client)
+		startHostDetection(func() { s.detectHostOS(ctx, hostID, currentDetectedOS, client, terminal) })
+		return terminal, nil
 	}
+}
+
+func startHostDetection(detect func()) { go detect() }
+
+func (s *SessionService) detectHostOS(ctx context.Context, hostID, currentDetectedOS string, client *sshx.Client, terminal *sshx.Terminal) {
+	version := string(client.ServerVersion())
+	banner := client.PreAuthBanner()
+	probeResult := make(chan string, 1)
+	probeOSRelease := shouldProbeOSRelease(version, banner, currentDetectedOS)
+	if probeOSRelease {
+		go func() { probeResult <- client.DetectOS(ctx) }()
+	} else {
+		probeResult <- ""
+	}
+
+	initialOutput := terminal.InitialOutput(ctx)
+	var osReleaseID string
+	select {
+	case osReleaseID = <-probeResult:
+	case <-ctx.Done():
+		return
+	}
+	signals := sshx.Signals{
+		Version:        version,
+		Banner:         banner,
+		Terminal:       initialOutput,
+		ProbeOSRelease: probeOSRelease,
+	}
+	if osReleaseID != "" {
+		signals.OSRelease = "ID=" + osReleaseID
+	}
+	if detected := sshx.ResolveOS(signals); detected != "" {
+		_ = s.recordDetectedOS(hostID, detected)
+	}
+}
+
+func shouldProbeOSRelease(version, banner, currentDetectedOS string) bool {
+	_, probeVersion := sshx.ClassifyServerVersion(version)
+	return probeVersion && sshx.ClassifyBanner(banner) == "" && !domain.IsNetworkOS(currentDetectedOS)
+}
+
+func (s *SessionService) detectedOSForHost(hostID string) (string, error) {
+	content, err := s.store.Read()
+	if err != nil {
+		return "", err
+	}
+	host, err := domain.FindHost(content, hostID)
+	if err != nil {
+		return "", err
+	}
+	if host.DetectedOS == nil {
+		return "", nil
+	}
+	return *host.DetectedOS, nil
 }
 
 func (s *SessionService) recordDetectedOS(hostID, detected string) error {
