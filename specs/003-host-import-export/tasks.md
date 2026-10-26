@@ -19,9 +19,9 @@ antes do código, falhando primeiro.
 
 ## Phase 1: Setup
 
-- [ ] T001 Criar o branch `003-host-import-export` a partir do `002-wails-migration` atual e os pacotes vazios `internal/importer/` e `internal/exporter/` com `doc.go` em pt-BR descrevendo o papel de cada um
+- [X] T001 Criar o branch `003-host-import-export` a partir do `002-wails-migration` atual e os pacotes vazios `internal/importer/` e `internal/exporter/` com `doc.go` em pt-BR descrevendo o papel de cada um
 - [ ] T002 [P] Go: promover `golang.org/x/text` a dependência direta em `go.mod` (uso de `encoding/charmap`, BSD-3) e registrar em `docs/licenses.md`
-- [ ] T003 [P] Criar a pasta de fixtures `internal/importer/testdata/` com `README.md` explicando a origem de cada arquivo (gerado pelo programa, anonimizado) e a regra de nunca conter senha real
+- [X] T003 [P] Criar a pasta de fixtures `internal/importer/testdata/` com `README.md` explicando a origem de cada arquivo (gerado pelo programa, anonimizado) e a regra de nunca conter senha real
 
 ---
 
@@ -35,8 +35,8 @@ antes do código, falhando primeiro.
 - [ ] T009 [P] Go: testes de `internal/importer/commit_test.go`: `Commit` cria grupos sob `targetGroupId` reaproveitando nomes iguais no mesmo nível; `replace` atualiza só campos da origem preservando credencial de senha, `profileId`, `osIcon` e regras de encaminhamento (FR-307); `keepBoth` cria com sufixo " (importado)"; hosts sem chave ficam `authMethod: "password"` sem credencial; falha injetada no meio do `Mutate` deixa o cofre idêntico (SC-307); `Undo` remove criados, restaura substituídos e mantém os editados depois (`keptEdited`); segundo `Undo` → `UNDO_UNAVAILABLE`
 - [ ] T010 Go: `internal/importer/commit.go` — `Commit` num único `vault.Store.Mutate` e `ImportBatch` em memória (só o último; descartado ao bloquear)
 - [ ] T011 Go: `ImportService` em `internal/bridge/import.go` com os métodos de `contracts/bridge.md` (`Sources`, `Preview`, `RemapCsv`, `UpdateRow`, `SelectAll`, `SetDuplicateAction`, `UnlockKey`, `SkipKey`, `Commit`, `Undo`, `Discard`, `SaveCsvTemplate`), registro de origens por `SourceKind`, diálogo nativo por tipo (com `TestService.SetDialogPath` funcionando), descarte da prévia e do lote no bloqueio do cofre; `Bind` em `main.go`; lista de métodos em `internal/bridge/contract_test.go`; teste que serializa todas as respostas e garante ausência de `PRIVATE KEY`, `PuTTY-User-Key-File` e passphrases
-- [ ] T012 [P] Interface: tipos e API em `frontend/src/shared/model/types.ts` (`SourceKind`, `PreviewView`, `PreviewRow`, `PreviewKey`, `ImportResult`, `ExportRequest`, novos `ErrorCode` com mensagens), `frontend/src/shared/ipc/api.ts` (`imports`, `exports`, `API_SHAPE`) e `frontend/src/bridge/index.ts`
-- [ ] T013 [P] Interface: store `frontend/src/stores/importExport.ts` (passo atual, prévia, filtro, seleção, erros) com testes em `importExport.test.ts`
+- [X] T012 [P] Interface: tipos e API em `frontend/src/shared/model/types.ts` (`SourceKind`, `PreviewView`, `PreviewRow`, `PreviewKey`, `ImportResult`, `ExportRequest`, novos `ErrorCode` com mensagens), `frontend/src/shared/ipc/api.ts` (`imports`, `exports`, `API_SHAPE`) e `frontend/src/bridge/index.ts`
+- [X] T013 [P] Interface: store `frontend/src/stores/importExport.ts` (passo atual, prévia, filtro, seleção, erros) com testes em `importExport.test.ts`
 - [ ] T014 Interface: `frontend/src/features/importexport/ImportExportPage.tsx` + `importexport.module.css` (seção "Importar e exportar" em `features/settings/SettingsPage.tsx` e item "Importar e exportar…" no menu da barra lateral em `features/hosts/HostSidebar.tsx`), cartões de origem com `Sources()`, tokens preto piano e destaque laranja, avisos sem borda
 - [ ] T015 Interface: `PreviewTable.tsx` — colunas rótulo, endereço, porta, usuário, grupo, chave, origem e avisos; marcar/desmarcar por linha, todas e por grupo; edição inline com `UpdateRow`; linhas `invalid` bloqueadas até corrigir; ação por duplicado e "para todos"; filtro "só avisos/duplicados"; `content-visibility: auto` para 1.000+ linhas; navegação por teclado e rótulos para leitor de tela
 - [ ] T016 Interface: `ImportWizard.tsx` (origem → prévia → resumo), escolha do grupo de destino, `KeyPassphraseDialog.tsx` (uma vez por chave, "Pular chave"), `ImportSummary.tsx` com contagens de `ImportResult` e "Desfazer"; recarrega hosts e grupos após `Commit`/`Undo`; progresso quando passar de 1 s; testes Vitest de `PreviewTable` e do fluxo
