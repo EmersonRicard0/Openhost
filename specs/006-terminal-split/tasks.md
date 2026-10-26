@@ -20,8 +20,8 @@ ganham testes antes do código; o e2e roda contra o app real com terminais locai
 
 **Checkpoint**: `npx vitest run src/features/terminal/layout.test.ts src/stores/sessions.test.ts` verde.
 
-- [ ] T001 Testes em `frontend/src/features/terminal/layout.test.ts` para `insert` (quatro lados, `ratio` 0,5), `remove` (irmão sobe; `null` com uma folha), `move`, `setRatio` limitado, `equalize`, `leaves`, `rects` (frações somam 1, divisórias entre os retângulos), `neighbor` nas quatro direções num 2×2 e num "1 grande + 2", e `dropVerdict` (`ok`, `full` com 4, `group`, `sftp`, `tooSmall`, `self`). Depois implementar `frontend/src/features/terminal/layout.ts` (data-model.md, research R2, R5).
-- [ ] T002 Testes em `frontend/src/stores/sessions.test.ts` para as transições de data-model.md: `join(dragId, targetId, side)`, `splitOut(id, beforeStripIndex?)`, `removeFromGroup` ao fechar sessão, grupo desfeito com uma sessão, `stripItems()` derivada na ordem de `tabs` (grupo na posição do primeiro membro), `cycleTab` pulando membros do mesmo grupo, `groupOf(id)`. Depois implementar em `frontend/src/stores/sessions.ts` (`groups`, ações e seletores).
+- [X] T001 Testes em `frontend/src/features/terminal/layout.test.ts` para `insert` (quatro lados, `ratio` 0,5), `remove` (irmão sobe; `null` com uma folha), `move`, `setRatio` limitado, `equalize`, `leaves`, `rects` (frações somam 1, divisórias entre os retângulos), `neighbor` nas quatro direções num 2×2 e num "1 grande + 2", e `dropVerdict` (`ok`, `full` com 4, `group`, `sftp`, `tooSmall`, `self`). Depois implementar `frontend/src/features/terminal/layout.ts` (data-model.md, research R2, R5).
+- [X] T002 Testes em `frontend/src/stores/sessions.test.ts` para as transições de data-model.md: `join(dragId, targetId, side)`, `splitOut(id, beforeStripIndex?)`, `removeFromGroup` ao fechar sessão, grupo desfeito com uma sessão, `stripItems()` derivada na ordem de `tabs` (grupo na posição do primeiro membro), `cycleTab` pulando membros do mesmo grupo, `groupOf(id)`. Depois implementar em `frontend/src/stores/sessions.ts` (`groups`, ações e seletores).
 
 ---
 
