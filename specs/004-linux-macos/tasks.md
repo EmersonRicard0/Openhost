@@ -124,7 +124,7 @@ Fazer o mesmo no `fedora:39` com o `.rpm`.
   - `SSH_AUTH_SOCK` vazio → `AGENT_UNAVAILABLE`;
   - socket inexistente → `AGENT_UNAVAILABLE` sem o caminho no `detail`.
 - [X] T018 [P] [US1] Interface: `frontend/src/app/TitleBar.tsx` não mostra os botões minimizar, maximizar e fechar quando `platform !== 'windows'`, e no Linux não marca área de arrasto (a moldura é nativa). A opção "Vidro" em `frontend/src/features/settings/SettingsPage.tsx` fica escondida no Linux. Testes Vitest por plataforma.
-- [ ] T019 [US1] Pacotes do Linux:
+- [X] T019 [US1] Pacotes do Linux:
   - `build/linux/nfpm.yaml`, com conteúdo e metadados exatos de `contracts/release.md` e sem scripts de remoção;
   - `build/linux/AppRun`: confere `libwebkit2gtk-4.1.so.0` via `ldconfig -p`; se faltar, mostra a mensagem com `zenity`, `kdialog` ou `stderr` e sai com 1;
   - `scripts/package-linux.sh <versão> <arch>`, que gera `openhost_<v>_<arch>.deb`, `openhost-<v>-1.<arch>.rpm` e `OpenHost-<v>-<arch>.AppImage` a partir de `build/bin/openhost`.
