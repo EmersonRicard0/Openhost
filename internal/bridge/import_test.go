@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -95,9 +96,13 @@ func TestImportServiceOpenSSHSourceAndDefault(t *testing.T) {
 		byKind[source.Kind] = source
 	}
 	if err != nil || !byKind[importer.SourceOpenHost].Available || !byKind[importer.SourceOpenSSH].Available || !byKind[importer.SourceOpenSSH].DefaultFound ||
-		!byKind[importer.SourcePuTTY].Available || !byKind[importer.SourceKiTTY].Available || !byKind[importer.SourceKiTTYPortable].Available ||
-		!byKind[importer.SourceMobaXterm].Available || !byKind[importer.SourceSecureCRT].Available {
+		!byKind[importer.SourceKiTTYPortable].Available || !byKind[importer.SourceMobaXterm].Available || !byKind[importer.SourceSecureCRT].Available {
 		t.Fatalf("Sources = %+v, %v", sources, err)
+	}
+	// Registro só no Windows; fora dele PuTTY e KiTTY instalados ficam indisponíveis (R12).
+	onWindows := runtime.GOOS == "windows"
+	if byKind[importer.SourcePuTTY].Available != onWindows || byKind[importer.SourceKiTTY].Available != onWindows {
+		t.Fatalf("PuTTY/KiTTY Available = %v/%v no %s", byKind[importer.SourcePuTTY].Available, byKind[importer.SourceKiTTY].Available, runtime.GOOS)
 	}
 	view, err := services.importService.Preview(importer.SourceOpenSSH, PreviewOptions{UseDefault: true})
 	if err != nil || view == nil || len(view.Rows) != 1 || view.Rows[0].Address != "bridge.example.test" {

@@ -180,9 +180,9 @@ Os cenários 4–7 do quickstart ficam com o usuário.
 **Independent Test**: a fixture gerada no Windows é importada no CI de Linux e macOS, com
 contagens e chaves iguais.
 
-- [ ] T027 [P] [US3] Go: fixture `internal/importer/testdata/openhost/windows-com-chaves.openhost`, gerada no Windows pelo app com 3 grupos, 5 hosts, 2 chaves e 1 regra, com a senha em `testdata/openhost/senha.txt`. Teste `TestOpenHostFromWindowsImportsAnywhere`, que roda nos três sistemas do CI e confere grupos, hosts, regras e impressões digitais.
-- [ ] T028 [P] [US3] Go: `internal/bridge/import.go`: `kittyPortable` com `Available: true` em todos os sistemas (R12); `putty` e `kitty` continuam só no Windows. Teste em `import_test.go` por `runtime.GOOS`.
-- [ ] T029 [P] [US3] Go: `samePath` em `internal/bridge/export.go` usa `os.SameFile` quando os dois caminhos existem; sem arquivo, compara exato no Unix e sem caixa no Windows. Teste: no Linux, `~/.ssh/Config` ≠ `~/.ssh/config`; no Windows, iguais.
+- [X] T027 [P] [US3] Go: fixture `internal/importer/testdata/openhost/windows-com-chaves.openhost`, gerada no Windows pelo app com 3 grupos, 5 hosts, 2 chaves e 1 regra, com a senha em `testdata/openhost/senha.txt`. Teste `TestOpenHostFromWindowsImportsAnywhere`, que roda nos três sistemas do CI e confere grupos, hosts, regras e impressões digitais.
+- [X] T028 [P] [US3] Go: `internal/bridge/import.go`: `kittyPortable` com `Available: true` em todos os sistemas (R12); `putty` e `kitty` continuam só no Windows. Teste em `import_test.go` por `runtime.GOOS`.
+- [X] T029 [P] [US3] Go: `samePath` em `internal/bridge/export.go` usa `os.SameFile` quando os dois caminhos existem; sem arquivo, compara exato no Unix e sem caixa no Windows. Teste: no Linux, `~/.ssh/Config` ≠ `~/.ssh/config`; no Windows, iguais.
 - [X] T030 [US3] Interface: `frontend/src/features/importexport/ImportExportPage.tsx` mostra o cartão "KiTTY" quando `kitty` ou `kittyPortable` está disponível. Sem `kitty`, só "Escolher pasta…" e sem a mensagem de "nenhuma sessão neste computador". O cartão "PuTTY" some quando indisponível. Teste Vitest com fontes simuladas.
 
 **Checkpoint**: a migração entre sistemas é coberta por teste no CI.

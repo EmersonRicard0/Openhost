@@ -91,6 +91,8 @@ func (s *ImportService) registerThirdPartyClients() {
 	}
 }
 
+// PuTTY e KiTTY instalados só existem no registro do Windows; a pasta Sessions do KiTTY
+// portátil é lida em qualquer sistema (specs/004-linux-macos, R12).
 func (s *ImportService) registerPutty() {
 	available := runtime.GOOS == "windows"
 	s.sources[importer.SourcePuTTY] = sourceLoader{
@@ -106,7 +108,7 @@ func (s *ImportService) registerPutty() {
 		},
 	}
 	s.sources[importer.SourceKiTTYPortable] = sourceLoader{
-		source: ImportSource{Kind: importer.SourceKiTTYPortable, Available: available},
+		source: ImportSource{Kind: importer.SourceKiTTYPortable, Available: true},
 		load: func(path string, _ PreviewOptions, content *model.Content) (*importer.ImportPreview, error) {
 			return importer.LoadKiTTYPortable(path, content)
 		},

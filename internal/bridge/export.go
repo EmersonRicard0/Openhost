@@ -218,13 +218,27 @@ func (s *ExportService) writeOpenSSH(path string, content *model.Content, mode e
 	}
 }
 
+// samePath diz se os dois caminhos são o mesmo arquivo. Quando ambos existem, quem decide é o
+// sistema de arquivos (os.SameFile), o que cobre links e o APFS sem caixa no macOS; sem o
+// arquivo, compara o texto: sem caixa no Windows, exato no Unix (specs/004-linux-macos, R12).
 func samePath(a, b string) bool {
 	if a == "" || b == "" {
 		return false
 	}
 	absA, errA := filepath.Abs(a)
 	absB, errB := filepath.Abs(b)
-	return errA == nil && errB == nil && strings.EqualFold(filepath.Clean(absA), filepath.Clean(absB))
+	if errA != nil || errB != nil {
+		return false
+	}
+	infoA, errA := os.Stat(absA)
+	infoB, errB := os.Stat(absB)
+	if errA == nil && errB == nil {
+		return os.SameFile(infoA, infoB)
+	}
+	if pathsIgnoreCase {
+		return strings.EqualFold(filepath.Clean(absA), filepath.Clean(absB))
+	}
+	return filepath.Clean(absA) == filepath.Clean(absB)
 }
 
 func selectExportContent(content *model.Content, scope ExportScope) (*model.Content, error) {
