@@ -3,13 +3,8 @@ import { t } from '../../i18n/pt-BR';
 import { groupOf, useSessions } from '../../stores/sessions';
 import { endDrag, type Dragging } from './dragState';
 import { dropVerdict, leaves, rects, type DropVerdict, type Rect, type Side } from './layout';
-import { terminalOf } from './terminalRegistry';
+import { paneMin } from './paneMin';
 import s from './terminal.module.css';
-
-/** Altura do cabeçalho de painel e o mínimo de células por painel (research R5). */
-export const PANE_HEADER = 24;
-const MIN_COLS = 20;
-const MIN_ROWS = 5;
 
 interface Hover {
   targetId: string;
@@ -17,18 +12,6 @@ interface Hover {
   /** Painel de destino em frações da área. */
   rect: Rect;
   verdict: DropVerdict;
-}
-
-/** Mínimo em pixels pela célula atual do xterm de destino; sem medida, uma célula típica. */
-function minSize(id: string): { w: number; h: number } {
-  const term = terminalOf(id)?.term;
-  const el = term?.element;
-  if (!term || !el || term.cols <= 0 || term.rows <= 0)
-    return { w: MIN_COLS * 8, h: MIN_ROWS * 17 + PANE_HEADER };
-  return {
-    w: (el.clientWidth / term.cols) * MIN_COLS,
-    h: (el.clientHeight / term.rows) * MIN_ROWS + PANE_HEADER,
-  };
 }
 
 /** Borda mais próxima do ponteiro, com o ponto em frações do painel. */
@@ -100,7 +83,7 @@ export function DropLayer({ dragging }: { dragging: Dragging }) {
       sameGroup: members.includes(dragging.id),
       side,
       targetSize: { w: rect.w * box.width, h: rect.h * box.height },
-      minSize: minSize(targetId),
+      minSize: paneMin(targetId),
     });
     return { targetId, side, rect, verdict };
   };

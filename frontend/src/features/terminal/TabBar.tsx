@@ -26,19 +26,15 @@ import {
   ChevronIcon,
   ChevronLeftIcon,
   CloseIcon,
-  ConnectedIcon,
-  ConnectingIcon,
-  DisconnectedIcon,
-  ErrorIcon,
-  ExitedIcon,
   KeyboardIcon,
   PlusIcon,
   RenameIcon,
 } from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { toastError } from '../../ui/Toast';
-import { closeActiveTab } from './commands';
+import { closeActiveTab, closeGroup } from './commands';
 import { endDrag, startDrag } from './dragState';
+import { StateIcon } from './StateIcon';
 import s from './terminal.module.css';
 
 function stateLabel(tab: Tab): string {
@@ -52,25 +48,6 @@ function stateLabel(tab: Tab): string {
     default:
       return `${tab.title} — ${t.terminal.connecting}`;
   }
-}
-
-/** Estado da aba por cor e por forma (FR-163): quem não distingue as cores vê o ícone. */
-function StateIcon({ state }: { state: Tab['state'] }) {
-  const Icon =
-    state === 'connected'
-      ? ConnectedIcon
-      : state === 'disconnected'
-        ? DisconnectedIcon
-        : state === 'error'
-          ? ErrorIcon
-          : state === 'closed'
-            ? ExitedIcon
-            : ConnectingIcon;
-  return (
-    <span className={s.state} data-state={state} aria-hidden>
-      <Icon width={13} height={13} />
-    </span>
-  );
 }
 
 /** Do pior ao melhor: a aba de um grupo mostra o pior estado entre as sessões (FR-611). */
@@ -98,7 +75,12 @@ const SEND_KEYS: [SendKeysCombo, string][] = [
 /** No macOS o app só captura ⌃Tab; as outras combinações com ⌃ já chegam ao terminal. */
 const SEND_KEYS_MAC: [SendKeysCombo, string][] = [['ctrl+tab', '⌃Tab']];
 
-function tabMenu(tab: Tab, platform: Platform, startRename: () => void): MenuItem[] {
+function tabMenu(
+  tab: Tab,
+  platform: Platform,
+  startRename: () => void,
+  groupId: string | null,
+): MenuItem[] {
   const items: MenuItem[] = [
     { label: t.terminal.renameTab, icon: <RenameIcon />, onSelect: startRename },
   ];
@@ -117,6 +99,10 @@ function tabMenu(tab: Tab, platform: Platform, startRename: () => void): MenuIte
     label: t.terminal.closeTab,
     icon: <CloseIcon />,
     onSelect: () => {
+      if (groupId) {
+        closeGroup(groupId);
+        return;
+      }
       useSessions.getState().activate(tab.id);
       closeActiveTab();
     },
@@ -129,7 +115,7 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
   const members = item.kind === 'tab' ? [item.tab] : item.members;
   const active = members.some((m) => m.id === activeId);
   const state = item.kind === 'tab' ? tab.state : worstState(members);
-  const { activate, rename, reorder } = useSessions();
+  const { activate, rename } = useSessions();
   const [editing, setEditing] = useState(false);
   const [dropTarget, setDropTarget] = useState(false);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
@@ -163,7 +149,7 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
         if (e.button === 1) void closeTab(tab.id);
       }}
       onDragStart={(e) => {
-        e.dataTransfer.setData('application/x-shellvault-tab', tab.id);
+        e.dataTransfer.setData(TAB_TYPE, tab.id);
         e.dataTransfer.effectAllowed = 'move';
         startDrag({
           id: tab.id,
@@ -173,7 +159,7 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
       }}
       onDragEnd={endDrag}
       onDragOver={(e) => {
-        if (e.dataTransfer.types.includes('application/x-shellvault-tab')) {
+        if (isTabDrag(e.dataTransfer)) {
           e.preventDefault();
           setDropTarget(true);
         }
@@ -183,8 +169,7 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
       }}
       onDrop={(e) => {
         setDropTarget(false);
-        const id = e.dataTransfer.getData('application/x-shellvault-tab');
-        if (id) reorder(id, tab.id);
+        dropOnStrip(e.dataTransfer, tab.id);
       }}
     >
       <StateIcon state={state} />
@@ -221,7 +206,8 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
         aria-label={`${t.terminal.closeTab} ${tab.title}`}
         onClick={(e) => {
           e.stopPropagation();
-          void closeTab(tab.id);
+          if (item.kind === 'group') closeGroup(item.id);
+          else void closeTab(tab.id);
         }}
       >
         <CloseIcon width={12} height={12} />
@@ -229,9 +215,14 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
       {menuAt && (
         <Menu
           anchor={menuAt}
-          items={tabMenu(tab, platform, () => {
-            setEditing(true);
-          })}
+          items={tabMenu(
+            tab,
+            platform,
+            () => {
+              setEditing(true);
+            },
+            item.kind === 'group' ? item.id : null,
+          )}
           onClose={() => {
             setMenuAt(null);
           }}
@@ -239,6 +230,25 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
       )}
     </div>
   );
+}
+
+const TAB_TYPE = 'application/x-shellvault-tab';
+const PANE_TYPE = 'application/x-shellvault-pane';
+
+const isTabDrag = (data: DataTransfer) =>
+  data.types.includes(TAB_TYPE) || data.types.includes(PANE_TYPE);
+
+/** Aba solta na barra reordena; cabeçalho de painel separa naquela posição (FR-612). */
+function dropOnStrip(data: DataTransfer, beforeId: string | null): void {
+  const sessions = useSessions.getState();
+  const pane = data.getData(PANE_TYPE);
+  if (pane) {
+    sessions.splitOut(pane);
+    if (beforeId !== pane) useSessions.getState().reorder(pane, beforeId);
+    return;
+  }
+  const id = data.getData(TAB_TYPE);
+  if (id) sessions.reorder(id, beforeId);
 }
 
 export interface TabBarProps {
@@ -326,7 +336,7 @@ function scrollByPage(bar: HTMLDivElement | null, dir: -1 | 1) {
 }
 
 export function TabBar({ newTabItems, trailing }: TabBarProps) {
-  const { tabs, groups, activeId, activate, reorder } = useSessions();
+  const { tabs, groups, activeId, activate } = useSessions();
   const items = stripItems(tabs, groups);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [listAnchor, setListAnchor] = useState<HTMLElement | null>(null);
@@ -365,7 +375,7 @@ export function TabBar({ newTabItems, trailing }: TabBarProps) {
           startPan(e.currentTarget, e);
         }}
         onDragOver={(e) => {
-          if (!e.dataTransfer.types.includes('application/x-shellvault-tab')) return;
+          if (!isTabDrag(e.dataTransfer)) return;
           e.preventDefault();
           // Levar a aba até a borda rola a barra e mostra as que estão escondidas.
           const box = e.currentTarget.getBoundingClientRect();
@@ -373,8 +383,7 @@ export function TabBar({ newTabItems, trailing }: TabBarProps) {
           else if (e.clientX > box.right - EDGE) e.currentTarget.scrollLeft += EDGE_STEP;
         }}
         onDrop={(e) => {
-          const id = e.dataTransfer.getData('application/x-shellvault-tab');
-          if (id && e.target === e.currentTarget) reorder(id, null);
+          if (e.target === e.currentTarget) dropOnStrip(e.dataTransfer, null);
         }}
       >
         {items.map((item) => (

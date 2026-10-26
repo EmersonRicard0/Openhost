@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { installShortcuts } from '../../app/shortcuts';
 import { currentKeymap, useShortcutLabel } from '../../app/useShortcuts';
 import { t } from '../../i18n/pt-BR';
-import { closeTab, groupOf, useSessions, type Tab } from '../../stores/sessions';
+import { closeTab, groupOf, isLive, useSessions, type Tab } from '../../stores/sessions';
 import { useShells } from '../../stores/shells';
 import { useUi } from '../../stores/ui';
 import { useWorkspace } from '../../stores/workspace';
@@ -16,11 +16,13 @@ import { SftpView } from '../sftp/SftpView';
 import { MAX_ATTEMPTS, stopAutoReconnect, useAutoReconnect } from './autoReconnect';
 import { runShortcut } from './commands';
 import { useDrag } from './dragState';
+import { Divider } from './Divider';
 import { DropLayer } from './DropLayer';
 import { HostKeyDialog } from './HostKeyDialog';
-import { rects, type Rect } from './layout';
+import { leaves, rects, type Rect } from './layout';
 import { openLocal } from './openLocal';
 import { reconnect } from './reconnect';
+import { PaneHeader } from './PaneHeader';
 import { PasteConfirmDialog } from './PasteConfirmDialog';
 import { PromptDialog } from './PromptDialog';
 import { TabBar } from './TabBar';
@@ -124,12 +126,24 @@ function Banner({ tab }: { tab: Tab }) {
 function CloseTabConfirm() {
   const id = useWorkspace((w) => w.confirmClose);
   const setConfirmClose = useWorkspace((w) => w.setConfirmClose);
-  const tab = useSessions((st) => st.tabs.find((tb) => tb.id === id));
-  if (!id || !tab) return null;
+  const tabs = useSessions((st) => st.tabs);
+  // Sessão avulsa ou painel; ou a aba de um grupo inteiro (FR-613).
+  const group = useSessions((st) => (id ? st.groups[id] : undefined));
+  if (!id) return null;
+  const tab = tabs.find((tb) => tb.id === id);
+  const members = group ? leaves(group.root) : [];
+  const live = tabs.filter(
+    (tb) => members.includes(tb.id) && tb.kind !== 'local' && isLive(tb.state),
+  ).length;
+  if (!tab && !group) return null;
   return (
     <ConfirmDialog
       title={t.terminal.closeConnected.title}
-      message={t.terminal.closeConnected.message(tab.title)}
+      message={
+        tab
+          ? t.terminal.closeConnected.message(tab.title)
+          : t.terminal.closeConnected.groupMessage(members.length, live)
+      }
       confirmLabel={t.terminal.closeConnected.confirm}
       danger
       onCancel={() => {
@@ -137,7 +151,7 @@ function CloseTabConfirm() {
       }}
       onConfirm={() => {
         setConfirmClose(null);
-        void closeTab(id);
+        for (const sid of tab ? [id] : members) void closeTab(sid);
       }}
     />
   );
@@ -147,7 +161,8 @@ export function Workspace() {
   const { tabs, activeId, groups, activate } = useSessions();
   // Aba ativa que é grupo: seus membros ficam visíveis lado a lado (specs/006, research R3).
   const activeGroup = activeId ? groupOf(groups, activeId) : undefined;
-  const panes = useMemo(() => (activeGroup ? rects(activeGroup.root).panes : {}), [activeGroup]);
+  const layout = useMemo(() => (activeGroup ? rects(activeGroup.root) : null), [activeGroup]);
+  const panes = layout?.panes ?? {};
   const settings = useWorkspace((w) => w.view === 'settings');
   const dragging = useDrag((d) => d.dragging);
   const newTabShortcut = useShortcutLabel('newTab');
@@ -205,6 +220,7 @@ export function Workspace() {
                 pane={
                   rect && {
                     style: paneStyle(rect),
+                    header: <PaneHeader tab={tab} />,
                     onActivate: () => {
                       if (useSessions.getState().activeId !== tab.id) activate(tab.id);
                     },
@@ -215,6 +231,11 @@ export function Workspace() {
             );
           })}
         </div>
+        {activeGroup &&
+          !settings &&
+          layout?.dividers.map((d) => (
+            <Divider key={d.path.join('') || 'root'} groupId={activeGroup.id} divider={d} />
+          ))}
         {dragging && !settings && activeId && <DropLayer dragging={dragging} />}
         {settings && <SettingsPage />}
       </div>

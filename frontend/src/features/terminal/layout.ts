@@ -24,6 +24,8 @@ export interface DividerRect extends Rect {
   path: Path;
   dir: SplitDir;
   ratio: number;
+  /** Área da divisão inteira; a proporção é medida nela. */
+  area: Rect;
 }
 
 export const MAX_PANES = 4;
@@ -89,6 +91,32 @@ export function setRatio(node: LayoutNode, path: Path, ratio: number): LayoutNod
 
 export const equalize = (node: LayoutNode, path: Path): LayoutNode => setRatio(node, path, 0.5);
 
+export function nodeAt(node: LayoutNode, path: Path): LayoutNode | null {
+  let cur: LayoutNode = node;
+  for (const step of path) {
+    if (cur.kind === 'leaf') return null;
+    cur = step === 'a' ? cur.a : cur.b;
+  }
+  return cur;
+}
+
+/**
+ * Menor extensão de uma subárvore na direção da divisão (`row`: largura; `column`: altura), com
+ * `min` por painel: painéis lado a lado na mesma direção somam, os empilhados não.
+ */
+export function minExtent(node: LayoutNode, dir: SplitDir, min: number): number {
+  if (node.kind === 'leaf') return min;
+  const a = minExtent(node.a, dir, min);
+  const b = minExtent(node.b, dir, min);
+  return node.dir === dir ? a + b : Math.max(a, b);
+}
+
+/** Proporção de uma divisão com `totalPx`, sem deixar `a` ou `b` abaixo do mínimo de cada um. */
+export function clampSplit(ratio: number, totalPx: number, minA: number, minB: number): number {
+  if (totalPx <= 0 || minA + minB >= totalPx) return 0.5;
+  return Math.min(1 - minB / totalPx, Math.max(minA / totalPx, ratio));
+}
+
 /** Limita a proporção para os dois lados terem pelo menos `minPx` num total de `totalPx`. */
 export function clampRatio(ratio: number, totalPx: number, minPx: number): number {
   if (totalPx <= 0) return ratio;
@@ -107,12 +135,30 @@ export function rects(root: LayoutNode): { panes: Record<string, Rect>; dividers
     }
     if (node.dir === 'row') {
       const w = r.w * node.ratio;
-      dividers.push({ path, dir: 'row', x: r.x + w, y: r.y, w: 0, h: r.h, ratio: node.ratio });
+      dividers.push({
+        path,
+        dir: 'row',
+        x: r.x + w,
+        y: r.y,
+        w: 0,
+        h: r.h,
+        ratio: node.ratio,
+        area: r,
+      });
       walk(node.a, { x: r.x, y: r.y, w, h: r.h }, [...path, 'a']);
       walk(node.b, { x: r.x + w, y: r.y, w: r.w - w, h: r.h }, [...path, 'b']);
     } else {
       const h = r.h * node.ratio;
-      dividers.push({ path, dir: 'column', x: r.x, y: r.y + h, w: r.w, h: 0, ratio: node.ratio });
+      dividers.push({
+        path,
+        dir: 'column',
+        x: r.x,
+        y: r.y + h,
+        w: r.w,
+        h: 0,
+        ratio: node.ratio,
+        area: r,
+      });
       walk(node.a, { x: r.x, y: r.y, w: r.w, h }, [...path, 'a']);
       walk(node.b, { x: r.x, y: r.y + h, w: r.w, h: r.h - h }, [...path, 'b']);
     }

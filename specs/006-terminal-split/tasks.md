@@ -47,11 +47,11 @@ ganham testes antes do código; o e2e roda contra o app real com terminais locai
 
 **Independent Test**: quickstart §2, cenários 3 e 4.
 
-- [ ] T008 [US2] `PaneHeader` em `frontend/src/features/terminal/PaneHeader.tsx` (ícone, título, estado, botões "Separar em nova aba" e "Fechar painel"; sem ações ainda ligadas além de foco) e destaque do painel ativo (`data-focused`, borda na cor de destaque) em `frontend/src/features/terminal/terminal.module.css`; clique em qualquer ponto do painel o ativa (FR-606, FR-610).
-- [ ] T009 [US2] `Divider` em `frontend/src/features/terminal/Divider.tsx`: arrasto por ponteiro com `setPointerCapture`, `setRatio` limitado pelo mínimo (R5), dois cliques e Enter igualam, setas mudam 5%, `role="separator"` com `aria-valuenow`; `fit` por quadro durante o arrasto (FR-608, FR-609).
-- [ ] T010 [US2] Atalhos `focusLeft/Right/Up/Down` em `frontend/src/app/shortcuts.ts` (padrões de contracts/ui.md, Windows/Linux e macOS), rótulos em `frontend/src/i18n/pt-BR.ts`, ação `focusDir` em `frontend/src/features/terminal/commands.ts` usando `neighbor`; testes em `frontend/src/app/shortcuts.test.ts` (sem conflito com os padrões existentes).
-- [ ] T011 [US2] Busca, copiar, colar, zoom e enviar teclas miram o painel ativo: conferir `activeTerminalId()` e o `SearchBar` dentro do painel em `frontend/src/features/terminal/commands.ts` e `TerminalView.tsx` (FR-606).
-- [ ] T012 [US2] E2e em `frontend/tests/e2e/split.spec.ts`: divisória arrastada mantém `ServerSizeOf` igual ao xterm de cada painel; `Ctrl+Alt+Setas` move o foco e a digitação vai para o painel `data-focused`.
+- [X] T008 [US2] `PaneHeader` em `frontend/src/features/terminal/PaneHeader.tsx` (ícone, título, estado, botões "Separar em nova aba" e "Fechar painel"; sem ações ainda ligadas além de foco) e destaque do painel ativo (`data-focused`, borda na cor de destaque) em `frontend/src/features/terminal/terminal.module.css`; clique em qualquer ponto do painel o ativa (FR-606, FR-610).
+- [X] T009 [US2] `Divider` em `frontend/src/features/terminal/Divider.tsx`: arrasto por ponteiro com `setPointerCapture`, `setRatio` limitado pelo mínimo (R5), dois cliques e Enter igualam, setas mudam 5%, `role="separator"` com `aria-valuenow`; `fit` por quadro durante o arrasto (FR-608, FR-609).
+- [X] T010 [US2] Atalhos `focusLeft/Right/Up/Down` em `frontend/src/app/shortcuts.ts` (padrões de contracts/ui.md, Windows/Linux e macOS), rótulos em `frontend/src/i18n/pt-BR.ts`, ação `focusDir` em `frontend/src/features/terminal/commands.ts` usando `neighbor`; testes em `frontend/src/app/shortcuts.test.ts` (sem conflito com os padrões existentes).
+- [X] T011 [US2] Busca, copiar, colar, zoom e enviar teclas miram o painel ativo: conferir `activeTerminalId()` e o `SearchBar` dentro do painel em `frontend/src/features/terminal/commands.ts` e `TerminalView.tsx` (FR-606).
+- [X] T012 [US2] E2e em `frontend/tests/e2e/split.spec.ts`: divisória arrastada mantém `ServerSizeOf` igual ao xterm de cada painel; `Ctrl+Alt+Setas` move o foco e a digitação vai para o painel `data-focused`.
 
 **Checkpoint**: SC-603 e SC-604 verificados.
 
@@ -63,16 +63,16 @@ ganham testes antes do código; o e2e roda contra o app real com terminais locai
 
 **Independent Test**: quickstart §2, cenários 5 e 6.
 
-- [ ] T013 [US3] Ligar "Separar em nova aba" (cabeçalho e menu de contexto do painel) a `splitOut`; arrastar o cabeçalho (`application/x-shellvault-pane`) para a barra de abas separa naquela posição (FR-612).
-- [ ] T014 [US3] Fechar painel (botão, atalho "fechar aba" com grupo ativo) e fechar a aba do grupo: em `frontend/src/features/terminal/commands.ts` e no diálogo de confirmação existente (`CloseTabConfirm` em `Workspace.tsx`), com a contagem de sessões vivas no texto quando forem várias (FR-613, FR-614); i18n.
-- [ ] T015 [US3] Sessão que cai ou termina dentro do grupo continua no painel com a faixa de estado e "Reconectar" (`Banner` atual), sem desfazer o grupo.
-- [ ] T016 [US3] E2e em `frontend/tests/e2e/split.spec.ts`: separar devolve aba com o mesmo conteúdo e id; fechar painel encerra só aquela sessão; com uma restante, a aba volta a ser comum.
+- [X] T013 [US3] Ligar "Separar em nova aba" (cabeçalho e menu de contexto do painel) a `splitOut`; arrastar o cabeçalho (`application/x-shellvault-pane`) para a barra de abas separa naquela posição (FR-612).
+- [X] T014 [US3] Fechar painel (botão, atalho "fechar aba" com grupo ativo) e fechar a aba do grupo: em `frontend/src/features/terminal/commands.ts` e no diálogo de confirmação existente (`CloseTabConfirm` em `Workspace.tsx`), com a contagem de sessões vivas no texto quando forem várias (FR-613, FR-614); i18n.
+- [X] T015 [US3] Sessão que cai ou termina dentro do grupo continua no painel com a faixa de estado e "Reconectar" (`Banner` atual), sem desfazer o grupo.
+- [X] T016 [US3] E2e em `frontend/tests/e2e/split.spec.ts`: separar devolve aba com o mesmo conteúdo e id; fechar painel encerra só aquela sessão; com uma restante, a aba volta a ser comum.
 
 ---
 
 ## Phase 5: User Story 4 - Reorganizar dentro do grupo (Priority: P3)
 
-- [ ] T017 [US4] Arrastar o cabeçalho de um painel sobre outro painel do mesmo grupo usa o `DropLayer` e chama `move` (FR-615); teste de store em `sessions.test.ts` e um cenário no e2e.
+- [X] T017 [US4] Arrastar o cabeçalho de um painel sobre outro painel do mesmo grupo usa o `DropLayer` e chama `move` (FR-615); teste de store em `sessions.test.ts` e um cenário no e2e.
 
 ---
 

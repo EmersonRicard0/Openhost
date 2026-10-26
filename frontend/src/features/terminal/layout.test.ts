@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
   clampRatio,
+  clampSplit,
   dropVerdict,
   equalize,
   insert,
   leaf,
   leaves,
+  minExtent,
   move,
   neighbor,
+  nodeAt,
   rects,
   remove,
   setRatio,
@@ -70,7 +73,30 @@ describe('layout dos grupos (006, data-model)', () => {
 
   it('retângulos das divisórias ficam na fronteira entre painéis', () => {
     const { dividers } = rects(insert(leaf('A'), 'A', 'right', 'B'));
-    expect(dividers).toEqual([{ path: [], dir: 'row', x: 0.5, y: 0, w: 0, h: 1, ratio: 0.5 }]);
+    expect(dividers).toEqual([
+      {
+        path: [],
+        dir: 'row',
+        x: 0.5,
+        y: 0,
+        w: 0,
+        h: 1,
+        ratio: 0.5,
+        area: { x: 0, y: 0, w: 1, h: 1 },
+      },
+    ]);
+  });
+
+  it('mínimo por subárvore e proporção limitada pelos dois lados', () => {
+    const root = grid();
+    expect(nodeAt(root, ['a'])).toEqual(insert(leaf('A'), 'A', 'bottom', 'C'));
+    expect(nodeAt(root, ['a', 'a', 'a'])).toBeNull();
+    // Lado a lado na direção somam; empilhados não.
+    expect(minExtent(root, 'row', 100)).toBe(200);
+    expect(minExtent(root, 'column', 50)).toBe(100);
+    expect(clampSplit(0.1, 1000, 200, 100)).toBeCloseTo(0.2);
+    expect(clampSplit(0.95, 1000, 200, 100)).toBeCloseTo(0.9);
+    expect(clampSplit(0.3, 200, 150, 100)).toBe(0.5);
   });
 
   it('vizinho nas quatro direções', () => {

@@ -155,6 +155,10 @@ export const t = {
       zoomIn: 'Aumentar a fonte',
       zoomOut: 'Diminuir a fonte',
       zoomReset: 'Tamanho padrão da fonte',
+      focusLeft: 'Focar painel à esquerda',
+      focusRight: 'Focar painel à direita',
+      focusUp: 'Focar painel acima',
+      focusDown: 'Focar painel abaixo',
     },
     shortcutDisabled: 'Desativado',
     shortcutChange: (action: string) => `Trocar o atalho de "${action}"`,
@@ -329,6 +333,9 @@ export const t = {
     sendKeys: (combo: string) => `Enviar ${combo} ao terminal`,
     group: {
       label: (title: string, more: number) => `${title} e mais ${String(more)}`,
+      splitOut: 'Separar em nova aba',
+      closePane: 'Fechar painel',
+      resize: 'Redimensionar painéis',
       refuse: {
         full: 'Máximo de 4 sessões por grupo',
         group: 'Arraste uma sessão por vez para dentro do grupo',
@@ -340,6 +347,10 @@ export const t = {
       title: 'Fechar a aba?',
       message: (title: string) => `A conexão "${title}" será encerrada.`,
       confirm: 'Fechar aba',
+      groupMessage: (total: number, live: number) =>
+        live === 1
+          ? `As ${String(total)} sessões do grupo serão fechadas; 1 conexão ativa será encerrada.`
+          : `As ${String(total)} sessões do grupo serão fechadas; ${String(live)} conexões ativas serão encerradas.`,
     },
   },
   terminalSettings: {

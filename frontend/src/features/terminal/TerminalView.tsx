@@ -123,6 +123,7 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       focus: () => {
         if (focusedRef.current) term.focus();
       },
+      fit: fitAndResize,
     });
     const detach = attach(sessionId, (data) => {
       term.write(data);
@@ -304,7 +305,11 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       data-session-id={tab.id}
       data-pane={pane ? '' : undefined}
       data-focused={pane && focused ? '' : undefined}
-      onPointerDownCapture={pane?.onActivate}
+      onPointerDownCapture={(e) => {
+        // No cabeçalho, mudar o foco no `pointerdown` cancelaria o arrasto: ele ativa no clique.
+        if (!(e.target instanceof Element && e.target.closest('[data-pane-header]')))
+          pane?.onActivate();
+      }}
     >
       {pane?.header}
       {banner}

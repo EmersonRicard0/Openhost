@@ -17,7 +17,11 @@ export type ShortcutAction =
   | 'zoomOut'
   | 'zoomReset'
   | 'toggleSidebar'
-  | 'openSettings';
+  | 'openSettings'
+  | 'focusLeft'
+  | 'focusRight'
+  | 'focusUp'
+  | 'focusDown';
 
 export interface KeyLike {
   code: string;
@@ -46,6 +50,10 @@ export const ACTIONS: readonly ShortcutAction[] = [
   'zoomIn',
   'zoomOut',
   'zoomReset',
+  'focusLeft',
+  'focusRight',
+  'focusUp',
+  'focusDown',
 ];
 
 /** Ações que existem no sistema: "Novo terminal PowerShell" só no Windows. */
@@ -68,6 +76,11 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, readonly Combo[]> = {
   zoomIn: ['Ctrl+Equal', 'Ctrl+NumpadAdd', 'Ctrl+Shift+Equal'],
   zoomOut: ['Ctrl+Minus', 'Ctrl+NumpadSubtract'],
   zoomReset: ['Ctrl+Digit0', 'Ctrl+Numpad0'],
+  // Painéis de um grupo (specs/006, research R6): Alt+Seta e Ctrl+Shift+Seta são do shell.
+  focusLeft: ['Ctrl+Alt+ArrowLeft'],
+  focusRight: ['Ctrl+Alt+ArrowRight'],
+  focusUp: ['Ctrl+Alt+ArrowUp'],
+  focusDown: ['Ctrl+Alt+ArrowDown'],
 };
 
 /** Padrões do macOS (contracts/platform.md): ⌘ no lugar de Ctrl+Shift; ⌃Tab continua. */
@@ -84,6 +97,10 @@ export const MAC_DEFAULT_SHORTCUTS: Record<ShortcutAction, readonly Combo[]> = {
   zoomIn: ['Meta+Equal', 'Shift+Meta+Equal', 'Meta+NumpadAdd'],
   zoomOut: ['Meta+Minus', 'Meta+NumpadSubtract'],
   zoomReset: ['Meta+Digit0', 'Meta+Numpad0'],
+  focusLeft: ['Alt+Meta+ArrowLeft'],
+  focusRight: ['Alt+Meta+ArrowRight'],
+  focusUp: ['Alt+Meta+ArrowUp'],
+  focusDown: ['Alt+Meta+ArrowDown'],
 };
 
 export function defaultShortcuts(platform: Platform = 'windows') {
