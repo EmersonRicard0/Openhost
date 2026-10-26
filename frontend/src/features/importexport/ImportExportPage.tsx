@@ -39,6 +39,22 @@ const HAS_DEFAULT = new Set<SourceKind>(['openssh', 'putty', 'kitty']);
 /** Origens lidas só do registro: sem "Escolher arquivo". */
 const REGISTRY_ONLY = new Set<SourceKind>(['putty']);
 
+type CardKind = Exclude<SourceKind, 'kittyPortable'>;
+
+/**
+ * Cartões disponíveis nesta plataforma. Antes da primeira resposta mostra tudo. O cartão do KiTTY
+ * aparece também quando só a pasta portátil existe (Linux e macOS, specs/004 FR-415).
+ */
+export function visibleCards(sources: readonly ImportSource[]): CardKind[] {
+  const available = new Set(sources.filter((src) => src.available).map((src) => src.kind));
+  return CARDS.map((c) => c.kind).filter(
+    (kind) =>
+      sources.length === 0 ||
+      available.has(kind) ||
+      (kind === 'kitty' && available.has('kittyPortable')),
+  );
+}
+
 function SourceCard({
   kind,
   icon,
@@ -52,7 +68,8 @@ function SourceCard({
 }) {
   const open = useImportExport((st) => st.open);
   const text = ie.sources[kind];
-  const canDefault = HAS_DEFAULT.has(kind) && (source?.defaultFound ?? false);
+  const canDefault =
+    HAS_DEFAULT.has(kind) && (source?.available ?? true) && (source?.defaultFound ?? false);
 
   async function saveTemplate() {
     const res = await window.shellvault.imports.saveCsvTemplate();
@@ -111,10 +128,8 @@ function SourcesStep() {
   const error = useImportExport((st) => (st.passwordFor ? null : st.error));
   const [exporting, setExporting] = useState(false);
   const byKind = new Map(sources.map((src) => [src.kind, src]));
-  // Antes da primeira resposta mostra tudo; depois, só o que existe nesta plataforma.
-  const visible = CARDS.filter(
-    ({ kind }) => sources.length === 0 || (byKind.get(kind)?.available ?? false),
-  );
+  const shown = new Set(visibleCards(sources));
+  const visible = CARDS.filter(({ kind }) => shown.has(kind));
 
   return (
     <>
