@@ -1,6 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
+import { runSmoke } from './app/smoke';
 import { installBridge } from './bridge';
 import { installAutoReconnect } from './features/terminal/autoReconnect';
 import { subscribeData } from './features/terminal/dataBus';
@@ -32,6 +33,7 @@ async function start(): Promise<void> {
       <App />
     </StrictMode>,
   );
+  void runSmoke();
 }
 
 void start();

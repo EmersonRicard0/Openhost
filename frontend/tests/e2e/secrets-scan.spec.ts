@@ -1,11 +1,12 @@
 // SC-108 (T098): depois de um fluxo completo, nenhum segredo legível no diretório de dados —
 // inclusive SQLite (.db, -wal), pasta do WebView2 e despejos de falha. SC-304 (T045): o mesmo
 // depois de importar, e nos arquivos exportados sem chaves (.openhost, OpenSSH e CSV).
-import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { expect, test } from '@playwright/test';
 import { KEYS_DIR, TEST_PASSPHRASE } from '../../../scripts/gen-test-keys.mjs';
+import { filesUnder, keyFragments, scan } from '../../../scripts/lib/secrets-scan.mjs';
 import { SSHD, up } from '../../../scripts/sshd.mjs';
 import { launchApp, testService } from './helpers/launch';
 import { waitWebViewGone } from './helpers/system';
@@ -23,48 +24,6 @@ import {
 } from './helpers/ui';
 
 const HOST_PASSWORD = 'pw-test-123';
-
-function filesUnder(dir: string): string[] {
-  const out: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...filesUnder(path));
-    else if (entry.isFile()) out.push(path);
-  }
-  return out;
-}
-
-/** Trechos do corpo base64 da chave: início, meio e fim, longe dos cabeçalhos PEM. */
-function keyFragments(pem: string): string[] {
-  const body = pem
-    .split('\n')
-    .filter((line) => line && !line.startsWith('-----'))
-    .join('');
-  const at = [8, Math.floor(body.length / 2), body.length - 40];
-  return at.map((i) => body.slice(i, i + 24));
-}
-
-function encodings(secret: string): { label: string; bytes: Buffer }[] {
-  return [
-    { label: 'utf8', bytes: Buffer.from(secret, 'utf8') },
-    { label: 'utf16le', bytes: Buffer.from(secret, 'utf16le') },
-    { label: 'base64', bytes: Buffer.from(Buffer.from(secret, 'utf8').toString('base64'), 'utf8') },
-  ];
-}
-
-/** Ocorrências de cada segredo, em cada codificação, nos arquivos dados. */
-function scan(files: string[], base: string, secrets: Record<string, string>): string[] {
-  const found: string[] = [];
-  for (const file of files) {
-    const data = readFileSync(file);
-    for (const [name, secret] of Object.entries(secrets)) {
-      for (const { label, bytes } of encodings(secret)) {
-        if (data.includes(bytes)) found.push(`${relative(base, file)}: ${name} (${label})`);
-      }
-    }
-  }
-  return found;
-}
 
 test.beforeAll(async () => {
   await up();

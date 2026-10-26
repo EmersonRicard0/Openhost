@@ -85,14 +85,14 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
   - A tag `webkit2_41` fica documentada no README e no CI.
 - [X] T012 [P] Interface: `useUi.platform` em `frontend/src/stores/ui.ts`, lido em `frontend/src/main.tsx` com `Environment()` do runtime do Wails antes do primeiro render. O padrão em testes é `'windows'`. Teste em `ui.test.ts`.
 - [ ] T013 Go: `main_smoke.go` (`//go:build smoke`), que liga `Smoke.Ready()` (encerra o app com código 0 depois de responder) e uma `TestService` mínima para criar o cofre e um host com senha (reuso de `testsvc`, se couber). Teste do contrato só com a tag.
-- [ ] T014 Teste de abertura (R11, FR-422):
+- [X] T014 Teste de abertura (R11, FR-422):
   - `frontend/src/app/smoke.ts` chama `Smoke.Ready()` quando `import.meta.env.VITE_SMOKE`, depois de montar a tela de criar o cofre;
   - `scripts/smoke.mjs`:
     - compila ou recebe o binário `-tags smoke`;
     - roda com `SHELLVAULT_DATA_DIR` temporário e cria cofre e host com senha pela ponte de teste;
     - espera a saída com código 0 em até 60 s;
     - varre o diretório de dados (incluindo o perfil do WebView) atrás de senha mestra, senha do host e passphrase em texto, UTF-16 e base64, reusando a lógica de `frontend/tests/e2e/secrets-scan.spec.ts` extraída para `scripts/lib/secrets-scan.mjs`.
-- [ ] T015 CI em matriz em `.github/workflows/ci.yml`:
+- [X] T015 CI em matriz em `.github/workflows/ci.yml`:
   - `windows-latest`, `ubuntu-22.04` e `macos-14`, com os passos atuais;
   - no Ubuntu, `apt-get install libgtk-3-dev libwebkit2gtk-4.1-dev xvfb` e `-tags webkit2_41`;
   - job `smoke` por sistema: `wails build -tags smoke` e depois `node scripts/smoke.mjs` (com `xvfb-run` no Linux);

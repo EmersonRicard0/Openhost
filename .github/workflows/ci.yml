@@ -13,15 +13,30 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Windows, Linux e macOS (specs/004-linux-macos, R10). No Linux o Wails usa o WebKitGTK 4.1 pela
+# tag `webkit2_41`; o Playwright E2E segue só no Windows, os outros dois provam a abertura pelo
+# teste de abertura (scripts/smoke.mjs).
 jobs:
   quality:
-    name: Go e frontend
-    runs-on: windows-latest
+    name: Go e frontend (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04, macos-14]
+    env:
+      GOFLAGS: ${{ startsWith(matrix.os, 'ubuntu') && '-tags=webkit2_41' || '' }}
 
     steps:
       - name: Obter o código
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Instalar GTK e WebKitGTK
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
 
       - name: Configurar Go
         uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
@@ -65,3 +80,47 @@ jobs:
       - name: Testar o frontend
         working-directory: frontend
         run: npm test
+
+  smoke:
+    name: Abertura do app (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-22.04, macos-14]
+
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Instalar GTK, WebKitGTK e Xvfb
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev xvfb
+
+      - name: Configurar Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar o Wails
+        run: go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.0
+
+      # Sem binário, o script compila com `-tags smoke` (e `webkit2_41` no Linux).
+      - name: Abrir o app e varrer segredos
+        if: ${{ !startsWith(matrix.os, 'ubuntu') }}
+        run: node scripts/smoke.mjs
+
+      - name: Abrir o app e varrer segredos (Xvfb)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: xvfb-run -a node scripts/smoke.mjs
