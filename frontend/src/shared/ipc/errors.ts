@@ -35,6 +35,8 @@ export const ERROR_CODES = [
   'PREVIEW_EXPIRED',
   'UNDO_UNAVAILABLE',
   'CANCELLED',
+  'NETWORK',
+  'RATE_LIMITED',
   'INTERNAL',
 ] as const;
 

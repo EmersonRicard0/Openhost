@@ -83,6 +83,7 @@ export const EVENT_NAMES = [
   'hosts:changed',
   'app:appearance',
   'app:close-requested',
+  'updates:state',
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -122,6 +123,7 @@ function createApi(): ShellVaultApi {
   const P = 'ProfileService';
   const I = 'ImportService';
   const E = 'ExportService';
+  const U = 'UpdateService';
   return {
     vault: {
       getStatus: () => call(V, 'GetStatus'),
@@ -269,6 +271,21 @@ function createApi(): ShellVaultApi {
       },
       onAppearanceChanged: ev('app:appearance'),
       onCloseRequested: ev('app:close-requested'),
+    },
+    updates: {
+      info: () => call(U, 'Info'),
+      check: (manual) => call(U, 'Check', manual),
+      download: () => call(U, 'Download'),
+      cancel: () => call(U, 'Cancel'),
+      remind: () => call(U, 'Remind'),
+      skip: (version) => call(U, 'Skip', version),
+      prefs: () => call(U, 'Prefs'),
+      setPrefs: (prefs) => call(U, 'SetPrefs', prefs),
+      restartNow: () => call(U, 'RestartNow'),
+      applyOnQuit: () => call(U, 'ApplyOnQuit'),
+      lastResult: () => call(U, 'LastResult'),
+      openDownloadFolder: () => call(U, 'OpenDownloadFolder'),
+      onState: ev('updates:state'),
     },
   };
 }

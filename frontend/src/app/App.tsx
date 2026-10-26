@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { CommandPalette } from '../features/palette/CommandPalette';
+import { UpdateToast } from '../features/updates/UpdateToast';
 import { ActiveForwardsDialog } from '../features/forwarding/ActiveForwardsDialog';
 import { Sidebar } from '../features/sidebar/Sidebar';
 import { toggleSidebar } from '../features/terminal/commands';
@@ -139,6 +140,7 @@ export function App() {
       <ActiveForwardsDialog />
       <CommandPalette />
       <CloseConfirmDialog />
+      <UpdateToast />
       <Toasts />
     </div>
   );

@@ -13,6 +13,7 @@ import { t } from '../../i18n/pt-BR';
 import { useSessions } from '../../stores/sessions';
 import { shellInfo, useShells } from '../../stores/shells';
 import { useUi } from '../../stores/ui';
+import { checkNow, savePrefs, useUpdates } from '../../stores/updates';
 import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
 import { DEFAULT_ACCENT, resolveAccent } from '../../theme/accent';
@@ -452,11 +453,82 @@ function ImportExportSection() {
 
 function AboutSection() {
   return (
-    <Group>
-      <p className={s.appName}>{t.common.appName}</p>
-      <p className={s.hint}>{t.settings.version(__APP_VERSION__)}</p>
-      <p>{t.settings.aboutDescription}</p>
-      <p className={s.hint}>{t.settings.aboutOffline}</p>
+    <>
+      <Group>
+        <p className={s.appName}>{t.common.appName}</p>
+        <p className={s.hint}>{t.settings.version(__APP_VERSION__)}</p>
+        <p>{t.settings.aboutDescription}</p>
+        <p className={s.hint}>{t.settings.aboutOffline}</p>
+      </Group>
+      <UpdatesGroup />
+    </>
+  );
+}
+
+/** Atualizações (specs/007, FR-716): versão, última verificação, procurar e opções. */
+function UpdatesGroup() {
+  const info = useUpdates((u) => u.info);
+  const prefs = useUpdates((u) => u.prefs);
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const tu = t.updates.settings;
+  const dev = info?.install === 'dev';
+  const lastCheck = info?.checkedAt
+    ? tu.lastCheck(new Date(info.checkedAt).toLocaleString('pt-BR'))
+    : tu.never;
+
+  return (
+    <Group title={tu.title}>
+      <p className={s.hint}>{tu.installed(info?.current ?? __APP_VERSION__)}</p>
+      {dev ? (
+        <p className={s.hint}>{tu.devBuild}</p>
+      ) : (
+        <>
+          <p className={s.hint}>{lastCheck}</p>
+          <div>
+            <Button
+              disabled={checking}
+              onClick={() => {
+                setChecking(true);
+                setResult(null);
+                void checkNow().then((err) => {
+                  setChecking(false);
+                  const now = useUpdates.getState().info;
+                  if (err) toastError(err);
+                  else if (now && !now.latest) setResult(tu.upToDate(now.current));
+                });
+              }}
+            >
+              {checking ? tu.checking : tu.check}
+            </Button>
+          </div>
+          {result && (
+            <p className={s.hint} role="status">
+              {result}
+            </p>
+          )}
+          <Checkbox
+            label={tu.auto}
+            hint={tu.autoHint}
+            checked={prefs?.auto ?? true}
+            onChange={(e) =>
+              void savePrefs({ auto: e.target.checked }).then((err) => {
+                if (err) toastError(err);
+              })
+            }
+          />
+          <Checkbox
+            label={tu.prerelease}
+            hint={tu.prereleaseHint}
+            checked={prefs?.prerelease ?? false}
+            onChange={(e) =>
+              void savePrefs({ prerelease: e.target.checked }).then((err) => {
+                if (err) toastError(err);
+              })
+            }
+          />
+        </>
+      )}
     </Group>
   );
 }
