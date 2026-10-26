@@ -1,6 +1,6 @@
 // Importar e exportar hosts (specs/003-host-import-export, T021 e T027): `~/.ssh/config` com prévia,
 // duplicados e desfazer; `.openhost` com chaves levado para um cofre novo.
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
@@ -156,6 +156,50 @@ test('exporta .openhost com chaves e reimporta num cofre novo', async () => {
     await hostItem(page, 'pw-cfg').dblclick();
     await acceptHostKey(page);
     await waitConnected(page, 'pw-cfg');
+  } finally {
+    await app.close();
+  }
+});
+
+test('baixa o modelo CSV e importa planilha mapeando as colunas', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'openhost-csv-'));
+  const template = join(dir, 'modelo.csv');
+  const sheet = join(dir, 'inventario.csv');
+  writeFileSync(
+    sheet,
+    'servidor;local;acesso\r\nCore;192.0.2.40;netops\r\nBorda;192.0.2.41;netops\r\n',
+  );
+  const app = await launchApp();
+  try {
+    const { page } = app;
+    await createVault(page);
+    await openImportExport(page);
+    const card = page
+      .getByRole('listitem')
+      .filter({ has: page.getByRole('heading', { name: 'Planilha (CSV)' }) });
+
+    await testService(page, 'SetDialogPath', template);
+    await card.getByRole('button', { name: 'Baixar modelo' }).click();
+    await expect(page.getByText('Modelo salvo.')).toBeVisible();
+    expect(readFileSync(template, 'utf8')).toContain('nome;endereco;porta;usuario;grupo;chave');
+
+    // Sem coluna de endereço reconhecível: a prévia pede o mapeamento antes da tabela.
+    await importFile(page, 'Planilha (CSV)', sheet);
+    await expect(page.getByRole('heading', { name: 'Quais colunas são quais?' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Aplicar' })).toBeDisabled();
+    await page.getByRole('combobox', { name: 'Endereço (obrigatório)' }).click();
+    await page.getByRole('option', { name: 'local' }).click();
+    await page.getByRole('combobox', { name: 'Rótulo' }).click();
+    await page.getByRole('option', { name: 'servidor' }).click();
+    await page.getByRole('combobox', { name: 'Usuário' }).click();
+    await page.getByRole('option', { name: 'acesso' }).click();
+    await page.getByRole('button', { name: 'Aplicar' }).click();
+
+    const table = page.getByRole('table');
+    await expect(table.getByRole('textbox', { name: 'Endereço: Core' })).toHaveValue('192.0.2.40');
+    await expect(table.getByRole('textbox', { name: 'Usuário: Borda' })).toHaveValue('netops');
+    await page.getByRole('button', { name: 'Importar 2 hosts' }).click();
+    await expect(page.getByText('2 hosts criados')).toBeVisible();
   } finally {
     await app.close();
   }

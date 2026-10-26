@@ -97,10 +97,10 @@ antes do código, falhando primeiro.
 
 **Independent Test**: modelo preenchido com 500 linhas, inválidas, grupos aninhados, `;` e Windows-1252.
 
-- [ ] T034 [P] [US4] Fixtures CSV em `internal/importer/testdata/csv/`: UTF-8 com BOM e `;` (Excel pt-BR), Windows-1252 com acentos, `,` com aspas e quebra de linha, tab, sinônimos (`host`, `ip`, `user`), sem coluna de endereço reconhecível, 500 linhas com porta `99999` e linha sem endereço, `Clientes/Norte/OLTs`
-- [ ] T035 [P] [US4] Go: testes em `internal/importer/csv_test.go` — detecção de separador e codificação, sinônimos de R7, `needsMapping` com lista de colunas, `RemapCsv`, `/` como separador de grupos, coluna `chave` vira `keyRef`, limites "10 MB e 5.000 linhas" → `IMPORT_TOO_LARGE`, modelo gerado tem `nome;endereco;porta;usuario;grupo;chave` e uma linha de exemplo
-- [ ] T036 [US4] Go: `internal/importer/csv.go`, origem `csv` e `SaveCsvTemplate`
-- [ ] T037 [US4] Interface: cartão "Planilha (CSV)" com "Baixar modelo"; tela de mapeamento de colunas quando `needsMapping` (um seletor por campo, `endereco` obrigatório)
+- [X] T034 [P] [US4] Fixtures CSV em `internal/importer/testdata/csv/`: UTF-8 com BOM e `;` (Excel pt-BR), Windows-1252 com acentos, `,` com aspas e quebra de linha, tab, sinônimos (`host`, `ip`, `user`), sem coluna de endereço reconhecível, 500 linhas com porta `99999` e linha sem endereço, `Clientes/Norte/OLTs`
+- [X] T035 [P] [US4] Go: testes em `internal/importer/csv_test.go` — detecção de separador e codificação, sinônimos de R7, `needsMapping` com lista de colunas, `RemapCsv`, `/` como separador de grupos, coluna `chave` vira `keyRef`, limites "10 MB e 5.000 linhas" → `IMPORT_TOO_LARGE`, modelo gerado tem `nome;endereco;porta;usuario;grupo;chave` e uma linha de exemplo
+- [X] T036 [US4] Go: `internal/importer/csv.go`, origem `csv` e `SaveCsvTemplate`
+- [X] T037 [US4] Interface: cartão "Planilha (CSV)" com "Baixar modelo"; tela de mapeamento de colunas quando `needsMapping` (um seletor por campo, `endereco` obrigatório)
 
 ---
 

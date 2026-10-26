@@ -158,6 +158,7 @@ type ImportPreview struct {
 	Ignored                 []IgnoredItem
 	FileWarnings            []Warning
 	CSV                     *CsvPreview
+	csv                     *csvSource
 	keyData                 map[string]*keySecret
 	credentialByFingerprint map[string]string
 	groupSortOrders         map[string]int

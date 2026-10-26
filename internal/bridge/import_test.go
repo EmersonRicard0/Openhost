@@ -90,8 +90,12 @@ func TestImportServiceOpenSSHSourceAndDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 	sources, err := services.importService.Sources()
-	if err != nil || len(sources) != 2 || sources[0].Kind != importer.SourceOpenHost || !sources[0].Available ||
-		sources[1].Kind != importer.SourceOpenSSH || !sources[1].Available || !sources[1].DefaultFound {
+	byKind := map[importer.SourceKind]ImportSource{}
+	for _, source := range sources {
+		byKind[source.Kind] = source
+	}
+	if openssh := byKind[importer.SourceOpenSSH]; err != nil || !openssh.Available || !openssh.DefaultFound ||
+		!byKind[importer.SourceOpenHost].Available {
 		t.Fatalf("Sources = %+v, %v", sources, err)
 	}
 	view, err := services.importService.Preview(importer.SourceOpenSSH, PreviewOptions{UseDefault: true})
@@ -108,5 +112,33 @@ func TestImportServiceOpenSSHSourceAndDefault(t *testing.T) {
 	view, err = services.importService.Preview(importer.SourceOpenSSH, PreviewOptions{})
 	if err != nil || view == nil || view.Rows[0].Label != "chosen" {
 		t.Fatalf("Preview escolhido = %+v, %v", view, err)
+	}
+}
+
+func TestImportServiceCSVPreviewAndRemap(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(t.TempDir(), "planilha.csv")
+	if err := os.WriteFile(path, []byte("servidor;local\nCore;192.0.2.40\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	services.importService.pickFile = func(context.Context, importer.SourceKind) (string, error) { return path, nil }
+	view, err := services.importService.Preview(importer.SourceCSV, PreviewOptions{})
+	if err != nil || view == nil || view.CSV == nil || !view.CSV.NeedsMapping {
+		t.Fatalf("prévia sem endereço = %+v, %v", view, err)
+	}
+	zero, one := 0, 1
+	remapped, err := services.importService.RemapCsv(view.ID, map[string]*int{"nome": &zero, "endereco": &one})
+	if err != nil || len(remapped.Rows) != 1 || remapped.Rows[0].Address != "192.0.2.40" {
+		t.Fatalf("RemapCsv = %+v, %v", remapped, err)
+	}
+	result, err := services.importService.Commit(remapped.ID, nil)
+	if err != nil || result.Created != 1 {
+		t.Fatalf("Commit = %+v, %v", result, err)
+	}
+	if _, err := services.importService.RemapCsv("inexistente", nil); err == nil {
+		t.Fatal("RemapCsv de prévia inexistente deveria falhar")
 	}
 }

@@ -57,6 +57,12 @@ func newImportService(store *vault.Store, contextFn func() context.Context) *Imp
 	}
 	s.registerOpenSSH()
 	s.registerOpenHost()
+	s.sources[importer.SourceCSV] = sourceLoader{
+		source: ImportSource{Kind: importer.SourceCSV, Available: true},
+		load: func(path string, options PreviewOptions, content *model.Content) (*importer.ImportPreview, error) {
+			return importer.LoadCSV(path, options.CSVMapping, content)
+		},
+	}
 	return s
 }
 
@@ -142,7 +148,21 @@ func (s *ImportService) Preview(kind importer.SourceKind, options PreviewOptions
 	return &view, nil
 }
 func (s *ImportService) RemapCsv(previewID string, mapping map[string]*int) (importer.PreviewView, error) {
-	return importer.PreviewView{}, apperr.New(apperr.InvalidInput)
+	p, err := s.coordinator.Preview(previewID)
+	if err != nil {
+		return importer.PreviewView{}, clean(err)
+	}
+	content, err := s.store.Read()
+	if err != nil {
+		return importer.PreviewView{}, clean(err)
+	}
+	// Reinterpreta a planilha já lida; a prévia nova substitui a anterior.
+	remapped, err := importer.RemapCSV(p, mapping, content)
+	if err != nil {
+		return importer.PreviewView{}, clean(err)
+	}
+	s.coordinator.SetPreview(remapped)
+	return remapped.View(), nil
 }
 func (s *ImportService) UpdateRow(previewID, rowID string, patch importer.RowPatch) (importer.PreviewView, error) {
 	p, err := s.coordinator.Preview(previewID)
@@ -213,8 +233,7 @@ func (s *ImportService) SaveCsvTemplate() (bool, error) {
 	if filepath.Ext(path) == "" {
 		path += ".csv"
 	}
-	const template = "\ufeffnome;endereco;porta;usuario;grupo;chave\r\nServidor de exemplo;192.0.2.10;22;usuario;Clientes/Norte;\r\n"
-	if err = os.WriteFile(path, []byte(template), 0600); err != nil {
+	if err = os.WriteFile(path, importer.CSVTemplate(), 0600); err != nil {
 		return false, clean(err)
 	}
 	return true, nil

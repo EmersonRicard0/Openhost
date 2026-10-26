@@ -126,16 +126,19 @@ export function PreviewStep({ preview }: { preview: PreviewView }) {
       <header className={s.previewHeader}>
         <div>
           <h3 className={s.blockTitle}>{ie.previewTitle(preview.sourceLabel)}</h3>
-          <p className={s.counts} aria-live="polite">
-            <span>{ie.counts(counts.selected, counts.total)}</span>
-            {counts.invalid > 0 && (
-              <span data-tone="danger">{ie.countInvalid(counts.invalid)}</span>
-            )}
-            {counts.duplicate > 0 && (
-              <span data-tone="warning">{ie.countDuplicate(counts.duplicate)}</span>
-            )}
-            {counts.warnings > 0 && <span>{ie.countWarnings(counts.warnings)}</span>}
-          </p>
+          {/* Antes do mapeamento ainda não há linhas para contar. */}
+          {!needsMapping && (
+            <p className={s.counts} aria-live="polite">
+              <span>{ie.counts(counts.selected, counts.total)}</span>
+              {counts.invalid > 0 && (
+                <span data-tone="danger">{ie.countInvalid(counts.invalid)}</span>
+              )}
+              {counts.duplicate > 0 && (
+                <span data-tone="warning">{ie.countDuplicate(counts.duplicate)}</span>
+              )}
+              {counts.warnings > 0 && <span>{ie.countWarnings(counts.warnings)}</span>}
+            </p>
+          )}
         </div>
         <div className={s.target}>
           <Select
@@ -208,13 +211,15 @@ export function PreviewStep({ preview }: { preview: PreviewView }) {
         <Button onClick={st.reset} disabled={st.busy}>
           {t.common.cancel}
         </Button>
-        <Button
-          variant="primary"
-          disabled={st.busy || needsMapping || counts.selected === 0}
-          onClick={() => void confirm()}
-        >
-          {ie.confirm(counts.selected)}
-        </Button>
+        {!needsMapping && (
+          <Button
+            variant="primary"
+            disabled={st.busy || counts.selected === 0}
+            onClick={() => void confirm()}
+          >
+            {ie.confirm(counts.selected)}
+          </Button>
+        )}
       </footer>
 
       {nextKey && (

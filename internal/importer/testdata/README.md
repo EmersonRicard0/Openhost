@@ -15,7 +15,7 @@ Regras:
 | `openssh/` | `~/.ssh/config` | à mão, seguindo `ssh_config(5)` |
 | `ppk/` | chaves do PuTTY | `puttygen` (comandos no cartão 49) |
 | `putty/` | sessões do KiTTY portátil | sintético |
-| `csv/` | planilhas | Excel pt-BR e à mão |
+| `csv/` | planilhas | sintético, no formato que o Excel pt-BR grava (UTF-8 com BOM e `;`, Windows-1252); `.gitattributes` mantém os bytes |
 | `mobaxterm/` | `.mxtsessions`, `MobaXterm.ini` | sintético (validar com arquivo real no quickstart) |
 | `securecrt/` | XML de Export Settings | sintético (validar com arquivo real no quickstart) |
 
