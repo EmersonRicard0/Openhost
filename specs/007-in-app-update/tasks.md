@@ -38,9 +38,9 @@ real com servidor de releases local.
 **Independent Test**: quickstart §2, cenários 1, 2 e 6.
 
 - [ ] T008 [US1] **Go** `internal/bridge/updates.go`: `UpdateService` com `Info`, `Check(manual)`, `Remind`, `Skip`, `Prefs`/`SetPrefs` e evento `updates:state`; verificação ao iniciar (depois da janela pronta) e a cada 6 h com `auto`; falha calada no automático (FR-701–FR-707); `TestService.SetUpdateSource` só com tag `e2e`; testes em `internal/bridge/updates_test.go`.
-- [ ] T009 [P] [US1] Frontend: tipos e `window.shellvault.updates` em `frontend/src/bridge/index.ts` e `frontend/src/shared/ipc/api.ts`; store `frontend/src/stores/updates.ts` (+ teste) assinando `updates:state`.
-- [ ] T010 [US1] `frontend/src/features/updates/UpdateToast.tsx`: aviso não bloqueante (sem roubar foco do terminal) com versão, selo "versão de teste", notas expansíveis (Markdown simples, sem HTML), "Atualizar", "Lembrar depois", "Pular esta versão"; i18n em `frontend/src/i18n/pt-BR.ts`; acessível (`role="status"`, foco só por Tab/atalho).
-- [ ] T011 [US1] Indicador na barra de status (`frontend/src/app/StatusBar.tsx`) enquanto há versão disponível/pronta, que reabre o aviso (FR-708).
+- [X] T009 [P] [US1] Frontend: tipos e `window.shellvault.updates` em `frontend/src/bridge/index.ts` e `frontend/src/shared/ipc/api.ts`; store `frontend/src/stores/updates.ts` (+ teste) assinando `updates:state`.
+- [X] T010 [US1] `frontend/src/features/updates/UpdateToast.tsx`: aviso não bloqueante (sem roubar foco do terminal) com versão, selo "versão de teste", notas expansíveis (Markdown simples, sem HTML), "Atualizar", "Lembrar depois", "Pular esta versão"; i18n em `frontend/src/i18n/pt-BR.ts`; acessível (`role="status"`, foco só por Tab/atalho).
+- [X] T011 [US1] Indicador na barra de status (`frontend/src/app/StatusBar.tsx`) enquanto há versão disponível/pronta, que reabre o aviso (FR-708).
 - [ ] T012 [US1] E2e `frontend/tests/e2e/update.spec.ts` com servidor de releases local: cenários 1, 2 e 6 do quickstart.
 
 ---
@@ -65,8 +65,8 @@ real com servidor de releases local.
 
 ## Phase 6: User Story 4 - Controlar as atualizações (P3)
 
-- [ ] T019 [US4] `frontend/src/features/updates/UpdateSettings.tsx` na página de Configurações: versão instalada, última verificação, "Procurar atualizações" (com "Você já está na versão mais recente"), "Verificar automaticamente", "Receber versões de teste" (FR-716).
-- [ ] T020 [US4] "Procurar atualizações" na paleta (`frontend/src/features/palette/CommandPalette.tsx`) (FR-717).
+- [X] T019 [US4] `frontend/src/features/updates/UpdateSettings.tsx` na página de Configurações: versão instalada, última verificação, "Procurar atualizações" (com "Você já está na versão mais recente"), "Verificar automaticamente", "Receber versões de teste" (FR-716).
+- [X] T020 [US4] "Procurar atualizações" na paleta (`frontend/src/features/palette/CommandPalette.tsx`) (FR-717).
 - [ ] T021 [US4] E2e: cenário 7 e desligar o automático sem nenhuma requisição.
 
 ---

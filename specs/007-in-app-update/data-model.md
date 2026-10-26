@@ -22,6 +22,10 @@
 | `oneClick` | bool | `nsis`, `app`, `appimage` graváveis |
 | `manualCommand` | string \| null | ex.: `sudo apt install ./openhost_0.5.1_amd64.deb` |
 | `checkedAt` | string ISO | |
+| `notify` | bool | `latest` existe, não é a pulada e já passou o `remindAfter` (o aviso aparece) |
+| `state` | estado atual (abaixo) | |
+| `progress` | `{received, total}` \| null | durante o download |
+| `reason` | string \| null | em `failed` |
 
 ## UpdateState (máquina de estados)
 

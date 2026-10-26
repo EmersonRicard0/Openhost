@@ -514,3 +514,65 @@ export interface ExportResult {
   hosts: number;
   keys: number;
 }
+
+// --- Atualização pelo app (specs/007, contracts/bridge-updater.md) -----------
+
+export type UpdateInstall = 'nsis' | 'app' | 'appimage' | 'deb' | 'rpm' | 'manual' | 'dev';
+
+export type UpdatePhase =
+  | 'idle'
+  | 'checking'
+  | 'upToDate'
+  | 'available'
+  | 'downloading'
+  | 'verifying'
+  | 'ready'
+  | 'applying'
+  | 'failed';
+
+export type UpdateFailure =
+  | 'network'
+  | 'diskSpace'
+  | 'signature'
+  | 'checksum'
+  | 'permission'
+  | 'install';
+
+export interface UpdateProgress {
+  received: number;
+  total: number;
+}
+
+export interface UpdateInfo {
+  current: string;
+  latest: string | null;
+  prerelease: boolean;
+  notes: string;
+  install: UpdateInstall;
+  oneClick: boolean;
+  manualCommand: string | null;
+  checkedAt: string;
+  /** O aviso deve aparecer: há versão, não foi pulada e passou o "lembrar depois". */
+  notify: boolean;
+  state: UpdatePhase;
+  progress: UpdateProgress | null;
+  reason: UpdateFailure | null;
+}
+
+export interface UpdateStateEvent {
+  state: UpdatePhase;
+  version?: string;
+  progress?: UpdateProgress;
+  reason?: UpdateFailure;
+}
+
+export interface UpdatePrefs {
+  auto: boolean;
+  prerelease: boolean;
+}
+
+export interface UpdateResult {
+  version: string;
+  status: 'ok' | 'failed';
+  reason?: UpdateFailure;
+}

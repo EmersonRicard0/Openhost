@@ -16,6 +16,7 @@ Novo serviço `UpdateService` (`internal/bridge/updates.go`), exposto como
 | `RestartNow()` | — | — | só em `ready`; dispara o auxiliar e fecha o app |
 | `ApplyOnQuit()` | — | — | só em `ready` |
 | `LastResult()` | — | `{version, status, reason} \| null` | resultado da última aplicação, uma vez |
+| `OpenDownloadFolder()` | — | — | abre só `updates/<versão>` no gerenciador de arquivos (FR-715) |
 
 ## Eventos
 

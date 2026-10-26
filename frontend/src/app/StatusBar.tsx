@@ -4,9 +4,10 @@ import { focusUnlock } from '../features/vault/UnlockScreen';
 import { t } from '../i18n/pt-BR';
 import { useForwards } from '../stores/forwards';
 import { useSessions } from '../stores/sessions';
+import { hasUpdate, useUpdates } from '../stores/updates';
 import { useVault } from '../stores/vault';
 import { useWorkspace } from '../stores/workspace';
-import { ForwardIcon, LockIcon, UnlockIcon } from '../ui/icons';
+import { DownloadIcon, ForwardIcon, LockIcon, UnlockIcon } from '../ui/icons';
 import { latencyLevel } from './latency';
 import s from './statusbar.module.css';
 
@@ -19,6 +20,8 @@ export function StatusBar() {
   const setForwardsOpen = useWorkspace((w) => w.setForwardsOpen);
 
   const unlocked = vault === 'unlocked';
+  const update = useUpdates((u) => u.info);
+  const openUpdate = useUpdates((u) => u.setOpen);
 
   return (
     <footer className={s.bar} aria-label={t.status.label}>
@@ -33,6 +36,20 @@ export function StatusBar() {
         </span>
       )}
       <span className={s.spacer} />
+      {hasUpdate(update) && (
+        <button
+          type="button"
+          className={s.item}
+          title={t.updates.statusTitle}
+          data-testid="status-update"
+          onClick={() => {
+            openUpdate(true);
+          }}
+        >
+          <DownloadIcon />
+          {update?.state === 'ready' ? t.updates.statusReady : t.updates.statusAvailable}
+        </button>
+      )}
       {anyForward && (
         <button
           type="button"

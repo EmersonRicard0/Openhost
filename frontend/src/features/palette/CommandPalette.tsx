@@ -11,6 +11,7 @@ import {
   ChevronIcon,
   ChevronLeftIcon,
   ChevronUpIcon,
+  DownloadIcon,
   FolderIcon,
   ImportExportIcon,
   LockIcon,
@@ -23,6 +24,8 @@ import { connectHost } from '../hosts/connect';
 import { openSftp } from '../sftp/openSftp';
 import { activeTerminalId, focusDir, openSearch, toggleTheme } from '../terminal/commands';
 import { groupOf, useSessions } from '../../stores/sessions';
+import { checkNow, useUpdates } from '../../stores/updates';
+import { toastError, toastInfo } from '../../ui/Toast';
 import { openLocal } from '../terminal/openLocal';
 import { useShortcutLabel } from '../../app/useShortcuts';
 import { ShellIcon } from '../../ui/ShellIcon';
@@ -100,6 +103,21 @@ function useCommands(): Entry[] {
         icon: <SettingsIcon />,
         run: () => {
           setView('settings');
+        },
+      },
+      {
+        id: 'checkUpdates',
+        label: t.updates.palette,
+        hint: '',
+        group: 'action',
+        icon: <DownloadIcon />,
+        run: () => {
+          // Achando versão, o aviso abre; sem novidade ou com erro, um toast explica (FR-717).
+          void checkNow().then((err) => {
+            const info = useUpdates.getState().info;
+            if (err) toastError(err);
+            else if (info && !info.latest) toastInfo(t.updates.settings.upToDate(info.current));
+          });
         },
       },
       {

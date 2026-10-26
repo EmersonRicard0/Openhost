@@ -37,6 +37,8 @@ export const ERROR_CAUSES: Record<ErrorCode, string> = {
   PREVIEW_EXPIRED: 'A prévia expirou. Escolha a origem de novo.',
   UNDO_UNAVAILABLE: 'Não há importação para desfazer.',
   CANCELLED: 'A operação foi cancelada.',
+  NETWORK: 'Sem conexão com a internet ou o serviço não respondeu.',
+  RATE_LIMITED: 'Muitas consultas seguidas; tente de novo em alguns minutos.',
   INTERNAL: 'Ocorreu um erro inesperado.',
 };
 

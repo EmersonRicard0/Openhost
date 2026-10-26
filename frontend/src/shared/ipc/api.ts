@@ -45,6 +45,10 @@ import type {
   TerminalProfile,
   TermSize,
   Transfer,
+  UpdateInfo,
+  UpdatePrefs,
+  UpdateResult,
+  UpdateStateEvent,
   VaultSettings,
   VaultStatus,
 } from '../model/types';
@@ -196,6 +200,23 @@ export interface ShellVaultApi {
     onAppearanceChanged: On<Appearance>;
     onCloseRequested: On<ActiveSummary>;
   };
+  /** Atualização pelo próprio app (specs/007, contracts/bridge-updater.md). */
+  updates: {
+    info: () => R<UpdateInfo>;
+    /** `manual`: sempre consulta e devolve o erro; automático respeita a preferência e cala. */
+    check: (manual: boolean) => R<UpdateInfo>;
+    download: () => R<void>;
+    cancel: () => R<void>;
+    remind: () => R<void>;
+    skip: (version: string) => R<void>;
+    prefs: () => R<UpdatePrefs>;
+    setPrefs: (prefs: UpdatePrefs) => R<UpdatePrefs>;
+    restartNow: () => R<void>;
+    applyOnQuit: () => R<void>;
+    lastResult: () => R<UpdateResult | null>;
+    openDownloadFolder: () => R<void>;
+    onState: On<UpdateStateEvent>;
+  };
 }
 
 export type ApiModule = keyof ShellVaultApi;
@@ -320,6 +341,23 @@ export const API_SHAPE = {
       'openExternalUrl',
     ],
     events: ['onAppearanceChanged', 'onCloseRequested'],
+  },
+  updates: {
+    invoke: [
+      'info',
+      'check',
+      'download',
+      'cancel',
+      'remind',
+      'skip',
+      'prefs',
+      'setPrefs',
+      'restartNow',
+      'applyOnQuit',
+      'lastResult',
+      'openDownloadFolder',
+    ],
+    events: ['onState'],
   },
 } as const satisfies {
   [M in ApiModule]: {
