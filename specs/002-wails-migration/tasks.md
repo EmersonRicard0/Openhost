@@ -262,8 +262,8 @@ frontend com o Claude.
 (Ubuntu, Debian, MikroTik, Cisco…), como no Termius. Go com o Codex, frontend com o Claude.
 
 - [X] T126 [P] Go: `detectedOs` e `osIcon` no Host (data-model; ids da lista fechada, validação, duplicar copia, cofre antigo lê `null`/`"auto"`); `internal/sshx` classifica a versão SSH do servidor e, só para OpenSSH sem distribuição na versão, lê `/etc/os-release` num canal `exec` à parte (tempo limite 3 s, falha silenciosa, nunca na aba do usuário, nunca em equipamento de rede); ao mudar, grava no cofre e emite `hosts:changed`; testes de classificação com versões reais e do `os-release`
-- [ ] T127 Frontend: logos de sistema embutidos (`frontend/src/ui/osIcons.tsx`, Simple Icons CC0, monocromáticos no tom do tema), `Avatar` mostra o logo de `osIcon`/`detectedOs` e cai nas iniciais; seletor "Ícone" no formulário do host; recarrega a lista em `hosts:changed`; licença em `docs/licenses.md`
-- [ ] T128 E2E: conectar ao servidor de teste muda o avatar para o logo detectado; escolher outro ícone no formulário persiste após reiniciar; "Automático" volta ao detectado
+- [X] T127 Frontend: logos de sistema embutidos (`frontend/src/ui/osIcons.tsx`, Simple Icons CC0, monocromáticos no tom do tema), `Avatar` mostra o logo de `osIcon`/`detectedOs` e cai nas iniciais; seletor "Ícone" no formulário do host; recarrega a lista em `hosts:changed`; licença em `docs/licenses.md`
+- [X] T128 E2E: conectar ao servidor de teste muda o avatar para o logo detectado; escolher outro ícone no formulário persiste após reiniciar; "Automático" volta ao detectado
 
 ---
 

@@ -12,7 +12,7 @@ import { NumberField } from '../../ui/NumberField';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { WarningIcon } from '../../ui/icons';
-import { OS_ICON_EDITABLE, OS_OPTIONS, OsLogo, osLabel } from '../../ui/osIcons';
+import { OS_OPTIONS, OsLogo, osLabel } from '../../ui/osIcons';
 import { toastError } from '../../ui/Toast';
 import { HostTerminalDialog } from './HostTerminalDialog';
 import s from './hosts.module.css';
@@ -106,7 +106,7 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
       credentialId: credId,
       groupId: host?.groupId ?? null,
       legacyAlgorithms: legacy,
-      ...(OS_ICON_EDITABLE ? { osIcon } : {}),
+      osIcon,
     };
     const res = host
       ? await window.shellvault.hosts.update(host.id, input)
@@ -145,26 +145,24 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             setLabel(e.target.value);
           }}
         />
-        {OS_ICON_EDITABLE && (
-          <Select
-            label={t.hosts.osIcon}
-            value={osIcon}
-            options={[
-              {
-                value: 'auto',
-                label: host?.detectedOs
-                  ? t.hosts.osIconAutoDetected(osLabel(host.detectedOs))
-                  : t.hosts.osIconAuto,
-              },
-              ...OS_OPTIONS.map((os) => ({
-                value: os.id,
-                label: os.label,
-                icon: <OsLogo id={os.id} />,
-              })),
-            ]}
-            onChange={setOsIcon}
-          />
-        )}
+        <Select
+          label={t.hosts.osIcon}
+          value={osIcon}
+          options={[
+            {
+              value: 'auto',
+              label: host?.detectedOs
+                ? t.hosts.osIconAutoDetected(osLabel(host.detectedOs))
+                : t.hosts.osIconAuto,
+            },
+            ...OS_OPTIONS.map((os) => ({
+              value: os.id,
+              label: os.label,
+              icon: <OsLogo id={os.id} />,
+            })),
+          ]}
+          onChange={setOsIcon}
+        />
         <div className={s.row}>
           <TextField
             label={t.hosts.address}

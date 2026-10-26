@@ -28,8 +28,7 @@ test.beforeAll(async () => {
   await up();
 });
 
-// Liga quando o Go gravar detectedOs/osIcon (T126) e OS_ICON_EDITABLE virar true.
-test.fixme('avatar mostra o sistema detectado; a escolha manual persiste e Automático volta (FR-178)', async () => {
+test('avatar mostra o sistema detectado; a escolha manual persiste e Automático volta (FR-178)', async () => {
   let app = await launchApp();
   const { dataDir } = app;
   try {
