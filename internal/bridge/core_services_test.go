@@ -257,3 +257,39 @@ func TestConnectionSettingsTermAndLegacyDefault(t *testing.T) {
 	_, err = services.vaultService.UpdateSettings(VaultSettingsPatch{"term": "screen"})
 	wantBridgeCode(t, err, apperr.InvalidInput)
 }
+
+func TestDetectedOSIsPersistedAndEmittedOnce(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	host, err := services.hostService.Create(domain.HostInput{
+		Label: "Alpine", Address: "localhost", Port: 22, Username: "ops", AuthMethod: model.AuthAsk,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var events []HostsChangedEvent
+	services.sessionService.emit = func(name string, payload any) {
+		if name == EventHostsChanged {
+			events = append(events, payload.(HostsChangedEvent))
+		}
+	}
+	if err := services.sessionService.recordDetectedOS(host.ID, domain.OSAlpine); err != nil {
+		t.Fatal(err)
+	}
+	if err := services.sessionService.recordDetectedOS(host.ID, domain.OSAlpine); err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 1 || events[0].HostID != host.ID || events[0].DetectedOS == nil || *events[0].DetectedOS != domain.OSAlpine {
+		t.Fatalf("eventos = %+v", events)
+	}
+	services.store.Lock()
+	if err := services.store.Unlock("senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	listed, err := services.hostService.List()
+	if err != nil || len(listed) != 1 || listed[0].DetectedOS == nil || *listed[0].DetectedOS != domain.OSAlpine {
+		t.Fatalf("host persistido = %+v, %v", listed, err)
+	}
+}

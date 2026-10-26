@@ -61,7 +61,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.vaultService = newVaultService(store, s.autoLock)
 	s.hostService = newHostService(store)
 	s.credentialService = newCredentialService(store, s.Context)
-	s.sessionService = newSessionService(store, s.sessions)
+	s.sessionService = newSessionService(store, s.sessions, s.emit)
 	s.transfers = sftpx.NewTransferManager(sftpx.TransferEvents{
 		Transfer: func(transfer sftpx.Transfer) { s.emit("sftp:transfer", transfer) },
 		Conflict: func(conflict sftpx.ConflictEvent) { s.emit("sftp:conflict", conflict) },

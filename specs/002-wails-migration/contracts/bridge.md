@@ -54,7 +54,12 @@ Evento `vault:state`: `VaultStatus` a cada mudança de estado (equivale ao `onSt
 ## HostService 🔒
 
 Como `hosts.*`/`groups.*` da 001. **Alterado**: `HostInput`/`HostView` ganham
-`authMethod: "agent"`, `legacyAlgorithms: boolean` e `profileId: string | null`.
+`authMethod: "agent"`, `legacyAlgorithms: boolean`, `profileId: string | null`,
+`detectedOs: OsId | null` e `osIcon: OsId | "auto"`. `detectedOs` é somente saída: valores
+enviados em `Create`/`Update` são ignorados; `osIcon` é validado pela lista fechada do modelo.
+
+Evento `hosts:changed`: `{ hostId: string, detectedOs: OsId | null }`, emitido quando a detecção
+de sistema de uma conexão SSH altera o host persistido.
 
 ## CredentialService 🔒
 

@@ -28,7 +28,9 @@ type HostInput struct {
 	CredentialID     *string          `json:"credentialId"`
 	GroupID          *string          `json:"groupId"`
 	LegacyAlgorithms bool             `json:"legacyAlgorithms"`
+	OSIcon           string           `json:"osIcon"`
 	legacySpecified  bool
+	osIconSpecified  bool
 }
 
 func (in *HostInput) UnmarshalJSON(data []byte) error {
@@ -41,6 +43,7 @@ func (in *HostInput) UnmarshalJSON(data []byte) error {
 		CredentialID     *string          `json:"credentialId"`
 		GroupID          *string          `json:"groupId"`
 		LegacyAlgorithms *bool            `json:"legacyAlgorithms"`
+		OSIcon           *string          `json:"osIcon"`
 	}
 	var wire wireInput
 	if err := json.Unmarshal(data, &wire); err != nil {
@@ -53,6 +56,10 @@ func (in *HostInput) UnmarshalJSON(data []byte) error {
 	if wire.LegacyAlgorithms != nil {
 		in.LegacyAlgorithms = *wire.LegacyAlgorithms
 		in.legacySpecified = true
+	}
+	if wire.OSIcon != nil {
+		in.OSIcon = *wire.OSIcon
+		in.osIconSpecified = true
 	}
 	return nil
 }
@@ -132,6 +139,15 @@ func validateHost(c *model.Content, in HostInput) (HostInput, error) {
 	if in.GroupID != nil && findGroup(c, *in.GroupID) == nil {
 		return in, invalid()
 	}
+	if in.OSIcon == "" {
+		if in.osIconSpecified {
+			return in, invalid()
+		}
+		in.OSIcon = model.OSIconAuto
+	}
+	if !ValidOSIcon(in.OSIcon) {
+		return in, invalid()
+	}
 	return in, nil
 }
 
@@ -155,7 +171,7 @@ func FindHost(c *model.Content, id string) (model.Host, error) {
 func fromInput(in HostInput) model.Host {
 	return model.Host{Label: in.Label, Address: in.Address, Port: in.Port, Username: in.Username,
 		AuthMethod: in.AuthMethod, CredentialID: in.CredentialID, GroupID: in.GroupID,
-		LegacyAlgorithms: in.LegacyAlgorithms}
+		LegacyAlgorithms: in.LegacyAlgorithms, OSIcon: in.OSIcon}
 }
 
 func CreateHost(c *model.Content, in HostInput, now string) (model.Host, error) {
@@ -174,13 +190,16 @@ func UpdateHost(c *model.Content, id string, in HostInput, now string) (model.Ho
 	if i < 0 {
 		return model.Host{}, notFound()
 	}
+	cur := c.Hosts[i]
+	if !in.osIconSpecified && in.OSIcon == "" {
+		in.OSIcon = cur.OSIcon
+	}
 	v, err := validateHost(c, in)
 	if err != nil {
 		return model.Host{}, err
 	}
-	cur := c.Hosts[i]
 	h := fromInput(v)
-	h.ID, h.CreatedAt, h.UpdatedAt, h.ProfileID = id, cur.CreatedAt, now, cur.ProfileID
+	h.ID, h.CreatedAt, h.UpdatedAt, h.ProfileID, h.DetectedOS = id, cur.CreatedAt, now, cur.ProfileID, cur.DetectedOS
 	c.Hosts[i] = h
 	return h, nil
 }

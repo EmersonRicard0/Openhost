@@ -35,7 +35,10 @@ func composeExec(t *testing.T, script string) string {
 	t.Helper()
 	cmd := exec.Command("docker", "compose", "-f", filepath.Join(repoRoot(t), "tests", "fixtures", "sshd", "compose.yml"),
 		"exec", "-T", "sshd", "sh", "-c", script)
-	out, _ := cmd.CombinedOutput()
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("docker compose exec falhou: %v: %s", err, out)
+	}
 	return string(out)
 }
 
@@ -88,8 +91,8 @@ func TestIntegrationHostKeyChangedBlocks(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = c.Close()
-	composeExec(t, "rm -f /etc/ssh/ssh_host_ed25519_key* && ssh-keygen -q -t ed25519 -N '' -f /etc/ssh/ssh_host_ed25519_key && pkill -HUP -f sshd.pam")
-	defer composeExec(t, "cp /etc/ssh/original/* /etc/ssh/ && pkill -HUP -f sshd.pam")
+	composeExec(t, "rm -f /etc/ssh/ssh_host_ed25519_key* && ssh-keygen -q -t ed25519 -N '' -f /etc/ssh/ssh_host_ed25519_key && kill -HUP 1")
+	defer composeExec(t, "cp /etc/ssh/original/* /etc/ssh/ && kill -HUP 1")
 	time.Sleep(time.Second)
 	ix := &fakeIx{acceptKey: false}
 	_, err = Dial(context.Background(), integrationOpts(sshdPort, "pwuser", known, auth), ix)
@@ -138,6 +141,18 @@ func TestIntegrationConfiguredTerm(t *testing.T) {
 			t.Fatalf("TERM escolhido não apareceu na saída: %q", output.String())
 		}
 		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func TestIntegrationDetectOS(t *testing.T) {
+	o := integrationOpts(sshdPort, "pwuser", newKnown(), Auth{Method: model.AuthPassword, Password: "pw-test-123"})
+	client, err := Dial(context.Background(), o, &fakeIx{acceptKey: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer client.Close()
+	if got := client.DetectOS(context.Background()); got != "alpine" {
+		t.Fatalf("sistema detectado = %q, esperado alpine", got)
 	}
 }
 
