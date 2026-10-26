@@ -18,3 +18,8 @@ Regras:
 | `csv/` | planilhas | Excel pt-BR e à mão |
 | `mobaxterm/` | `.mxtsessions`, `MobaXterm.ini` | sintético (validar com arquivo real no quickstart) |
 | `securecrt/` | XML de Export Settings | sintético (validar com arquivo real no quickstart) |
+
+As fixtures `openssh/` foram anonimizadas a partir de estruturas reais de operação:
+domínios usam `.test`, caminhos de chaves não existem e nenhum segredo foi incluído. O
+conjunto cobre padrões, negação, aliases, `Include` com ciclo, `Match`, tokens e as formas
+`chave valor` e `chave=valor`.

@@ -39,6 +39,7 @@ func (p *ImportPreview) ResolveKeys(content *model.Content) error {
 		}
 		setParsedKey(key, p.keyData[key.Ref], parsed, p.credentialByFingerprint)
 	}
+	p.syncKeyWarnings()
 	return nil
 }
 
@@ -85,6 +86,7 @@ func (p *ImportPreview) UnlockKey(ref, passphrase string) (PreviewKey, error) {
 		key.Status = KeyExisting
 		secret.credentialID = id
 	}
+	p.syncKeyWarnings()
 	return *key, nil
 }
 
@@ -97,7 +99,34 @@ func (p *ImportPreview) SkipKey(ref string) (PreviewKey, error) {
 		zero(secret.passphrase)
 	}
 	p.Keys[i].Status = KeySkipped
+	p.syncKeyWarnings()
 	return p.Keys[i], nil
+}
+
+func (p *ImportPreview) syncKeyWarnings() {
+	statuses := make(map[string]KeyStatus, len(p.Keys))
+	for _, key := range p.Keys {
+		statuses[key.Ref] = key.Status
+	}
+	for i := range p.Rows {
+		row := &p.Rows[i]
+		kept := row.Warnings[:0]
+		for _, warning := range row.Warnings {
+			if warning.Code != WarningKeyNotFound && warning.Code != WarningKeyUnsupported {
+				kept = append(kept, warning)
+			}
+		}
+		row.Warnings = kept
+		if row.KeyRef == nil {
+			continue
+		}
+		switch statuses[*row.KeyRef] {
+		case KeyNotFound:
+			row.Warnings = append(row.Warnings, Warning{Code: WarningKeyNotFound})
+		case KeyUnsupported:
+			row.Warnings = append(row.Warnings, Warning{Code: WarningKeyUnsupported})
+		}
+	}
 }
 
 func (p *ImportPreview) findKey(ref string) (int, *keySecret) {

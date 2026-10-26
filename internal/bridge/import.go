@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"sort"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
@@ -38,7 +39,7 @@ type ImportService struct {
 }
 
 func newImportService(store *vault.Store, contextFn func() context.Context) *ImportService {
-	return &ImportService{store: store, coordinator: importer.NewCoordinator(store), context: contextFn, sources: map[importer.SourceKind]sourceLoader{},
+	s := &ImportService{store: store, coordinator: importer.NewCoordinator(store), context: contextFn, sources: map[importer.SourceKind]sourceLoader{},
 		pickFile: func(ctx context.Context, kind importer.SourceKind) (string, error) {
 			if path := os.Getenv("SHELLVAULT_TEST_DIALOG_PATH"); path != "" {
 				return path, nil
@@ -52,6 +53,34 @@ func newImportService(store *vault.Store, contextFn func() context.Context) *Imp
 			return wruntime.SaveFileDialog(ctx, wruntime.SaveDialogOptions{Title: "Salvar modelo CSV", DefaultFilename: "modelo-hosts.csv", Filters: []wruntime.FileFilter{{DisplayName: "Planilha CSV", Pattern: "*.csv"}}})
 		},
 	}
+	s.registerOpenSSH()
+	return s
+}
+
+func (s *ImportService) registerOpenSSH() {
+	home, err := os.UserHomeDir()
+	available := err == nil && home != ""
+	defaultPath := ""
+	defaultFound := false
+	if available {
+		defaultPath = filepath.Join(home, ".ssh", "config")
+		if info, statErr := os.Stat(defaultPath); statErr == nil && !info.IsDir() {
+			defaultFound = true
+		}
+	}
+	localUser := os.Getenv("USERNAME")
+	if localUser == "" {
+		localUser = os.Getenv("USER")
+	}
+	s.sources[importer.SourceOpenSSH] = sourceLoader{
+		source: ImportSource{Kind: importer.SourceOpenSSH, Available: available, DefaultFound: defaultFound},
+		load: func(path string, _ PreviewOptions, content *model.Content) (*importer.ImportPreview, error) {
+			if path == "" {
+				path = defaultPath
+			}
+			return importer.LoadOpenSSH(path, importer.OpenSSHOptions{HomeDir: home, LocalUser: localUser}, content)
+		},
+	}
 }
 
 func (s *ImportService) Sources() ([]ImportSource, error) {
@@ -59,6 +88,7 @@ func (s *ImportService) Sources() ([]ImportSource, error) {
 	for _, source := range s.sources {
 		out = append(out, source.source)
 	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Kind < out[j].Kind })
 	return out, nil
 }
 func (s *ImportService) Preview(kind importer.SourceKind, options PreviewOptions) (*importer.PreviewView, error) {

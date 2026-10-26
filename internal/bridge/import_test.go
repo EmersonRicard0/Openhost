@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -68,5 +69,43 @@ func TestImportServiceLifecycleAndTemplate(t *testing.T) {
 	}
 	if !strings.HasPrefix(string(raw), "\ufeffnome;endereco;porta;usuario;grupo;chave") || !strings.Contains(string(raw), "Servidor de exemplo") {
 		t.Fatalf("modelo = %q", raw)
+	}
+}
+
+func TestImportServiceOpenSSHSourceAndDefault(t *testing.T) {
+	home := t.TempDir()
+	sshDir := filepath.Join(home, ".ssh")
+	if err := os.MkdirAll(sshDir, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	config := filepath.Join(sshDir, "config")
+	if err := os.WriteFile(config, []byte("Host bridge-host\n  HostName bridge.example.test\n  User ops\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("HOME", home)
+	t.Setenv("USERPROFILE", home)
+	t.Setenv("USERNAME", "local-user")
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	sources, err := services.importService.Sources()
+	if err != nil || len(sources) != 1 || sources[0].Kind != importer.SourceOpenSSH || !sources[0].Available || !sources[0].DefaultFound {
+		t.Fatalf("Sources = %+v, %v", sources, err)
+	}
+	view, err := services.importService.Preview(importer.SourceOpenSSH, PreviewOptions{UseDefault: true})
+	if err != nil || view == nil || len(view.Rows) != 1 || view.Rows[0].Address != "bridge.example.test" {
+		t.Fatalf("Preview default = %+v, %v", view, err)
+	}
+	services.importService.Discard(view.ID)
+
+	chosen := filepath.Join(t.TempDir(), "chosen-config")
+	if err := os.WriteFile(chosen, []byte("Host chosen\n  HostName chosen.example.test\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	services.importService.pickFile = func(context.Context, importer.SourceKind) (string, error) { return chosen, nil }
+	view, err = services.importService.Preview(importer.SourceOpenSSH, PreviewOptions{})
+	if err != nil || view == nil || view.Rows[0].Label != "chosen" {
+		t.Fatalf("Preview escolhido = %+v, %v", view, err)
 	}
 }
