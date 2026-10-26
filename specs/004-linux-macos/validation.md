@@ -52,9 +52,16 @@ com 0 em 2 s; 152 arquivos no diretório de dados sem nenhum segredo legível.
 Em cada um, o binário de release instalado não tem biblioteca faltando (`ldd`) e o `.desktop`,
 o ícone e o `copyright` estão nos caminhos de `contracts/release.md`.
 
+## CI e pré-release (T034)
+
+- PR #1: os seis jobs verdes. Go e frontend em `windows-latest`, `ubuntu-22.04` e `macos-14`;
+  teste de abertura nos três, sem segredos legíveis: Windows 9,6 s, Linux 3,6 s, macOS 8,3 s.
+- `v0.4.0-rc.1` falhou no macOS (comentário com `{{` no `Info.plist`) e não publicou nada.
+- `v0.4.0-rc.2` publicada como pré-release, com os 5 instaladores obrigatórios, os 3 de arm64 e
+  o `SHA256SUMS.txt`. O `.dmg` universal tem 17,8 MB.
+
 ## Pendências
 
-- macOS: CI `macos-14` (`quality` e `smoke`) e `.dmg` pelo `release.yml` (T031), na
-  pré-release `v0.4.0-rc.1` (T034, com confirmação do usuário).
+- Proteção da `main` exigindo os três sistemas: aguarda confirmação do usuário.
 - Cenários manuais do usuário: fechar com sessões no macOS (acima) e uso do app com interface
   no Linux (terminal local, SSH, SFTP).
