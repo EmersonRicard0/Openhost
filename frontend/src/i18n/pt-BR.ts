@@ -1,5 +1,10 @@
 // Todos os textos da interface (FR-029). Identificadores em inglês, conteúdo em pt-BR.
 
+const countFmt = new Intl.NumberFormat('pt-BR');
+
+/** Contagens com separador de milhar: 1.000 hosts. */
+const count = (n: number): string => countFmt.format(n);
+
 export const t = {
   window: {
     minimise: 'Minimizar',
@@ -608,10 +613,10 @@ export const t = {
     importing: 'Importando…',
     previewTitle: (source: string) => `Revisar importação — ${source}`,
     counts: (selected: number, total: number) =>
-      `${String(selected)} de ${String(total)} ${total === 1 ? 'host marcado' : 'hosts marcados'}`,
-    countInvalid: (n: number) => (n === 1 ? '1 inválido' : `${String(n)} inválidos`),
-    countDuplicate: (n: number) => (n === 1 ? '1 duplicado' : `${String(n)} duplicados`),
-    countWarnings: (n: number) => (n === 1 ? '1 com aviso' : `${String(n)} com aviso`),
+      `${count(selected)} de ${count(total)} ${total === 1 ? 'host marcado' : 'hosts marcados'}`,
+    countInvalid: (n: number) => (n === 1 ? '1 inválido' : `${count(n)} inválidos`),
+    countDuplicate: (n: number) => (n === 1 ? '1 duplicado' : `${count(n)} duplicados`),
+    countWarnings: (n: number) => (n === 1 ? '1 com aviso' : `${count(n)} com aviso`),
     target: 'Grupo de destino',
     targetRoot: 'Raiz (sem grupo)',
     targetHint: 'Os grupos da origem são criados dentro dele.',
@@ -660,9 +665,9 @@ export const t = {
       TOKEN_UNSUPPORTED: (name: string) => `${name} não é suportado no caminho da chave`,
       LINE_UNREADABLE: (line: number) => `Linha ${String(line)} não pôde ser lida`,
     },
-    ignoredTitle: (n: number) => (n === 1 ? '1 item ignorado' : `${String(n)} itens ignorados`),
+    ignoredTitle: (n: number) => (n === 1 ? '1 item ignorado' : `${count(n)} itens ignorados`),
     fileWarningsTitle: (n: number) =>
-      n === 1 ? '1 linha não pôde ser lida' : `${String(n)} linhas não puderam ser lidas`,
+      n === 1 ? '1 linha não pôde ser lida' : `${count(n)} linhas não puderam ser lidas`,
     empty: 'Nenhum host encontrado.',
     emptyAttention: 'Nenhum host precisa de atenção.',
     mappingTitle: 'Quais colunas são quais?',
@@ -677,10 +682,10 @@ export const t = {
       grupo: 'Grupo',
       chave: 'Chave',
     },
-    confirm: (n: number) => (n === 1 ? 'Importar 1 host' : `Importar ${String(n)} hosts`),
+    confirm: (n: number) => (n === 1 ? 'Importar 1 host' : `Importar ${count(n)} hosts`),
     passphraseTitle: (name: string) => `Passphrase da chave ${name}`,
     passphraseIntro: (n: number) =>
-      n === 1 ? 'Usada por 1 host.' : `Usada por ${String(n)} hosts.`,
+      n === 1 ? 'Usada por 1 host.' : `Usada por ${count(n)} hosts.`,
     passphrase: 'Passphrase',
     skipKey: 'Pular chave',
     unlockKey: 'Usar chave',
@@ -690,17 +695,17 @@ export const t = {
     openFile: 'Abrir',
     summaryTitle: 'Importação concluída',
     summary: {
-      created: (n: number) => (n === 1 ? '1 host criado' : `${String(n)} hosts criados`),
-      replaced: (n: number) => (n === 1 ? '1 substituído' : `${String(n)} substituídos`),
-      skipped: (n: number) => (n === 1 ? '1 pulado' : `${String(n)} pulados`),
-      ignored: (n: number) => (n === 1 ? '1 ignorado' : `${String(n)} ignorados`),
+      created: (n: number) => (n === 1 ? '1 host criado' : `${count(n)} hosts criados`),
+      replaced: (n: number) => (n === 1 ? '1 substituído' : `${count(n)} substituídos`),
+      skipped: (n: number) => (n === 1 ? '1 pulado' : `${count(n)} pulados`),
+      ignored: (n: number) => (n === 1 ? '1 ignorado' : `${count(n)} ignorados`),
       keys: (stored: number, reused: number) =>
-        `${String(stored)} ${stored === 1 ? 'chave guardada' : 'chaves guardadas'} no cofre` +
-        (reused > 0 ? `, ${String(reused)} já existia${reused === 1 ? '' : 'm'}` : ''),
+        `${count(stored)} ${stored === 1 ? 'chave guardada' : 'chaves guardadas'} no cofre` +
+        (reused > 0 ? `, ${count(reused)} já existia${reused === 1 ? '' : 'm'}` : ''),
       askPassword: (n: number) =>
         n === 1
           ? '1 host vai pedir a senha na primeira conexão.'
-          : `${String(n)} hosts vão pedir a senha na primeira conexão.`,
+          : `${count(n)} hosts vão pedir a senha na primeira conexão.`,
     },
     undo: 'Desfazer importação',
     undone: (removed: number, kept: number) =>
@@ -725,15 +730,15 @@ export const t = {
       scope: 'O que exportar',
       scopeAll: 'Todos os hosts',
       scopeGroup: 'Um grupo',
-      scopeHosts: (n: number) => (n === 1 ? 'Este host' : `${String(n)} hosts selecionados`),
+      scopeHosts: (n: number) => (n === 1 ? 'Este host' : `${count(n)} hosts selecionados`),
       group: 'Grupo',
       count: (hosts: number, groups: number) => {
-        const h = `${String(hosts)} ${hosts === 1 ? 'host' : 'hosts'}`;
-        return groups === 0 ? h : `${h} em ${String(groups)} ${groups === 1 ? 'grupo' : 'grupos'}`;
+        const h = `${count(hosts)} ${hosts === 1 ? 'host' : 'hosts'}`;
+        return groups === 0 ? h : `${h} em ${count(groups)} ${groups === 1 ? 'grupo' : 'grupos'}`;
       },
       includeKeys: 'Incluir chaves privadas',
       includeKeysHint: (n: number) =>
-        `${n === 1 ? '1 chave' : `${String(n)} chaves`}. O arquivo inteiro fica criptografado com uma senha sua.`,
+        `${n === 1 ? '1 chave' : `${count(n)} chaves`}. O arquivo inteiro fica criptografado com uma senha sua.`,
       plainWarning:
         'Sem chaves o arquivo não é criptografado: endereços e usuários ficam legíveis. Guarde-o com cuidado.',
       masterPassword: 'Senha mestra do cofre',

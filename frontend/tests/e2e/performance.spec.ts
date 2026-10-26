@@ -187,8 +187,8 @@ test('prévia de importação com 1.000 hosts em até 3 s e gravação em até 5
     const edit = Date.now() - t0;
 
     t0 = Date.now();
-    await page.getByRole('button', { name: `Importar ${String(HOSTS)} hosts` }).click();
-    await expect(page.getByText(`${String(HOSTS)} hosts criados`)).toBeVisible({ timeout: 30_000 });
+    await page.getByRole('button', { name: 'Importar 1.000 hosts' }).click();
+    await expect(page.getByText('1.000 hosts criados')).toBeVisible({ timeout: 30_000 });
     const commit = Date.now() - t0;
 
     console.log(

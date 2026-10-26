@@ -54,6 +54,8 @@ function Cell({ value, label, invalid, mono, inputMode, onCommit }: CellProps) {
       aria-label={label}
       aria-invalid={invalid || undefined}
       value={text}
+      // Coluna estreita corta valores longos; o valor inteiro aparece ao passar o mouse.
+      title={text || undefined}
       inputMode={inputMode}
       spellCheck={false}
       onChange={(e) => {

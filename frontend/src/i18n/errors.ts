@@ -30,7 +30,7 @@ export const ERROR_CAUSES: Record<ErrorCode, string> = {
   ALREADY_EXISTS: 'Já existe um item com esse nome.',
   IN_USE: 'O item está em uso e não pode ser removido.',
   IMPORT_TOO_LARGE: 'O arquivo é grande demais (até 10 MB e 5.000 hosts).',
-  IMPORT_UNREADABLE: 'Nenhum host foi encontrado nesse arquivo.',
+  IMPORT_UNREADABLE: 'Não encontramos hosts nesse arquivo. Confira se ele é do formato escolhido.',
   IMPORT_FORMAT_NEWER: 'O arquivo foi criado por uma versão mais nova do OpenHost. Atualize o app.',
   FILE_PASSWORD_REQUIRED: 'O arquivo é protegido por senha.',
   FILE_PASSWORD_WRONG: 'Senha incorreta.',

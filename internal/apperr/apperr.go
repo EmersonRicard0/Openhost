@@ -97,7 +97,7 @@ var Messages = map[Code]string{
 	InUse:                   "O item está em uso e não pode ser excluído.",
 	Cancelled:               "Operação cancelada.",
 	ImportTooLarge:          "O arquivo é grande demais (até 10 MB e 5.000 hosts).",
-	ImportUnreadable:        "Nenhum host foi encontrado nesse arquivo.",
+	ImportUnreadable:        "Não encontramos hosts nesse arquivo. Confira se ele é do formato escolhido.",
 	ImportFormatNewer:       "O arquivo foi criado por uma versão mais nova do OpenHost. Atualize o app.",
 	FilePasswordRequired:    "O arquivo é protegido por senha.",
 	FilePasswordWrong:       "Senha incorreta.",
