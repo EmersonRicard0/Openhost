@@ -43,7 +43,7 @@ export interface TerminalViewProps {
   /** Recebe o teclado; numa aba avulsa coincide com `visible`. */
   focused: boolean;
   /** Painel de um grupo (specs/006): posição na área, cabeçalho e foco por clique. */
-  pane?: { style: CSSProperties; header?: ReactNode; onActivate: () => void };
+  pane?: { style: CSSProperties; header?: ReactNode; onActivate: () => void } | undefined;
   /** Faixa sobre o terminal (desconectado, processo encerrado). */
   banner?: ReactNode;
 }
@@ -127,8 +127,23 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     const detach = attach(sessionId, (data) => {
       term.write(data);
     });
+    // Uma escrita por vez: o Wails atende cada chamada numa goroutine e teclas rápidas chegariam
+    // fora de ordem. O que for digitado durante a escrita vai junto na próxima.
+    let pending = '';
+    let writing = false;
+    const flush = () => {
+      if (writing || !pending) return;
+      const data = pending;
+      pending = '';
+      writing = true;
+      void api.write(sessionId, data).finally(() => {
+        writing = false;
+        flush();
+      });
+    };
     const onData = term.onData((data) => {
-      void api.write(sessionId, data);
+      pending += data;
+      flush();
     });
     const onBell = term.onBell(() => {
       ringBell(behavior()?.bell ?? 'visual', container.parentElement ?? container);

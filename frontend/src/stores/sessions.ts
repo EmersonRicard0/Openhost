@@ -146,12 +146,20 @@ export const useSessions = create<SessionsState>((set, get) => ({
     set({ tabs: get().tabs.map((t) => (t.id === id ? { ...t, title: clean.slice(0, 100) } : t)) });
   },
   reorder(id, beforeId) {
-    const tabs = get().tabs;
-    const moving = tabs.find((t) => t.id === id);
-    if (!moving || id === beforeId) return;
-    const rest = tabs.filter((t) => t.id !== id);
-    const index = beforeId === null ? rest.length : rest.findIndex((t) => t.id === beforeId);
-    rest.splice(index < 0 ? rest.length : index, 0, moving);
+    const { tabs, groups } = get();
+    // Grupo se move em bloco, e soltar sobre um grupo põe antes do seu primeiro membro.
+    const block = (x: string) => {
+      const group = groupOf(groups, x);
+      return group ? leaves(group.root) : [x];
+    };
+    const ids = block(id);
+    if (beforeId !== null && ids.includes(beforeId)) return;
+    const moving = tabs.filter((t) => ids.includes(t.id));
+    if (moving.length === 0) return;
+    const rest = tabs.filter((t) => !ids.includes(t.id));
+    const before = beforeId === null ? [] : block(beforeId);
+    const index = beforeId === null ? rest.length : rest.findIndex((t) => before.includes(t.id));
+    rest.splice(index < 0 ? rest.length : index, 0, ...moving);
     set({ tabs: rest });
   },
   close(id) {

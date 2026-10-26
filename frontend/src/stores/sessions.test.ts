@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { leaves, rects } from '../features/terminal/layout';
+import { cycleTab } from '../features/terminal/commands';
 import { groupOf, stripItems, useSessions, type Tab } from './sessions';
 
 function open(id: string, kind: Tab['kind'] = 'local'): void {
@@ -93,6 +94,28 @@ describe('grupos de sessões no store (006, data-model)', () => {
     state().activate('E');
     const item = stripItems(state().tabs, state().groups).find((i) => i.kind === 'group');
     expect(item?.kind === 'group' && item.focus.id).toBe('A');
+  });
+
+  it('reordenar move o grupo em bloco e solta antes do grupo inteiro', () => {
+    state().join('C', 'B', 'right');
+    state().reorder('B', 'A');
+    expect(strip()).toEqual(['[B,C]', 'A', 'D', 'E']);
+    state().reorder('E', 'C');
+    expect(strip()).toEqual(['E', '[B,C]', 'A', 'D']);
+    state().reorder('B', null);
+    expect(strip()).toEqual(['E', 'A', 'D', '[B,C]']);
+  });
+
+  it('próxima aba trata o grupo como um item e volta ao painel focado', () => {
+    state().join('C', 'B', 'right');
+    state().activate('A');
+    cycleTab(1);
+    expect(state().activeId).toBe('C');
+    cycleTab(1);
+    expect(state().activeId).toBe('D');
+    cycleTab(-1);
+    cycleTab(-1);
+    expect(state().activeId).toBe('A');
   });
 
   it('juntar um painel de outro grupo o tira de lá', () => {

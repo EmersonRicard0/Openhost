@@ -327,6 +327,15 @@ export const t = {
       preview: 'Início do conteúdo',
     },
     sendKeys: (combo: string) => `Enviar ${combo} ao terminal`,
+    group: {
+      label: (title: string, more: number) => `${title} e mais ${String(more)}`,
+      refuse: {
+        full: 'Máximo de 4 sessões por grupo',
+        group: 'Arraste uma sessão por vez para dentro do grupo',
+        sftp: 'Sessões SFTP não entram em grupos',
+        tooSmall: 'Não há espaço para dividir este painel',
+      },
+    },
     closeConnected: {
       title: 'Fechar a aba?',
       message: (title: string) => `A conexão "${title}" será encerrada.`,

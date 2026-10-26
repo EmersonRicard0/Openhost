@@ -9,7 +9,14 @@ import {
 } from 'react';
 import { t } from '../../i18n/pt-BR';
 import type { Platform, SendKeysCombo } from '@shared/model/types';
-import { closeTab, isLive, useSessions, type Tab } from '../../stores/sessions';
+import {
+  closeTab,
+  isLive,
+  stripItems,
+  useSessions,
+  type StripItem,
+  type Tab,
+} from '../../stores/sessions';
 import { useUi } from '../../stores/ui';
 import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
@@ -31,6 +38,7 @@ import {
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { toastError } from '../../ui/Toast';
 import { closeActiveTab } from './commands';
+import { endDrag, startDrag } from './dragState';
 import s from './terminal.module.css';
 
 function stateLabel(tab: Tab): string {
@@ -63,6 +71,19 @@ function StateIcon({ state }: { state: Tab['state'] }) {
       <Icon width={13} height={13} />
     </span>
   );
+}
+
+/** Do pior ao melhor: a aba de um grupo mostra o pior estado entre as sessões (FR-611). */
+const STATE_RANK: Tab['state'][] = ['error', 'disconnected', 'closed', 'connecting', 'connected'];
+
+function worstState(members: Tab[]): Tab['state'] {
+  return members.reduce<Tab['state']>((worst, m) => {
+    const rank = (st: Tab['state']) => {
+      const i = STATE_RANK.indexOf(st);
+      return i < 0 ? STATE_RANK.indexOf('connecting') : i;
+    };
+    return rank(m.state) < rank(worst) ? m.state : worst;
+  }, 'connected');
 }
 
 /** Combinações que o app usa como atalho; o menu da aba as envia ao shell (FR-140). */
@@ -103,7 +124,11 @@ function tabMenu(tab: Tab, platform: Platform, startRename: () => void): MenuIte
   return items;
 }
 
-function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
+function TabItem({ item, activeId }: { item: StripItem; activeId: string | null }) {
+  const tab = item.kind === 'tab' ? item.tab : item.focus;
+  const members = item.kind === 'tab' ? [item.tab] : item.members;
+  const active = members.some((m) => m.id === activeId);
+  const state = item.kind === 'tab' ? tab.state : worstState(members);
   const { activate, rename, reorder } = useSessions();
   const [editing, setEditing] = useState(false);
   const [dropTarget, setDropTarget] = useState(false);
@@ -116,6 +141,10 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
       aria-selected={active}
       tabIndex={active ? 0 : -1}
       title={stateLabel(tab)}
+      aria-label={
+        item.kind === 'group' ? t.terminal.group.label(tab.title, members.length - 1) : undefined
+      }
+      data-group={item.kind === 'group' ? '' : undefined}
       className={`${s.tab} ${active ? s.tabActive : ''} ${dropTarget ? s.dropBefore : ''} no-drag`}
       draggable={!editing}
       onClick={() => {
@@ -136,7 +165,13 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
       onDragStart={(e) => {
         e.dataTransfer.setData('application/x-shellvault-tab', tab.id);
         e.dataTransfer.effectAllowed = 'move';
+        startDrag({
+          id: tab.id,
+          kind: item.kind === 'group' ? 'group' : tab.kind === 'sftp' ? 'sftp' : 'session',
+          fromPane: false,
+        });
       }}
+      onDragEnd={endDrag}
       onDragOver={(e) => {
         if (e.dataTransfer.types.includes('application/x-shellvault-tab')) {
           e.preventDefault();
@@ -152,7 +187,7 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
         if (id) reorder(id, tab.id);
       }}
     >
-      <StateIcon state={tab.state} />
+      <StateIcon state={state} />
       {editing ? (
         <input
           className={s.tabRename}
@@ -173,6 +208,11 @@ function TabItem({ tab, active }: { tab: Tab; active: boolean }) {
         />
       ) : (
         <span className={s.tabTitle}>{tab.title}</span>
+      )}
+      {item.kind === 'group' && (
+        <span className={s.groupCount} aria-hidden>
+          {members.length}
+        </span>
       )}
       <Button
         variant="ghost"
@@ -286,12 +326,13 @@ function scrollByPage(bar: HTMLDivElement | null, dir: -1 | 1) {
 }
 
 export function TabBar({ newTabItems, trailing }: TabBarProps) {
-  const { tabs, activeId, activate, reorder } = useSessions();
+  const { tabs, groups, activeId, activate, reorder } = useSessions();
+  const items = stripItems(tabs, groups);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [listAnchor, setListAnchor] = useState<HTMLElement | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   // Ordem e títulos mudam a posição da aba ativa sem trocar o id: entram na chave.
-  const layoutKey = `${activeId ?? ''}|${tabs.map((tb) => `${tb.id}:${tb.title}`).join('|')}`;
+  const layoutKey = `${activeId ?? ''}|${items.map((it) => `${it.id}:${it.kind === 'tab' ? it.tab.title : `${it.focus.title}+${String(it.members.length)}`}`).join('|')}`;
   const indicator = useSlidingIndicator(barRef, layoutKey, 'x');
   const overflow = useTabScroll(barRef, activeId);
   const overflowing = overflow.start || overflow.end;
@@ -336,8 +377,8 @@ export function TabBar({ newTabItems, trailing }: TabBarProps) {
           if (id && e.target === e.currentTarget) reorder(id, null);
         }}
       >
-        {tabs.map((tab) => (
-          <TabItem key={tab.id} tab={tab} active={tab.id === activeId} />
+        {items.map((item) => (
+          <TabItem key={item.id} item={item} activeId={activeId} />
         ))}
       </div>
       {overflowing && (
@@ -399,11 +440,16 @@ export function TabBar({ newTabItems, trailing }: TabBarProps) {
       {listAnchor && (
         <Menu
           anchor={listAnchor}
-          items={tabs.map((tab) => ({
-            label: tab.title,
-            icon: <StateIcon state={tab.state} />,
+          items={items.map((item) => ({
+            label:
+              item.kind === 'tab'
+                ? item.tab.title
+                : t.terminal.group.label(item.focus.title, item.members.length - 1),
+            icon: (
+              <StateIcon state={item.kind === 'tab' ? item.tab.state : worstState(item.members)} />
+            ),
             onSelect: () => {
-              activate(tab.id);
+              activate(item.kind === 'tab' ? item.id : item.focus.id);
               useWorkspace.getState().setView('terminal');
               // Já ativa, a aba não muda o id e o efeito não roda: revela depois do render.
               requestAnimationFrame(() => {

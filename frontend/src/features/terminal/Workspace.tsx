@@ -15,6 +15,8 @@ import { SettingsPage } from '../settings/SettingsPage';
 import { SftpView } from '../sftp/SftpView';
 import { MAX_ATTEMPTS, stopAutoReconnect, useAutoReconnect } from './autoReconnect';
 import { runShortcut } from './commands';
+import { useDrag } from './dragState';
+import { DropLayer } from './DropLayer';
 import { HostKeyDialog } from './HostKeyDialog';
 import { rects, type Rect } from './layout';
 import { openLocal } from './openLocal';
@@ -147,6 +149,7 @@ export function Workspace() {
   const activeGroup = activeId ? groupOf(groups, activeId) : undefined;
   const panes = useMemo(() => (activeGroup ? rects(activeGroup.root).panes : {}), [activeGroup]);
   const settings = useWorkspace((w) => w.view === 'settings');
+  const dragging = useDrag((d) => d.dragging);
   const newTabShortcut = useShortcutLabel('newTab');
   const shells = useShells((s) => s.shells);
   const defaultShell = useUi((u) => u.settings?.defaultShell);
@@ -212,6 +215,7 @@ export function Workspace() {
             );
           })}
         </div>
+        {dragging && !settings && activeId && <DropLayer dragging={dragging} />}
         {settings && <SettingsPage />}
       </div>
       <HostKeyDialog />

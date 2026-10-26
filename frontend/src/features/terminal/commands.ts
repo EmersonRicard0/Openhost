@@ -1,6 +1,6 @@
 // Ações do espaço de trabalho usadas pelos atalhos (FR-140) e pela paleta (FR-141).
 import type { ShortcutAction } from '../../app/shortcuts';
-import { closeTab, isLive, useSessions } from '../../stores/sessions';
+import { closeTab, isLive, stripItems, useSessions } from '../../stores/sessions';
 import { useShells } from '../../stores/shells';
 import { useUi } from '../../stores/ui';
 import { useWorkspace } from '../../stores/workspace';
@@ -38,12 +38,16 @@ export function closeActiveTab(): void {
   else void closeTab(tab.id);
 }
 
+/** Próxima aba da barra; um grupo conta como uma aba e abre no painel que tinha o foco. */
 export function cycleTab(step: 1 | -1): void {
-  const { tabs, activeId, activate } = useSessions.getState();
-  if (tabs.length < 2) return;
-  const index = tabs.findIndex((tab) => tab.id === activeId);
-  const next = tabs[(index + step + tabs.length) % tabs.length];
-  if (next) activate(next.id);
+  const { tabs, groups, activeId, activate } = useSessions.getState();
+  const items = stripItems(tabs, groups);
+  if (items.length < 2) return;
+  const index = items.findIndex((item) =>
+    item.kind === 'tab' ? item.id === activeId : item.members.some((m) => m.id === activeId),
+  );
+  const next = items[(index + step + items.length) % items.length];
+  if (next) activate(next.kind === 'tab' ? next.id : next.focus.id);
 }
 
 function zoom(delta: number | null): void {
