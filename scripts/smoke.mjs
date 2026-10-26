@@ -7,7 +7,15 @@
 //   Sem binário, compila com `wails build -tags smoke` (no Linux também `webkit2_41`).
 //   No Linux, rodar sob `xvfb-run` quando não houver sessão gráfica.
 import { execFileSync, spawn } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from 'node:fs';
 import { homedir, platform, tmpdir } from 'node:os';
 import { join, relative, resolve } from 'node:path';
 import { filesUnder, scan } from './lib/secrets-scan.mjs';
@@ -35,8 +43,15 @@ function build() {
   );
   if (OS === 'win32') return join(ROOT, 'build', 'bin', 'shellvault-smoke.exe');
   // No macOS o Wails monta o .app com o nome do produto; `-o` vale para o executável dentro dele.
-  if (OS === 'darwin')
-    return join(ROOT, 'build', 'bin', 'OpenHost.app', 'Contents', 'MacOS', 'shellvault-smoke');
+  if (OS === 'darwin') {
+    // O nome do .app e do executável dentro dele variam com a versão do Wails: pega o que existir.
+    const app = readdirSync(join(ROOT, 'build', 'bin')).find((name) => name.endsWith('.app'));
+    if (!app) fail('nenhum .app em build/bin');
+    const macos = join(ROOT, 'build', 'bin', app, 'Contents', 'MacOS');
+    const [exe] = readdirSync(macos);
+    if (!exe) fail(`nenhum executável em ${macos}`);
+    return join(macos, exe);
+  }
   return join(ROOT, 'build', 'bin', 'shellvault-smoke');
 }
 
