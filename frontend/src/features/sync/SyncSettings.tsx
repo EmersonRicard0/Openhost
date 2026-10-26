@@ -1,5 +1,5 @@
 // Configurações → Sincronização (specs/008, FR-801, FR-809, FR-819).
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { SyncInfo } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import {
@@ -17,7 +17,10 @@ import { TextField } from '../../ui/TextField';
 import { toastError, toastInfo } from '../../ui/Toast';
 import { Group } from '../settings/Group';
 import s from '../settings/settings.module.css';
+import { ConflictDialog } from './ConflictDialog';
 import { DisconnectDialog } from './DisconnectDialog';
+import { HistoryDialog } from './HistoryDialog';
+import { NewPasswordDialog } from './NewPasswordDialog';
 import { StartChoiceDialog } from './StartChoiceDialog';
 
 /** Frase do estado atual; erro tem prioridade e explica a causa. */
@@ -59,7 +62,12 @@ export function SyncSection() {
   const connecting = useSync((st) => st.connecting);
   const unlocked = useVault((v) => v.status?.state === 'unlocked');
   const { choice, closeChoice, connect } = useConnectFlow();
-  const [disconnecting, setDisconnecting] = useState(false);
+  const [dialog, setDialog] = useState<'disconnect' | 'conflicts' | 'history' | 'password' | null>(
+    null,
+  );
+  const close = useCallback(() => {
+    setDialog(null);
+  }, []);
   const [busy, setBusy] = useState(false);
 
   if (!info) return null;
@@ -120,10 +128,37 @@ export function SyncSection() {
                   {t.sync.syncNow}
                 </Button>
               )}
+              {info.conflicts > 0 && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setDialog('conflicts');
+                  }}
+                >
+                  {t.sync.conflicts(info.conflicts)}
+                </Button>
+              )}
+              {info.state === 'needsPassword' && (
+                <Button
+                  variant="primary"
+                  onClick={() => {
+                    setDialog('password');
+                  }}
+                >
+                  {t.sync.newPassword.confirm}
+                </Button>
+              )}
+              <Button
+                onClick={() => {
+                  setDialog('history');
+                }}
+              >
+                {t.sync.history}
+              </Button>
               <Button
                 variant="danger"
                 onClick={() => {
-                  setDisconnecting(true);
+                  setDialog('disconnect');
                 }}
               >
                 {t.sync.disconnect}
@@ -134,13 +169,10 @@ export function SyncSection() {
         </>
       )}
       {choice && <StartChoiceDialog email={choice} onClose={closeChoice} />}
-      {disconnecting && (
-        <DisconnectDialog
-          onClose={() => {
-            setDisconnecting(false);
-          }}
-        />
-      )}
+      {dialog === 'disconnect' && <DisconnectDialog onClose={close} />}
+      {dialog === 'conflicts' && <ConflictDialog onClose={close} />}
+      {dialog === 'history' && <HistoryDialog onClose={close} />}
+      {dialog === 'password' && <NewPasswordDialog onClose={close} />}
     </>
   );
 }

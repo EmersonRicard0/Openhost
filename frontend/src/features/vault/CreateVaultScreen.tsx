@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { t } from '../../i18n/pt-BR';
+import { startSync, useSync } from '../../stores/sync';
 import { useVault } from '../../stores/vault';
 import { Button } from '../../ui/Button';
 import { TextField } from '../../ui/TextField';
-import { WarningIcon } from '../../ui/icons';
+import { CloudIcon, WarningIcon } from '../../ui/icons';
 import { Logo } from '../../ui/Logo';
+import { toastError } from '../../ui/Toast';
+import { OpenFromCloud } from '../sync/OpenFromCloud';
 import s from './vault.module.css';
 
 const MIN_LENGTH = 8;
@@ -15,6 +18,10 @@ export function CreateVaultScreen() {
   const [confirmation, setConfirmation] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const syncAvailable = useSync((st) => st.info?.available ?? false);
+  const [cloud, setCloud] = useState(false);
+  /** Conta conectada sem cofre na nuvem: o cofre novo já nasce sincronizado (US2-5). */
+  const [uploadAfter, setUploadAfter] = useState(false);
 
   const tooShort = Array.from(password).length < MIN_LENGTH;
   const mismatch = confirmation.length > 0 && confirmation !== password;
@@ -26,8 +33,30 @@ export function CreateVaultScreen() {
     setError(null);
     const res = await create(password, confirmation);
     setBusy(false);
-    if (!res.ok) setError(res.error.message);
+    if (!res.ok) {
+      setError(res.error.message);
+      return;
+    }
+    if (uploadAfter) {
+      const err = await startSync('upload');
+      if (err) toastError(err);
+    }
   }
+
+  if (cloud)
+    return (
+      <div className={s.fullscreen}>
+        <OpenFromCloud
+          onBack={() => {
+            setCloud(false);
+          }}
+          onCreateNew={() => {
+            setCloud(false);
+            setUploadAfter(true);
+          }}
+        />
+      </div>
+    );
 
   return (
     <div className={s.fullscreen}>
@@ -82,6 +111,18 @@ export function CreateVaultScreen() {
             {busy ? t.vault.creating : t.vault.createAction}
           </Button>
         </div>
+        {syncAvailable && !uploadAfter && (
+          <button
+            type="button"
+            className={s.linkButton}
+            data-testid="open-from-cloud"
+            onClick={() => {
+              setCloud(true);
+            }}
+          >
+            <CloudIcon width={14} height={14} /> {t.sync.openFromCloud.choose}
+          </button>
+        )}
       </form>
     </div>
   );
