@@ -328,8 +328,9 @@ port forwarding) na versão nova, com o mesmo servidor de teste, e obter os mesm
 - **Plataforma**: Windows 10/11 é o alvo de entrega desta feature; o código não deve impedir
   Linux e macOS depois, mas builds e testes dessas plataformas ficam fora.
 - **Fora desta feature** (Fase 2 e 3): encaminhamento remoto, divisão de painéis, snippets por
-  fabricante, log de sessão em arquivo, ProxyJump, importação de `~/.ssh/config` e
-  atualização automática.
+  fabricante, log de sessão em arquivo, ProxyJump e
+  atualização automática. A importação de `~/.ssh/config` passou para a feature 003
+  (`specs/003-host-import-export`).
 - **Ambiente de teste** de equipamentos reais (OLT DmOS, Huawei, Mikrotik) é fornecido pelo
   usuário para SC-102; os demais critérios são verificados com servidores SSH em contêiner,
   incluindo um configurado só com algoritmos legados.
