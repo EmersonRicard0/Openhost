@@ -163,6 +163,7 @@ export function Workspace() {
   const activeGroup = activeId ? groupOf(groups, activeId) : undefined;
   const layout = useMemo(() => (activeGroup ? rects(activeGroup.root) : null), [activeGroup]);
   const panes = layout?.panes ?? {};
+  const activeTab = tabs.find((tb) => tb.id === activeId);
   const settings = useWorkspace((w) => w.view === 'settings');
   const dragging = useDrag((d) => d.dragging);
   const newTabShortcut = useShortcutLabel('newTab');
@@ -237,6 +238,10 @@ export function Workspace() {
             <Divider key={d.path.join('') || 'root'} groupId={activeGroup.id} divider={d} />
           ))}
         {dragging && !settings && activeId && <DropLayer dragging={dragging} />}
+        {/* Leitor de tela anuncia o painel que recebeu o foco dentro do grupo (T019). */}
+        <div className="visually-hidden" aria-live="polite">
+          {activeGroup && activeTab ? t.terminal.group.focused(activeTab.title) : ''}
+        </div>
         {settings && <SettingsPage />}
       </div>
       <HostKeyDialog />

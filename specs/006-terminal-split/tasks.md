@@ -78,9 +78,9 @@ ganham testes antes do código; o e2e roda contra o app real com terminais locai
 
 ## Phase 6: Polish & Cross-Cutting
 
-- [ ] T018 [P] Atualizar `specs/002-wails-migration/contracts/bridge.md`? Não há mudança na ponte; registrar só em `docs/` de atalhos se existir a lista de atalhos documentada (conferir `README.md`).
-- [ ] T019 Acessibilidade: nomes de painel, separador focável, anúncio do painel ativo; conferir com o snapshot de acessibilidade do Playwright.
-- [ ] T020 Rodar quickstart §1–§2 e registrar em `specs/006-terminal-split/validation.md`; §3 (SSH real) como pendência do usuário.
+- [X] T018 [P] Atualizar `specs/002-wails-migration/contracts/bridge.md`? Não há mudança na ponte; registrar só em `docs/` de atalhos se existir a lista de atalhos documentada (conferir `README.md`).
+- [X] T019 Acessibilidade: nomes de painel, separador focável, anúncio do painel ativo; conferir com o snapshot de acessibilidade do Playwright.
+- [X] T020 Rodar quickstart §1–§2 e registrar em `specs/006-terminal-split/validation.md`; §3 (SSH real) como pendência do usuário.
 - [ ] T021 CI verde nos três sistemas.
 
 ---

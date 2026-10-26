@@ -336,6 +336,7 @@ export const t = {
       splitOut: 'Separar em nova aba',
       closePane: 'Fechar painel',
       resize: 'Redimensionar painéis',
+      focused: (title: string) => `Painel ativo: ${title}`,
       refuse: {
         full: 'Máximo de 4 sessões por grupo',
         group: 'Arraste uma sessão por vez para dentro do grupo',

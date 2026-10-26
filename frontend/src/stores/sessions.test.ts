@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { leaves, rects } from '../features/terminal/layout';
-import { cycleTab } from '../features/terminal/commands';
+import { closeGroup, cycleTab } from '../features/terminal/commands';
+import { useWorkspace } from './workspace';
 import { groupOf, stripItems, useSessions, type Tab } from './sessions';
 
 function open(id: string, kind: Tab['kind'] = 'local'): void {
@@ -116,6 +117,19 @@ describe('grupos de sessões no store (006, data-model)', () => {
     cycleTab(-1);
     cycleTab(-1);
     expect(state().activeId).toBe('A');
+  });
+
+  it('fechar a aba do grupo com conexão SSH ativa pede uma confirmação só (FR-613)', () => {
+    open('S1', 'ssh');
+    open('S2', 'ssh');
+    state().join('S2', 'S1', 'right');
+    state().join('A', 'S1', 'bottom');
+    const group = groupOf(state().groups, 'S1');
+    if (!group) throw new Error('sem grupo');
+    closeGroup(group.id);
+    expect(useWorkspace.getState().confirmClose).toBe(group.id);
+    expect(state().tabs.map((t) => t.id)).toContain('S1');
+    useWorkspace.getState().setConfirmClose(null);
   });
 
   it('juntar um painel de outro grupo o tira de lá', () => {
