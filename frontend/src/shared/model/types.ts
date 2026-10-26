@@ -82,6 +82,9 @@ export const OS_IDS = [
   'hpe',
   'fortinet',
   'openwrt',
+  'zte',
+  'datacom',
+  'hillstone',
 ] as const;
 
 export type OsId = (typeof OS_IDS)[number];

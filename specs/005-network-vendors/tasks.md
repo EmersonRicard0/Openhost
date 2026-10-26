@@ -76,11 +76,11 @@ teste de integração.
 
 **Independent Test**: `npx vitest run src/ui/osIcons.test.ts` e o e2e do seletor (quickstart §4).
 
-- [ ] T017 [P] [US3] Teste em `frontend/src/ui/osIcons.test.ts`: `zte`, `datacom` e `hillstone` têm rótulo, caminho próprio (não o ícone genérico) e cor em ao menos um tema (`osLogoColors`).
-- [ ] T018 [US3] Ids e rótulos: `OS_IDS` em `frontend/src/shared/model/types.ts` e `LABELS` em `frontend/src/ui/osIcons.tsx` (`ZTE`, `Datacom`, `Hillstone`).
-- [ ] T019 [US3] Desenhar os três ícones próprios (SVG 24×24, um `path`, silhueta preenchida, sem copiar os logos; research R6) em `frontend/src/ui/osIcons.tsx`, com as cores da marca em `EXTRA_HEX`, conferindo em print que se distinguem dos demais a 16 px nos temas escuro e claro (SC-505).
+- [X] T017 [P] [US3] Teste em `frontend/src/ui/osIcons.test.ts`: `zte`, `datacom` e `hillstone` têm rótulo, caminho próprio (não o ícone genérico) e cor em ao menos um tema (`osLogoColors`).
+- [X] T018 [US3] Ids e rótulos: `OS_IDS` em `frontend/src/shared/model/types.ts` e `LABELS` em `frontend/src/ui/osIcons.tsx` (`ZTE`, `Datacom`, `Hillstone`).
+- [X] T019 [US3] Desenhar os três ícones próprios (SVG 24×24, um `path`, silhueta preenchida, sem copiar os logos; research R6) em `frontend/src/ui/osIcons.tsx`, com as cores da marca em `EXTRA_HEX`, conferindo em print que se distinguem dos demais a 16 px nos temas escuro e claro (SC-505).
 - [ ] T020 [US3] E2e em `frontend/tests/e2e/os-icon.spec.ts`: escolher ZTE, Datacom e Hillstone no seletor "Ícone", conferir a ordem alfabética e o `data-os` do avatar.
-- [ ] T021 [P] [US3] Registrar em `docs/licenses.md` os três ícones como desenho próprio do projeto e a origem das cores.
+- [X] T021 [P] [US3] Registrar em `docs/licenses.md` os três ícones como desenho próprio do projeto e a origem das cores.
 
 **Checkpoint**: os três fabricantes escolhíveis e visíveis.
 
