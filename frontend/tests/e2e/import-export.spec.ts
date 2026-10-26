@@ -112,8 +112,7 @@ test('importa o ~/.ssh/config com prévia, conecta pela chave, ignora duplicados
   }
 });
 
-// Liga quando o Go entregar ExportService e a leitura do `.openhost` (cartão 48).
-test.fixme('exporta .openhost com chaves e reimporta num cofre novo', async () => {
+test('exporta .openhost com chaves e reimporta num cofre novo', async () => {
   const dir = mkdtempSync(join(tmpdir(), 'openhost-export-'));
   const file = join(dir, 'backup.openhost');
   let app = await launchApp();

@@ -11,7 +11,7 @@ import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { TextField } from '../../ui/TextField';
 import { toastInfo } from '../../ui/Toast';
-import { groupOptions } from './options';
+import { groupOptions, passwordStrength } from './options';
 import s from './importexport.module.css';
 
 const ex = t.importExport.exportDialog;
@@ -62,7 +62,15 @@ export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDi
     };
   }, [scopeKey]);
 
+  const scopeOptions: { value: ScopeKind; label: string }[] = [
+    ...(hostIds.length > 0
+      ? [{ value: 'hosts' as const, label: ex.scopeHosts(hostIds.length) }]
+      : []),
+    { value: 'all', label: ex.scopeAll },
+    ...(groups.length > 0 ? [{ value: 'group' as const, label: ex.scopeGroup }] : []),
+  ];
   const withKeys = format === 'openhost' && includeKeys;
+  const strength = passwordStrength(filePassword, MIN_PASSWORD);
   const tooShort = withKeys && Array.from(filePassword).length < MIN_PASSWORD;
   const mismatch = withKeys && confirmation.length > 0 && confirmation !== filePassword;
   const valid =
@@ -115,18 +123,14 @@ export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDi
         hint={ex.formatHints[format]}
         onChange={setFormat}
       />
-      <Segmented<ScopeKind>
-        label={ex.scope}
-        value={scopeKind}
-        options={[
-          ...(hostIds.length > 0
-            ? [{ value: 'hosts' as const, label: ex.scopeHosts(hostIds.length) }]
-            : []),
-          { value: 'all', label: ex.scopeAll },
-          ...(groups.length > 0 ? [{ value: 'group' as const, label: ex.scopeGroup }] : []),
-        ]}
-        onChange={setScopeKind}
-      />
+      {scopeOptions.length > 1 && (
+        <Segmented<ScopeKind>
+          label={ex.scope}
+          value={scopeKind}
+          options={scopeOptions}
+          onChange={setScopeKind}
+        />
+      )}
       {scopeKind === 'group' && groups.length > 0 && (
         <Select
           label={ex.group}
@@ -164,12 +168,22 @@ export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDi
                 secret
                 autoComplete="new-password"
                 value={filePassword}
-                hint={t.vault.minLength}
+                {...(filePassword.length === 0 ? { hint: t.vault.minLength } : {})}
                 error={filePassword.length > 0 && tooShort ? t.vault.minLength : null}
                 onChange={(e) => {
                   setFilePassword(e.target.value);
                 }}
               />
+              {filePassword.length > 0 && !tooShort && (
+                <div className={s.strength} data-level={strength}>
+                  <span className={s.strengthBar} aria-hidden>
+                    {[1, 2, 3, 4].map((n) => (
+                      <span key={n} data-on={n <= strength || undefined} />
+                    ))}
+                  </span>
+                  <span>{ex.strength[strength]}</span>
+                </div>
+              )}
               <TextField
                 label={ex.filePasswordConfirm}
                 secret

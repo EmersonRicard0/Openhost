@@ -49,3 +49,22 @@ export function parsePort(text: string): number | null {
   const n = Number(text);
   return n >= 1 && n <= 65535 ? n : null;
 }
+
+export type Strength = 0 | 1 | 2 | 3 | 4;
+
+/**
+ * Força estimada da senha do arquivo: 0 abaixo do mínimo; depois sobe com o comprimento e a
+ * variedade de caracteres (minúsculas, maiúsculas, dígitos, símbolos).
+ */
+export function passwordStrength(password: string, minLength: number): Strength {
+  const length = Array.from(password).length;
+  if (length < minLength) return 0;
+  const classes = [/\p{Ll}/u, /\p{Lu}/u, /\p{Nd}/u, /[^\p{L}\p{Nd}]/u].filter((re) =>
+    re.test(password),
+  ).length;
+  let score = 1;
+  if (length >= 12) score++;
+  if (classes >= 3) score++;
+  if (length >= 16 && classes >= 2) score++;
+  return Math.min(score, 4) as Strength;
+}

@@ -727,8 +727,10 @@ export const t = {
       scopeGroup: 'Um grupo',
       scopeHosts: (n: number) => (n === 1 ? 'Este host' : `${String(n)} hosts selecionados`),
       group: 'Grupo',
-      count: (hosts: number, groups: number) =>
-        `${String(hosts)} ${hosts === 1 ? 'host' : 'hosts'} em ${String(groups)} ${groups === 1 ? 'grupo' : 'grupos'}`,
+      count: (hosts: number, groups: number) => {
+        const h = `${String(hosts)} ${hosts === 1 ? 'host' : 'hosts'}`;
+        return groups === 0 ? h : `${h} em ${String(groups)} ${groups === 1 ? 'grupo' : 'grupos'}`;
+      },
       includeKeys: 'Incluir chaves privadas',
       includeKeysHint: (n: number) =>
         `${n === 1 ? '1 chave' : `${String(n)} chaves`}. O arquivo inteiro fica criptografado com uma senha sua.`,
@@ -738,6 +740,7 @@ export const t = {
       filePassword: 'Senha do arquivo',
       filePasswordConfirm: 'Repita a senha do arquivo',
       mismatch: 'As senhas não coincidem.',
+      strength: ['', 'Força: fraca', 'Força: razoável', 'Força: boa', 'Força: forte'] as const,
       sshConfigMode: 'Se o destino for o ~/.ssh/config',
       sshNewFile: 'Salvar como novo arquivo',
       sshAppend: 'Acrescentar ao final',

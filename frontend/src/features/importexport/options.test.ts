@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Group, PreviewKey, PreviewRow } from '@shared/model/types';
-import { groupOptions, keyText, parsePort, ROOT, warningText } from './options';
+import { groupOptions, keyText, parsePort, passwordStrength, ROOT, warningText } from './options';
 
 const g = (id: string, name: string, parentId: string | null = null): Group => ({
   id,
@@ -54,5 +54,20 @@ describe('textos da prévia', () => {
     expect(parsePort('0')).toBeNull();
     expect(parsePort('99999')).toBeNull();
     expect(parsePort('22a')).toBeNull();
+  });
+});
+
+describe('passwordStrength', () => {
+  it('é zero abaixo do mínimo, contando caracteres e não bytes', () => {
+    expect(passwordStrength('abc', 8)).toBe(0);
+    expect(passwordStrength('çãõéíóúâ', 8)).toBe(1);
+  });
+
+  it('sobe com comprimento e variedade', () => {
+    expect(passwordStrength('abcdefgh', 8)).toBe(1);
+    expect(passwordStrength('abcdefghijkl', 8)).toBe(2);
+    expect(passwordStrength('Abcdefgh1', 8)).toBe(2);
+    expect(passwordStrength('Abcdefgh1!xy', 8)).toBe(3);
+    expect(passwordStrength('Abcdefgh1!xyz-longa', 8)).toBe(4);
   });
 });

@@ -72,7 +72,7 @@ antes do código, falhando primeiro.
 - [X] T024 [US2] Go: `ExportService` em `internal/bridge/export.go` (`Count`, `Export` com diálogo de salvar, escopo `all`/`group` com subgrupos/`hosts`, revalidação da senha mestra → `VAULT_BAD_PASSWORD`, força da senha do arquivo → `WEAK_PASSWORD`); `Bind` e contrato
 - [X] T025 [US2] Interface: `ExportDialog.tsx` — formato, escopo (tudo, grupo, selecionados; contagem via `Count`), "Incluir chaves privadas" com aviso, senha mestra, senha do arquivo duas vezes com indicador de força; resumo "Salvo em …"; ação "Exportar…" no menu de grupo e da seleção de hosts
 - [X] T026 [US2] Interface: origem "Arquivo do OpenHost" com pedido de senha do arquivo quando `FILE_PASSWORD_REQUIRED`/`FILE_PASSWORD_WRONG`
-- [ ] T027 [US2] E2E em `import-export.spec.ts`: exportar com chaves, criar cofre novo (`launchApp` com `dataDir` novo), importar com senha errada e depois certa, conferir árvore e conexão pela chave; varredura de segredos no `.openhost` sem chaves
+- [X] T027 [US2] E2E em `import-export.spec.ts`: exportar com chaves, criar cofre novo (`launchApp` com `dataDir` novo), importar com senha errada e depois certa, conferir árvore e conexão pela chave; varredura de segredos no `.openhost` sem chaves
 
 ---
 

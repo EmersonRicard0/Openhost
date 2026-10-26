@@ -529,3 +529,41 @@
     transition: none;
   }
 }
+
+/* --- Força da senha do arquivo ------------------------------------------------ */
+
+.strength {
+  --level: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: -6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.strength[data-level='2'] {
+  --level: var(--warning);
+}
+
+.strength[data-level='3'],
+.strength[data-level='4'] {
+  --level: var(--success);
+}
+
+.strengthBar {
+  display: grid;
+  grid-template-columns: repeat(4, 28px);
+  gap: 4px;
+}
+
+.strengthBar > span {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+
+.strengthBar > span[data-on] {
+  background: var(--level);
+}
