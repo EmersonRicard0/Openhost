@@ -17,6 +17,7 @@ import type {
   UndoResult,
   ActiveSummary,
   Appearance,
+  Platform,
   ColorScheme,
   ConflictChoice,
   ConflictEvent,
@@ -177,6 +178,8 @@ export interface ShellVaultApi {
     export: (request: ExportRequest) => R<ExportResult | null>;
   };
   app: {
+    /** Sistema em que o app roda; lido uma vez no início (specs/004, contracts/platform.md). */
+    getPlatform: () => R<Platform>;
     getAppearance: () => R<Appearance>;
     getUiSettings: () => R<Settings>;
     /** Shells instalados, em ordem estável (FR-176). */
@@ -304,6 +307,7 @@ export const API_SHAPE = {
   exports: { invoke: ['count', 'export'], events: [] },
   app: {
     invoke: [
+      'getPlatform',
       'getAppearance',
       'getUiSettings',
       'listLocalShells',

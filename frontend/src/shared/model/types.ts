@@ -152,6 +152,9 @@ export interface ActiveForward extends ForwardRuleStatus {
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 
+/** Sistema em que o app roda (`runtime.Environment()` do Wails; specs/004). */
+export type Platform = 'windows' | 'linux' | 'darwin';
+
 export interface WindowBounds {
   width: number;
   height: number;
@@ -269,10 +272,13 @@ export interface ProfilesChangedEvent {
 // --- Sessões (só em memória) ------------------------------------------------
 
 export type SessionKind = 'ssh' | 'local' | 'sftp';
-/** Id estável de shell local: `powershell`, `pwsh`, `cmd`, `gitbash` ou `wsl:<distro>`. */
+/**
+ * Id estável de shell local: no Windows `powershell`, `pwsh`, `cmd`, `gitbash` ou `wsl:<distro>`;
+ * no Linux e no macOS o nome do shell (`bash`, `zsh`, `fish`…).
+ */
 export type LocalShell = string;
 
-export type LocalShellKind = 'powershell' | 'pwsh' | 'cmd' | 'gitbash' | 'wsl';
+export type LocalShellKind = 'powershell' | 'pwsh' | 'cmd' | 'gitbash' | 'wsl' | 'unix';
 
 /** Shell detectado na máquina (o caminho do executável fica no Go). */
 export interface LocalShellInfo {

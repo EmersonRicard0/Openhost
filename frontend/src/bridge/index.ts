@@ -4,7 +4,7 @@
 import type { ShellVaultApi, Unsubscribe } from '@shared/ipc/api';
 import { ERROR_CODES, type AppError, type ErrorCode } from '@shared/ipc/errors';
 import type { Result } from '@shared/ipc/result';
-import { EventsOn, WindowIsMaximised } from '../../wailsjs/runtime/runtime';
+import { Environment, EventsOn, WindowIsMaximised } from '../../wailsjs/runtime/runtime';
 
 type GoMethod = (...args: unknown[]) => Promise<unknown>;
 type GoServices = Record<string, Record<string, GoMethod | undefined> | undefined>;
@@ -239,6 +239,18 @@ function createApi(): ShellVaultApi {
       export: (request) => call(E, 'Export', request),
     },
     app: {
+      getPlatform: async () => {
+        try {
+          const { platform } = await Environment();
+          // Qualquer outro valor (não esperado no Wails v2) cai no comportamento do Windows.
+          return {
+            ok: true,
+            value: platform === 'linux' || platform === 'darwin' ? platform : 'windows',
+          };
+        } catch {
+          return { ok: false, error: INTERNAL };
+        }
+      },
       getAppearance: () => call(A, 'GetAppearance'),
       getUiSettings: () => call(A, 'GetPreferences'),
       listLocalShells: () => call(A, 'ListLocalShells'),

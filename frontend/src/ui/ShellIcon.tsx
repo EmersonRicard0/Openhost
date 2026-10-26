@@ -1,12 +1,14 @@
 import type { LocalShellKind } from '@shared/model/types';
 import s from './ui.module.css';
 
-/** Glifo de cada tipo de shell; WSL usa a inicial da distro (como os hosts). */
+/** Glifo de cada tipo de shell; WSL usa a inicial da distro (como os hosts). Shells do Linux e do
+ * macOS usam o prompt genérico. */
 const GLYPHS: Record<Exclude<LocalShellKind, 'wsl'>, string> = {
   powershell: 'PS',
   pwsh: 'P7',
   cmd: 'C:',
   gitbash: '$_',
+  unix: '$_',
 };
 
 /** Selo monocromático do shell local, do tamanho de um ícone de menu (FR-176). */
