@@ -79,7 +79,7 @@ test('Ctrl+Shift+B recolhe e expande a lateral sem reconectar e o estado volta a
   }
 });
 
-test('configurações abrem como página, Esc volta à aba e a barra de status mostra a aba ativa (FR-168, FR-172)', async () => {
+test('configurações abrem como página, Esc volta à aba e a barra de status não repete a aba (FR-168, FR-172)', async () => {
   const app = await launchApp();
   try {
     const { page } = app;
@@ -88,8 +88,9 @@ test('configurações abrem como página, Esc volta à aba e a barra de status m
     await waitPowerShellPrompt(page, id);
 
     const status = page.getByRole('contentinfo', { name: 'Barra de status' });
-    await expect(status.getByTestId('status-tab')).toContainText('PowerShell');
-    await expect(status.getByTestId('status-state')).toHaveText('Em execução');
+    // Nome e estado ficam só na aba; a barra de status não os repete.
+    await expect(status.getByTestId('status-tab')).toHaveCount(0);
+    await expect(status).toContainText('Cofre desbloqueado');
 
     await page.keyboard.press('Control+Shift+P');
     await page.keyboard.type('configura');
