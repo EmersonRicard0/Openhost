@@ -5,6 +5,7 @@ go 1.26.0
 require (
 	github.com/Microsoft/go-winio v0.6.4
 	github.com/aymanbagabas/go-pty v0.2.3
+	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/uuid v1.6.0
 	github.com/pkg/sftp v1.13.9
 	github.com/wailsapp/go-webview2 v1.0.22
@@ -24,7 +25,6 @@ require (
 	github.com/dustin/go-humanize v1.1.0 // indirect
 	github.com/gabriel-vasile/mimetype v1.4.16 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
-	github.com/godbus/dbus/v5 v5.1.0 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/jchv/go-winloader v0.0.0-20210711035445-715c2860da7e // indirect
 	github.com/kr/fs v0.1.0 // indirect

@@ -110,6 +110,9 @@ func Open(dir string, kdf func(salt []byte) KDFParams) (*Store, error) {
 }
 
 func openDB(path string) (*sql.DB, error) {
+	if err := restrictFiles(path); err != nil {
+		return nil, err
+	}
 	dsn := filepath.ToSlash(path) + "?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)" +
 		"&_pragma=synchronous(FULL)&_pragma=secure_delete(1)&_pragma=busy_timeout(5000)"
 	db, err := sql.Open("sqlite", dsn)
@@ -119,6 +122,11 @@ func openDB(path string) (*sql.DB, error) {
 	// Uma conexão: pragmas por conexão valem sempre e as escritas ficam serializadas.
 	db.SetMaxOpenConns(1)
 	if err := migrate(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	// O -wal e o -shm só nascem na primeira escrita: confere o modo deles também.
+	if err := restrictFiles(path); err != nil {
 		_ = db.Close()
 		return nil, err
 	}

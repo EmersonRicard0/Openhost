@@ -54,7 +54,7 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
   - id do Windows salvo (`powershell`) resolve para o padrão com aviso;
   - `args` = `["-l"]`.
 - [ ] T006 Go: `internal/localpty/shells_unix.go` (`//go:build !windows`) conforme `data-model.md` (Shell local) e R2. Em `pty.go`, no Unix, `cmd.Env` recebe `TERM=xterm-256color`, e o comentário do pacote passa a citar o PTY Unix. Shell padrão por sistema: `localpty.DefaultShellID()` (`powershell` no Windows; no Unix o id do shell de login) passa a ser o padrão de `DefaultShell` em `internal/appwin/preferences.go` e o substituto em `internal/bridge/app.go` (`GetPreferences`), no lugar do `PowerShell` fixo; `ValidShellID` aceita os ids do Unix.
-- [ ] T007 [P] Go: testes de aparência com leitor falso, nos três arquivos abaixo. Valores fora do domínio esperado viram o padrão.
+- [X] T007 [P] Go: testes de aparência com leitor falso, nos três arquivos abaixo. Valores fora do domínio esperado viram o padrão.
   - `internal/appwin/appearance_linux_test.go` (portal):
     - `color-scheme` 1 → escuro, 2 → claro, 0 → claro;
     - `accent-color` (0.2, 0.4, 0.6) → `#336699`; ausente → `nil`;
@@ -66,13 +66,13 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
     - `AppleAccentColor` -1..6 → tabela;
     - `reduceTransparency`;
     - `increaseContrast`.
-- [ ] T008 Go: `internal/appwin/appearance_linux.go` (portal `org.freedesktop.portal.Settings`, `godbus/dbus/v5`) e `appearance_darwin.go` (`defaults read`, R3); construtor `appwin.SystemAppearanceReader()` em cada `appearance_<os>.go` (o do Windows devolve `RegistryAppearanceReader{}`); `internal/bridge/services.go` passa a usá-lo; `godbus/dbus/v5` direta no `go.mod`
-- [ ] T009 [P] Go: diretórios de fontes por sistema (R7):
+- [X] T008 Go: `internal/appwin/appearance_linux.go` (portal `org.freedesktop.portal.Settings`, `godbus/dbus/v5`) e `appearance_darwin.go` (`defaults read`, R3); construtor `appwin.SystemAppearanceReader()` em cada `appearance_<os>.go` (o do Windows devolve `RegistryAppearanceReader{}`); `internal/bridge/services.go` passa a usá-lo; `godbus/dbus/v5` direta no `go.mod`
+- [X] T009 [P] Go: diretórios de fontes por sistema (R7):
   - `internal/fonts/dirs_windows.go`: o código atual de `%WINDIR%` e `%LOCALAPPDATA%`;
   - `internal/fonts/dirs_linux.go`: `$XDG_DATA_HOME/fonts`, `~/.local/share/fonts`, `~/.fonts`, `/usr/share/fonts` e `/usr/local/share/fonts`, recursivos;
   - `internal/fonts/dirs_darwin.go`: `/System/Library/Fonts`, `/Library/Fonts` e `~/Library/Fonts`.
   - Teste com diretório temporário e uma fonte de `testdata`.
-- [ ] T010 [P] Go: permissões no Unix (R8):
+- [X] T010 [P] Go: permissões no Unix (R8):
   - `internal/appwin/datadir_unix.go`: `DataDir` corrige para `0700` um diretório existente mais aberto;
   - o cofre (`internal/vault`) e as preferências criam arquivos com `0600`;
   - teste `datadir_unix_test.go` e teste no `vault` (`//go:build !windows`): `shellvault.db`, `-wal`, `-shm` e preferências com modo `0600` mesmo com `umask 000`.
