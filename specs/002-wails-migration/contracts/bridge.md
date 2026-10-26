@@ -11,7 +11,8 @@ Operações sem marcação mantêm assinatura e semântica da 001.
 - Cada grupo de operações é uma struct Go ligada ao Wails (`Bind`): `VaultService`,
   `HostService` (hosts e grupos), `CredentialService`, `SessionService`, `SftpService`,
   `ForwardService`, `ProfileService` **novo**, `AppService`, e, desde a 003, `ImportService` e
-  `ExportService`. Nenhuma outra struct é ligada.
+  `ExportService`. Nenhuma outra struct é ligada no binário de release (os builds de teste
+  ligam também `TestService` e `Smoke`, abaixo).
   Métodos exportados que não fazem parte deste contrato MUST NOT existir nessas structs (teste
   de reflexão compara a lista de métodos com este documento).
 - A interface recebe sempre `Result<T>` =
@@ -130,7 +131,14 @@ Como `app.*` da 001, com:
 | `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups` e `shortcuts: Record<string, string>`; no patch, `shortcuts` substitui o mapa inteiro (`""` desativa a ação) |
 | `app:close-requested` / `ConfirmClose(bool)` | igual à 001 (FR-028) |
 | `WindowMinimise()`, `WindowToggleMaximise()`, `WindowClose()` **novo** | botões da barra de título própria (FR-133); `WindowClose` passa pela confirmação de FR-028 |
-| `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (FR-145) |
+| `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (⌘-clique no macOS) (FR-145) |
+
+**Plataformas (004).** A mesma ponte vale no Windows, no Linux e no macOS. A interface lê o
+sistema pelo `Environment()` do runtime do Wails (não é método ligado). `WindowMinimise`,
+`WindowToggleMaximise` e `WindowClose` só são chamados no Windows, onde a barra de título é
+própria; no Linux e no macOS a moldura é nativa e o fechamento passa pelo mesmo `OnBeforeClose`.
+`defaultShell` aceita os ids do Windows (`powershell`, `pwsh`, `cmd`, `gitbash`, `wsl:<distro>`) e,
+no Unix, o nome do shell de `/etc/shells` (`bash`, `zsh`, `fish`…).
 
 ## ImportService e ExportService 🔒 (003)
 
@@ -143,3 +151,17 @@ descartados quando o cofre bloqueia.
 
 Não existe no binário de release. `Maximise()`, `Restore()`, `SetSize(w, h)`, `Goroutines()`,
 `SessionCount()`, `ServerSizeOf(sessionId)`. Usado pelos testes E2E (research R18).
+
+## Smoke (somente build com tag `smoke`, 004)
+
+Não existe no binário de release (`scripts/check-release.mjs` recusa `smokesvc`). Ligado em
+`window.go.smokesvc.Smoke`.
+
+| Método | Entrada | Saída | Efeito |
+|---|---|---|---|
+| `Ready()` | — | `void` | responde e encerra o processo com código 0 |
+
+O frontend chama `Ready()` só quando `import.meta.env.VITE_SMOKE` está definido, depois de a tela
+de criar o cofre aparecer e de criar cofre, host e chave pela ponte normal
+(`frontend/src/app/smoke.ts`). Usado por `scripts/smoke.mjs` no CI dos três sistemas
+(specs/004-linux-macos, R11).
