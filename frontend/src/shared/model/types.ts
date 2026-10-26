@@ -373,14 +373,7 @@ export interface ConflictEvent {
 // --- Importar e exportar (specs/003-host-import-export/data-model.md) --------
 
 export type SourceKind =
-  | 'openssh'
-  | 'putty'
-  | 'kitty'
-  | 'kittyPortable'
-  | 'csv'
-  | 'mobaxterm'
-  | 'securecrt'
-  | 'openhost';
+  'openssh' | 'putty' | 'kitty' | 'kittyPortable' | 'csv' | 'mobaxterm' | 'securecrt' | 'openhost';
 
 export interface ImportSource {
   kind: SourceKind;
@@ -437,12 +430,7 @@ export interface PreviewRow {
 }
 
 export type PreviewKeyStatus =
-  | 'ready'
-  | 'needsPassphrase'
-  | 'skipped'
-  | 'notFound'
-  | 'unsupported'
-  | 'existing';
+  'ready' | 'needsPassphrase' | 'skipped' | 'notFound' | 'unsupported' | 'existing';
 
 /** Chave referenciada pela origem; o conteúdo fica só no Go. */
 export interface PreviewKey {
@@ -495,9 +483,7 @@ export interface UndoResult {
 
 export type ExportFormat = 'openhost' | 'openssh' | 'csv';
 export type ExportScope =
-  | { kind: 'all' }
-  | { kind: 'group'; groupId: string }
-  | { kind: 'hosts'; hostIds: string[] };
+  { kind: 'all' } | { kind: 'group'; groupId: string } | { kind: 'hosts'; hostIds: string[] };
 
 export interface ExportRequest {
   format: ExportFormat;

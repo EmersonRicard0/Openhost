@@ -13,6 +13,7 @@ import type {
   PreviewView,
   RowPatch,
   SourceKind,
+  UndoResult,
 } from '@shared/model/types';
 import { useHosts } from './hosts';
 
@@ -80,7 +81,7 @@ interface ImportExportState {
   setTarget: (groupId: string | null) => void;
   setFilter: (filter: RowFilter) => void;
   commit: () => Promise<boolean>;
-  undo: () => Promise<boolean>;
+  undo: () => Promise<UndoResult | null>;
   cancelPassword: () => void;
   reset: () => void;
 }
@@ -130,7 +131,8 @@ export const useImportExport = create<ImportExportState>((set, get) => ({
       set({ busy: false, passwordFor: null });
       return;
     }
-    if (previous && previous.id !== res.value.id) void window.shellvault.imports.discard(previous.id);
+    if (previous && previous.id !== res.value.id)
+      void window.shellvault.imports.discard(previous.id);
     set({
       busy: false,
       passwordFor: null,
@@ -221,12 +223,12 @@ export const useImportExport = create<ImportExportState>((set, get) => ({
 
   async undo() {
     const batchId = get().undoable;
-    if (!batchId) return false;
+    if (!batchId) return null;
     set({ busy: true, error: null });
     const res = await window.shellvault.imports.undo(batchId);
     set({ busy: false, undoable: null, ...(res.ok ? {} : { error: res.error }) });
     await useHosts.getState().reload();
-    return res.ok;
+    return res.ok ? res.value : null;
   },
 
   cancelPassword() {

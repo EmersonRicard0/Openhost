@@ -8,6 +8,7 @@ import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
 import {
   FolderIcon,
+  ImportExportIcon,
   LockIcon,
   SearchIcon,
   ServerIcon,
@@ -32,6 +33,7 @@ function useCommands(): Entry[] {
   const unlocked = useVault((v) => v.status?.state === 'unlocked');
   const hosts = useHosts((h) => h.hosts);
   const lock = useVault((v) => v.lock);
+  const openSettings = useWorkspace((w) => w.openSettings);
   const setView = useWorkspace((w) => w.setView);
   const powershellKey = useShortcutLabel('newPowerShell') ?? '';
   const shells = useShells((x) => x.shells);
@@ -85,6 +87,16 @@ function useCommands(): Entry[] {
       icon: <LockIcon />,
       run: () => void lock(),
     });
+    actions.push({
+      id: 'importExport',
+      label: p.importExport,
+      hint: '',
+      group: 'action',
+      icon: <ImportExportIcon />,
+      run: () => {
+        openSettings('importExport');
+      },
+    });
     const hostEntries: Entry[] = hosts.flatMap((host) => {
       const hint = `${host.username}@${host.address}`;
       return [
@@ -107,7 +119,7 @@ function useCommands(): Entry[] {
       ];
     });
     return [...actions, ...hostEntries];
-  }, [shells, unlocked, hosts, lock, setView, powershellKey, searchKey]);
+  }, [shells, unlocked, hosts, lock, setView, openSettings, powershellKey, searchKey]);
 }
 
 export function CommandPalette() {

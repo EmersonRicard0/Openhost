@@ -46,6 +46,7 @@ import {
   Upload,
   Download,
   ArrowLeftRight,
+  ArrowDownUp,
   X,
 } from 'lucide-react';
 import { icon } from './Icon';
@@ -65,6 +66,7 @@ export const CloseIcon = icon(X);
 export const MoreIcon = icon(Ellipsis);
 export const KeyIcon = icon(KeyRound);
 export const ForwardIcon = icon(ArrowLeftRight);
+export const ImportExportIcon = icon(ArrowDownUp);
 export const SettingsIcon = icon(Settings);
 export const WarningIcon = icon(TriangleAlert);
 export const RefreshIcon = icon(RefreshCw);

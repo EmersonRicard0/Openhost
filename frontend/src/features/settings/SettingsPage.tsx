@@ -22,6 +22,7 @@ import { Checkbox } from '../../ui/Checkbox';
 import {
   BackIcon,
   GeneralIcon,
+  ImportExportIcon,
   InfoIcon,
   KeyboardIcon,
   NetworkIcon,
@@ -37,6 +38,7 @@ import { toastError } from '../../ui/Toast';
 import { focusTerminal } from '../terminal/terminalRegistry';
 import { ChangePasswordDialog } from '../vault/ChangePasswordDialog';
 import { EraseVaultDialog } from '../vault/EraseVaultDialog';
+import { ImportExportPage } from '../importexport/ImportExportPage';
 import { ShortcutsEditor } from './ShortcutsEditor';
 import { GlobalTerminalSettings } from './TerminalSettings';
 import s from './settings.module.css';
@@ -50,6 +52,7 @@ const SECTIONS: { id: Section; icon: ReactNode }[] = [
   { id: 'connection', icon: <NetworkIcon /> },
   { id: 'vault', icon: <ShieldIcon /> },
   { id: 'shortcuts', icon: <KeyboardIcon /> },
+  { id: 'importExport', icon: <ImportExportIcon /> },
   { id: 'about', icon: <InfoIcon /> },
 ];
 
@@ -437,6 +440,12 @@ function ShortcutsSection() {
   );
 }
 
+function ImportExportSection() {
+  const unlocked = useVault((v) => v.status?.state === 'unlocked');
+  if (!unlocked) return <p className={s.notice}>{t.settings.vaultLocked}</p>;
+  return <ImportExportPage />;
+}
+
 function AboutSection() {
   return (
     <Group>
@@ -451,7 +460,11 @@ function AboutSection() {
 export function SettingsPage() {
   const setView = useWorkspace((w) => w.setView);
   const settings = useUi((u) => u.settings);
-  const [section, setSection] = useState<Section>('general');
+  const [section, setSection] = useState<Section>(() => {
+    const wanted = useWorkspace.getState().settingsSection;
+    useWorkspace.setState({ settingsSection: null });
+    return SECTIONS.find((x) => x.id === wanted)?.id ?? 'general';
+  });
   const navRef = useRef<HTMLElement>(null);
   const indicator = useSlidingIndicator(navRef, section, 'y', '[aria-current="page"]');
 
@@ -551,7 +564,7 @@ export function SettingsPage() {
           ))}
         </nav>
         <div
-          className={`${s.content} ${section === 'terminal' ? s.wide : section === 'shortcuts' ? s.medium : ''}`}
+          className={`${s.content} ${section === 'terminal' ? s.wide : section === 'importExport' ? s.full : section === 'shortcuts' ? s.medium : ''}`}
           key={section}
         >
           <h2 className={s.sectionTitle}>{t.settings.sections[section]}</h2>
@@ -566,6 +579,7 @@ export function SettingsPage() {
           {section === 'connection' && <ConnectionSection />}
           {section === 'vault' && <VaultSection />}
           {section === 'shortcuts' && <ShortcutsSection />}
+          {section === 'importExport' && <ImportExportSection />}
           {section === 'about' && <AboutSection />}
         </div>
       </div>
