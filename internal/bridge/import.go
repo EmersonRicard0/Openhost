@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -35,6 +36,7 @@ type ImportService struct {
 	context     func() context.Context
 	sources     map[importer.SourceKind]sourceLoader
 	pickFile    func(context.Context, importer.SourceKind) (string, error)
+	pickDir     func(context.Context, importer.SourceKind) (string, error)
 	saveFile    func(context.Context) (string, error)
 	pendingKind importer.SourceKind
 	pendingPath string
@@ -47,6 +49,12 @@ func newImportService(store *vault.Store, contextFn func() context.Context) *Imp
 				return path, nil
 			}
 			return wruntime.OpenFileDialog(ctx, wruntime.OpenDialogOptions{Title: "Importar hosts", Filters: []wruntime.FileFilter{{DisplayName: "Arquivos de importação", Pattern: "*"}}})
+		},
+		pickDir: func(ctx context.Context, kind importer.SourceKind) (string, error) {
+			if path := os.Getenv("SHELLVAULT_TEST_DIALOG_PATH"); path != "" {
+				return path, nil
+			}
+			return wruntime.OpenDirectoryDialog(ctx, wruntime.OpenDialogOptions{Title: "Selecionar pasta do KiTTY portátil"})
 		},
 		saveFile: func(ctx context.Context) (string, error) {
 			if path := os.Getenv("SHELLVAULT_TEST_DIALOG_PATH"); path != "" {
@@ -63,7 +71,30 @@ func newImportService(store *vault.Store, contextFn func() context.Context) *Imp
 			return importer.LoadCSV(path, options.CSVMapping, content)
 		},
 	}
+	s.registerPutty()
 	return s
+}
+
+func (s *ImportService) registerPutty() {
+	available := runtime.GOOS == "windows"
+	s.sources[importer.SourcePuTTY] = sourceLoader{
+		source: ImportSource{Kind: importer.SourcePuTTY, Available: available, DefaultFound: available && importer.InstalledPuttyAvailable(importer.PuttyRegistryRoot)},
+		load: func(_ string, _ PreviewOptions, content *model.Content) (*importer.ImportPreview, error) {
+			return importer.LoadInstalledPuttyRegistry(importer.SourcePuTTY, content)
+		},
+	}
+	s.sources[importer.SourceKiTTY] = sourceLoader{
+		source: ImportSource{Kind: importer.SourceKiTTY, Available: available, DefaultFound: available && importer.InstalledPuttyAvailable(importer.KiTTYRegistryRoot)},
+		load: func(_ string, _ PreviewOptions, content *model.Content) (*importer.ImportPreview, error) {
+			return importer.LoadInstalledPuttyRegistry(importer.SourceKiTTY, content)
+		},
+	}
+	s.sources[importer.SourceKiTTYPortable] = sourceLoader{
+		source: ImportSource{Kind: importer.SourceKiTTYPortable, Available: available},
+		load: func(path string, _ PreviewOptions, content *model.Content) (*importer.ImportPreview, error) {
+			return importer.LoadKiTTYPortable(path, content)
+		},
+	}
 }
 
 func (s *ImportService) registerOpenHost() {
@@ -122,9 +153,13 @@ func (s *ImportService) Preview(kind importer.SourceKind, options PreviewOptions
 	reusePending := options.FilePassword != nil && s.pendingKind == kind && s.pendingPath != ""
 	if reusePending {
 		path = s.pendingPath
-	} else if !options.UseDefault {
+	} else if kind != importer.SourcePuTTY && kind != importer.SourceKiTTY && !options.UseDefault {
 		s.pendingKind, s.pendingPath = "", ""
-		path, err = s.pickFile(s.context(), kind)
+		if kind == importer.SourceKiTTYPortable {
+			path, err = s.pickDir(s.context(), kind)
+		} else {
+			path, err = s.pickFile(s.context(), kind)
+		}
 		if err != nil {
 			return nil, clean(err)
 		}

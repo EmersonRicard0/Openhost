@@ -1,6 +1,7 @@
 package importer
 
 import (
+	"bytes"
 	"errors"
 	"io"
 	"os"
@@ -27,8 +28,22 @@ func (p *ImportPreview) ResolveKeys(content *model.Content) error {
 			key.Status = KeyUnsupported
 			continue
 		}
-		p.keyData[key.Ref] = &keySecret{privateKey: data}
-		parsed, err := domain.ParsePrivateKey(string(data), nil)
+		secret := &keySecret{privateKey: data}
+		p.keyData[key.Ref] = secret
+		if isPPK(data) {
+			converted, convertErr := ConvertPPK(data, nil)
+			if convertErr != nil && apperr.CodeOf(convertErr) == apperr.KeyBadPassphrase {
+				key.Status = KeyNeedsPassphrase
+				continue
+			}
+			if convertErr != nil {
+				key.Status = KeyUnsupported
+				continue
+			}
+			zero(secret.privateKey)
+			secret.privateKey = converted
+		}
+		parsed, err := domain.ParsePrivateKey(string(secret.privateKey), nil)
 		if err != nil && apperr.CodeOf(err) == apperr.KeyBadPassphrase {
 			key.Status = KeyNeedsPassphrase
 			continue
@@ -37,7 +52,7 @@ func (p *ImportPreview) ResolveKeys(content *model.Content) error {
 			key.Status = KeyUnsupported
 			continue
 		}
-		setParsedKey(key, p.keyData[key.Ref], parsed, p.credentialByFingerprint)
+		setParsedKey(key, secret, parsed, p.credentialByFingerprint)
 	}
 	p.syncKeyWarnings()
 	return nil
@@ -73,9 +88,26 @@ func (p *ImportPreview) UnlockKey(ref, passphrase string) (PreviewKey, error) {
 	if i < 0 || secret == nil {
 		return PreviewKey{}, apperr.New(apperr.NotFound)
 	}
-	parsed, err := domain.ParsePrivateKey(string(secret.privateKey), &passphrase)
+	privateKey := secret.privateKey
+	convertedPPK := false
+	if isPPK(privateKey) {
+		var err error
+		privateKey, err = ConvertPPK(privateKey, &passphrase)
+		if err != nil {
+			return PreviewKey{}, err
+		}
+		convertedPPK = true
+	}
+	parsed, err := domain.ParsePrivateKey(string(privateKey), &passphrase)
 	if err != nil {
+		if convertedPPK {
+			zero(privateKey)
+		}
 		return PreviewKey{}, err
+	}
+	if convertedPPK {
+		zero(secret.privateKey)
+		secret.privateKey = privateKey
 	}
 	zero(secret.passphrase)
 	secret.passphrase = []byte(passphrase)
@@ -88,6 +120,10 @@ func (p *ImportPreview) UnlockKey(ref, passphrase string) (PreviewKey, error) {
 	}
 	p.syncKeyWarnings()
 	return *key, nil
+}
+
+func isPPK(data []byte) bool {
+	return bytes.HasPrefix(data, []byte(ppkV2Prefix)) || bytes.HasPrefix(data, []byte(ppkV3Prefix))
 }
 
 func (p *ImportPreview) SkipKey(ref string) (PreviewKey, error) {

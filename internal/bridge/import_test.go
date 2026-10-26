@@ -90,12 +90,12 @@ func TestImportServiceOpenSSHSourceAndDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 	sources, err := services.importService.Sources()
-	byKind := map[importer.SourceKind]ImportSource{}
+	byKind := make(map[importer.SourceKind]ImportSource, len(sources))
 	for _, source := range sources {
 		byKind[source.Kind] = source
 	}
-	if openssh := byKind[importer.SourceOpenSSH]; err != nil || !openssh.Available || !openssh.DefaultFound ||
-		!byKind[importer.SourceOpenHost].Available {
+	if err != nil || !byKind[importer.SourceOpenHost].Available || !byKind[importer.SourceOpenSSH].Available || !byKind[importer.SourceOpenSSH].DefaultFound ||
+		!byKind[importer.SourcePuTTY].Available || !byKind[importer.SourceKiTTY].Available || !byKind[importer.SourceKiTTYPortable].Available {
 		t.Fatalf("Sources = %+v, %v", sources, err)
 	}
 	view, err := services.importService.Preview(importer.SourceOpenSSH, PreviewOptions{UseDefault: true})
