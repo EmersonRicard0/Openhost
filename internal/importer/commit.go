@@ -7,13 +7,17 @@ import (
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/domain"
+	"shellvault/internal/exporter"
 	"shellvault/internal/model"
 	"shellvault/internal/vault"
 )
 
 type replacedHost struct {
-	Before    model.Host
-	UpdatedAt string
+	Before         model.Host
+	BeforeRules    []model.ForwardRule
+	BeforeProfile  *model.TerminalProfile
+	AfterProfileID *string
+	UpdatedAt      string
 }
 type ImportBatch struct {
 	ID                                                    string
@@ -96,9 +100,21 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 	now := domain.Now()
 	result := ImportResult{BatchID: domain.NewID(), Ignored: len(p.Ignored)}
 	batch := &ImportBatch{ID: result.BatchID, CommittedAt: now}
-	err := c.store.Mutate(func(content *model.Content) error {
+	profilesBefore := map[string]*model.TerminalProfile{}
+	for _, row := range p.Rows {
+		_, importsProfile := row.Extra["profile"]
+		if importsProfile && row.Selected && row.State == StateDuplicate && row.DuplicateAction == DuplicateReplace && row.DuplicateOf != nil && row.DuplicateOf.HostID != nil {
+			profile, err := c.store.HostProfile(*row.DuplicateOf.HostID)
+			if err != nil {
+				return ImportResult{}, err
+			}
+			profilesBefore[*row.DuplicateOf.HostID] = profile
+		}
+	}
+	err := c.store.MutateWithProfiles(func(content *model.Content) (vault.ProfileChanges, error) {
+		profileChanges := vault.ProfileChanges{}
 		if targetGroupID != nil && !groupExists(content, *targetGroupID) {
-			return apperr.New(apperr.InvalidInput)
+			return profileChanges, apperr.New(apperr.InvalidInput)
 		}
 		keyIDs := map[string]string{}
 		usedRefs := map[string]bool{}
@@ -130,7 +146,7 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 				}
 				credential, err := domain.ImportKey(content, name, string(secret.privateKey), phrase, now)
 				if err != nil {
-					return err
+					return profileChanges, err
 				}
 				keyIDs[key.Ref] = credential.ID
 				batch.CreatedCredentialIDs = append(batch.CreatedCredentialIDs, credential.ID)
@@ -138,14 +154,21 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 			}
 		}
 		paths := map[string]*string{}
+		if p.Kind == SourceOpenHost {
+			for _, group := range p.Groups {
+				if _, err := ensureGroupPath(content, targetGroupID, group.Path, paths, batch, p.groupSortOrders); err != nil {
+					return profileChanges, err
+				}
+			}
+		}
 		for _, row := range p.Rows {
 			if !row.Selected || row.State == StateInvalid || (row.State == StateDuplicate && row.DuplicateAction == DuplicateSkip) {
 				result.Skipped++
 				continue
 			}
-			groupID, err := ensureGroupPath(content, targetGroupID, row.GroupPath, paths, batch)
+			groupID, err := ensureGroupPath(content, targetGroupID, row.GroupPath, paths, batch, p.groupSortOrders)
 			if err != nil {
-				return err
+				return profileChanges, err
 			}
 			credentialID := (*string)(nil)
 			if row.KeyRef != nil {
@@ -157,22 +180,30 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 				for i := range content.Hosts {
 					if content.Hosts[i].ID == *row.DuplicateOf.HostID {
 						before := content.Hosts[i]
+						beforeRules := domain.ListForwardRulesForHost(content, before.ID)
 						updated := before
 						updated.Label = row.Label
 						updated.Address = row.Address
 						updated.Port = row.Port
 						updated.Username = row.Username
 						updated.GroupID = groupID
-						if credentialID != nil {
+						_, importsAuth := row.Extra["authMethod"]
+						if credentialID != nil || importsAuth {
 							updated.CredentialID = credentialID
-							updated.AuthMethod = model.AuthKey
-						} else if updated.CredentialID == nil {
-							updated.AuthMethod = model.AuthPassword
+						}
+						applyOpenHostFields(&updated, row, credentialID != nil)
+						if updated.CredentialID == nil {
 							result.AskPassword++
+						}
+						if err := collectProfileChange(&updated, row, &profileChanges); err != nil {
+							return profileChanges, err
 						}
 						updated.UpdatedAt = now
 						content.Hosts[i] = updated
-						batch.Replaced = append(batch.Replaced, replacedHost{Before: before, UpdatedAt: updated.UpdatedAt})
+						if err := replaceForwardRules(content, updated.ID, row); err != nil {
+							return profileChanges, err
+						}
+						batch.Replaced = append(batch.Replaced, replacedHost{Before: before, BeforeRules: beforeRules, BeforeProfile: profilesBefore[before.ID], AfterProfileID: cloneString(updated.ProfileID), UpdatedAt: updated.UpdatedAt})
 						result.Replaced++
 						break
 					}
@@ -190,14 +221,23 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 				result.AskPassword++
 			}
 			host := model.Host{ID: domain.NewID(), Label: label, Address: domain.NormalizeAddress(row.Address), Port: row.Port, Username: row.Username, AuthMethod: auth, CredentialID: credentialID, GroupID: groupID, OSIcon: model.OSIconAuto, CreatedAt: now, UpdatedAt: now}
+			applyOpenHostFields(&host, row, credentialID != nil)
+			if err := collectProfileChange(&host, row, &profileChanges); err != nil {
+				return profileChanges, err
+			}
 			content.Hosts = append(content.Hosts, host)
+			if err := replaceForwardRules(content, host.ID, row); err != nil {
+				return profileChanges, err
+			}
 			batch.CreatedHostIDs = append(batch.CreatedHostIDs, host.ID)
 			result.Created++
 		}
 		if c.commitHook != nil {
-			return c.commitHook(content)
+			if err := c.commitHook(content); err != nil {
+				return profileChanges, err
+			}
 		}
-		return nil
+		return profileChanges, nil
 	})
 	if err != nil {
 		return ImportResult{}, err
@@ -208,6 +248,100 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 	return result, nil
 }
 
+func applyOpenHostFields(host *model.Host, row PreviewRow, hasKey bool) {
+	if row.Extra == nil {
+		return
+	}
+	if value, ok := row.Extra["legacyAlgorithms"].(bool); ok {
+		host.LegacyAlgorithms = value
+	}
+	if value, ok := row.Extra["osIcon"].(string); ok && domain.ValidOSIcon(value) {
+		host.OSIcon = value
+	}
+	if hasKey {
+		host.AuthMethod = model.AuthKey
+		return
+	}
+	if value, ok := row.Extra["authMethod"].(string); ok {
+		switch model.AuthMethod(value) {
+		case model.AuthAsk, model.AuthAgent, model.AuthPassword:
+			host.AuthMethod = model.AuthMethod(value)
+		default:
+			host.AuthMethod = model.AuthPassword
+		}
+	}
+}
+
+func collectProfileChange(host *model.Host, row PreviewRow, changes *vault.ProfileChanges) error {
+	if row.Extra == nil {
+		return nil
+	}
+	value, present := row.Extra["profile"]
+	if !present {
+		return nil
+	}
+	if value == nil {
+		if host.ProfileID != nil {
+			changes.Delete = append(changes.Delete, *host.ProfileID)
+		}
+		host.ProfileID = nil
+		return nil
+	}
+	profile, ok := value.(model.TerminalProfile)
+	if !ok {
+		return apperr.New(apperr.ImportUnreadable)
+	}
+	if host.ProfileID != nil {
+		profile.ID = *host.ProfileID
+	} else {
+		if profile.ID == "" {
+			profile.ID = domain.NewID()
+		}
+	}
+	profile.IsGlobal = false
+	host.ProfileID = model.Ptr(profile.ID)
+	changes.Save = append(changes.Save, profile)
+	return nil
+}
+
+func replaceForwardRules(content *model.Content, hostID string, row PreviewRow) error {
+	if row.Extra == nil {
+		return nil
+	}
+	value, present := row.Extra["forwardRules"]
+	if !present {
+		return nil
+	}
+	rules, ok := value.([]exporter.OpenHostForwardRule)
+	if !ok {
+		return apperr.New(apperr.ImportUnreadable)
+	}
+	kept := content.ForwardRules[:0]
+	for _, rule := range content.ForwardRules {
+		if rule.HostID != hostID {
+			kept = append(kept, rule)
+		}
+	}
+	content.ForwardRules = kept
+	for _, rule := range rules {
+		_, err := domain.CreateForwardRule(content, domain.ForwardRuleInput{HostID: hostID, Label: rule.Label,
+			BindAddress: rule.BindAddress, AllowNonLoopback: rule.AllowNonLoopback, BindPort: rule.BindPort,
+			DestHost: rule.DestHost, DestPort: rule.DestPort})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func cloneString(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	copy := *value
+	return &copy
+}
+
 func groupExists(content *model.Content, id string) bool {
 	for _, g := range content.Groups {
 		if g.ID == id {
@@ -216,9 +350,10 @@ func groupExists(content *model.Content, id string) bool {
 	}
 	return false
 }
-func ensureGroupPath(content *model.Content, root *string, path []string, cache map[string]*string, batch *ImportBatch) (*string, error) {
+func ensureGroupPath(content *model.Content, root *string, path []string, cache map[string]*string, batch *ImportBatch, sortOrders map[string]int) (*string, error) {
 	parent := root
 	parts := []string{}
+	sourceParts := []string{}
 	if root != nil {
 		parts = append(parts, *root)
 	}
@@ -228,6 +363,7 @@ func ensureGroupPath(content *model.Content, root *string, path []string, cache 
 			continue
 		}
 		parts = append(parts, name)
+		sourceParts = append(sourceParts, name)
 		key := strings.Join(parts, "\x00")
 		if id, ok := cache[key]; ok {
 			parent = id
@@ -245,6 +381,14 @@ func ensureGroupPath(content *model.Content, root *string, path []string, cache 
 			g, err := domain.CreateGroup(content, name, parent)
 			if err != nil {
 				return nil, err
+			}
+			if order, ok := sortOrders[strings.Join(sourceParts, "\x00")]; ok {
+				for i := range content.Groups {
+					if content.Groups[i].ID == g.ID {
+						content.Groups[i].SortOrder = order
+						break
+					}
+				}
 			}
 			batch.CreatedGroupIDs = append(batch.CreatedGroupIDs, g.ID)
 			found = model.Ptr(g.ID)
@@ -301,12 +445,18 @@ func (c *Coordinator) Undo(batchID string) (UndoResult, error) {
 	}
 	batch := c.batch
 	result := UndoResult{}
-	err := c.store.Mutate(func(content *model.Content) error {
+	err := c.store.MutateWithProfiles(func(content *model.Content) (vault.ProfileChanges, error) {
+		profileChanges := vault.ProfileChanges{}
 		created := set(batch.CreatedHostIDs)
+		removedHosts := map[string]bool{}
 		hosts := content.Hosts[:0]
 		for _, h := range content.Hosts {
 			if created[h.ID] {
 				if h.UpdatedAt == batch.CommittedAt {
+					removedHosts[h.ID] = true
+					if h.ProfileID != nil {
+						profileChanges.Delete = append(profileChanges.Delete, *h.ProfileID)
+					}
 					result.Removed++
 					continue
 				}
@@ -315,10 +465,30 @@ func (c *Coordinator) Undo(batchID string) (UndoResult, error) {
 			hosts = append(hosts, h)
 		}
 		content.Hosts = hosts
+		keptRules := content.ForwardRules[:0]
+		for _, rule := range content.ForwardRules {
+			if !removedHosts[rule.HostID] {
+				keptRules = append(keptRules, rule)
+			}
+		}
+		content.ForwardRules = keptRules
 		for _, rep := range batch.Replaced {
 			for i := range content.Hosts {
 				if content.Hosts[i].ID == rep.Before.ID {
 					if content.Hosts[i].UpdatedAt == rep.UpdatedAt {
+						kept := content.ForwardRules[:0]
+						for _, rule := range content.ForwardRules {
+							if rule.HostID != rep.Before.ID {
+								kept = append(kept, rule)
+							}
+						}
+						content.ForwardRules = append(kept, rep.BeforeRules...)
+						if rep.AfterProfileID != nil && (rep.Before.ProfileID == nil || *rep.AfterProfileID != *rep.Before.ProfileID) {
+							profileChanges.Delete = append(profileChanges.Delete, *rep.AfterProfileID)
+						}
+						if rep.BeforeProfile != nil {
+							profileChanges.Save = append(profileChanges.Save, *rep.BeforeProfile)
+						}
 						content.Hosts[i] = rep.Before
 						result.Restored++
 					} else {
@@ -368,7 +538,7 @@ func (c *Coordinator) Undo(batchID string) (UndoResult, error) {
 			}
 			content.Groups = groups
 		}
-		return nil
+		return profileChanges, nil
 	})
 	if err != nil {
 		return UndoResult{}, err

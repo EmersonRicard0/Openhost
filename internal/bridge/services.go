@@ -44,6 +44,7 @@ type Services struct {
 	profileService    *ProfileService
 	appService        *AppService
 	importService     *ImportService
+	exportService     *ExportService
 	closeGuard        *appwin.CloseGuard
 }
 
@@ -94,6 +95,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	)
 	s.appService = newAppService(preferences, appearance, s.closeGuard, s.Context)
 	s.importService = newImportService(store, s.Context)
+	s.exportService = newExportService(store, s.Context)
 	store.OnStatus(func(status vault.Status) {
 		if status.State != vault.StateUnlocked {
 			s.importService.coordinator.Clear()
@@ -119,7 +121,7 @@ func (s *Services) connectForward(hostID string) (forwarding.Client, error) {
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
 func (s *Services) Bound() []any {
-	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService}
+	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService, s.exportService}
 }
 
 // Context é o contexto do Wails, disponível depois de Startup.

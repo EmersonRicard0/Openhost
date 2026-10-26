@@ -36,6 +36,8 @@ type ImportService struct {
 	sources     map[importer.SourceKind]sourceLoader
 	pickFile    func(context.Context, importer.SourceKind) (string, error)
 	saveFile    func(context.Context) (string, error)
+	pendingKind importer.SourceKind
+	pendingPath string
 }
 
 func newImportService(store *vault.Store, contextFn func() context.Context) *ImportService {
@@ -54,7 +56,17 @@ func newImportService(store *vault.Store, contextFn func() context.Context) *Imp
 		},
 	}
 	s.registerOpenSSH()
+	s.registerOpenHost()
 	return s
+}
+
+func (s *ImportService) registerOpenHost() {
+	s.sources[importer.SourceOpenHost] = sourceLoader{
+		source: ImportSource{Kind: importer.SourceOpenHost, Available: true},
+		load: func(path string, options PreviewOptions, content *model.Content) (*importer.ImportPreview, error) {
+			return importer.LoadOpenHost(path, options.FilePassword, content)
+		},
+	}
 }
 
 func (s *ImportService) registerOpenSSH() {
@@ -101,7 +113,11 @@ func (s *ImportService) Preview(kind importer.SourceKind, options PreviewOptions
 		return nil, clean(err)
 	}
 	path := ""
-	if !options.UseDefault {
+	reusePending := options.FilePassword != nil && s.pendingKind == kind && s.pendingPath != ""
+	if reusePending {
+		path = s.pendingPath
+	} else if !options.UseDefault {
+		s.pendingKind, s.pendingPath = "", ""
 		path, err = s.pickFile(s.context(), kind)
 		if err != nil {
 			return nil, clean(err)
@@ -112,8 +128,15 @@ func (s *ImportService) Preview(kind importer.SourceKind, options PreviewOptions
 	}
 	preview, err := loader.load(path, options, content)
 	if err != nil {
+		code := apperr.CodeOf(err)
+		if path != "" && (code == apperr.FilePasswordRequired || code == apperr.FilePasswordWrong) {
+			s.pendingKind, s.pendingPath = kind, path
+		} else {
+			s.pendingKind, s.pendingPath = "", ""
+		}
 		return nil, clean(err)
 	}
+	s.pendingKind, s.pendingPath = "", ""
 	s.coordinator.SetPreview(preview)
 	view := preview.View()
 	return &view, nil

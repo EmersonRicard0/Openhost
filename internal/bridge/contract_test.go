@@ -27,6 +27,7 @@ var contract = map[string][]string{
 		"WindowMinimise", "WindowToggleMaximise", "WindowClose", "OpenExternalUrl"},
 	"ImportService": {"Sources", "Preview", "RemapCsv", "UpdateRow", "SelectAll",
 		"SetDuplicateAction", "UnlockKey", "SkipKey", "Commit", "Undo", "Discard", "SaveCsvTemplate"},
+	"ExportService": {"Count", "Export"},
 }
 
 func TestBoundServicesMatchContract(t *testing.T) {

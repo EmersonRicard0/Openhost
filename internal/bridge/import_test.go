@@ -90,7 +90,8 @@ func TestImportServiceOpenSSHSourceAndDefault(t *testing.T) {
 		t.Fatal(err)
 	}
 	sources, err := services.importService.Sources()
-	if err != nil || len(sources) != 1 || sources[0].Kind != importer.SourceOpenSSH || !sources[0].Available || !sources[0].DefaultFound {
+	if err != nil || len(sources) != 2 || sources[0].Kind != importer.SourceOpenHost || !sources[0].Available ||
+		sources[1].Kind != importer.SourceOpenSSH || !sources[1].Available || !sources[1].DefaultFound {
 		t.Fatalf("Sources = %+v, %v", sources, err)
 	}
 	view, err := services.importService.Preview(importer.SourceOpenSSH, PreviewOptions{UseDefault: true})

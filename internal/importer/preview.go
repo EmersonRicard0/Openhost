@@ -160,6 +160,7 @@ type ImportPreview struct {
 	CSV                     *CsvPreview
 	keyData                 map[string]*keySecret
 	credentialByFingerprint map[string]string
+	groupSortOrders         map[string]int
 	expiresAt               time.Time
 }
 

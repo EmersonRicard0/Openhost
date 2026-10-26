@@ -316,6 +316,21 @@ func (s *Store) Unlock(password string) error {
 	return nil
 }
 
+// VerifyPassword confirma a senha mestra sem alterar o estado nem reembrulhar a DEK.
+func (s *Store) VerifyPassword(password string) error {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	if s.status.State != StateUnlocked {
+		return apperr.New(apperr.VaultLocked)
+	}
+	check, err := unwrap(password, s.meta)
+	if err != nil {
+		return err
+	}
+	Zero(check)
+	return nil
+}
+
 func (s *Store) corrupted() error {
 	r := ReasonCorrupted
 	s.setStatus(Status{State: StateUnreadable, Reason: &r})
@@ -415,16 +430,44 @@ func (s *Store) Read() (*model.Content, error) {
 // Mutate aplica fn a um rascunho e grava, numa transação, só as linhas que mudaram.
 // Se fn ou a gravação falharem, nada muda.
 func (s *Store) Mutate(fn func(c *model.Content) error) error {
+	return s.MutateWithProfiles(func(c *model.Content) (ProfileChanges, error) {
+		return ProfileChanges{}, fn(c)
+	})
+}
+
+// ProfileChanges permite que uma mutação do cofre atualize overrides de terminal na mesma
+// transação que hosts e regras. Perfis não guardam segredos, mas precisam acompanhar o host.
+type ProfileChanges struct {
+	Save   []model.TerminalProfile
+	Delete []string
+}
+
+func (s *Store) MutateWithProfiles(fn func(c *model.Content) (ProfileChanges, error)) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
 	if s.status.State != StateUnlocked {
 		return apperr.New(apperr.VaultLocked)
 	}
 	draft := s.content.Clone()
-	if err := fn(draft); err != nil {
+	profiles, err := fn(draft)
+	if err != nil {
 		return err
 	}
-	sigs, err := s.persist(nil, s.dek, s.sigs, draft)
+	pre := func(tx *sql.Tx) error {
+		for _, id := range profiles.Delete {
+			if _, err := tx.Exec(`DELETE FROM terminal_profiles WHERE id = ? AND is_global = 0`, id); err != nil {
+				return err
+			}
+		}
+		for _, profile := range profiles.Save {
+			profile.IsGlobal = false
+			if err := putTerminalProfile(tx, profile); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	sigs, err := s.persist(pre, s.dek, s.sigs, draft)
 	if err != nil {
 		return err
 	}
