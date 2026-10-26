@@ -10,7 +10,8 @@ Operações sem marcação mantêm assinatura e semântica da 001.
 
 - Cada grupo de operações é uma struct Go ligada ao Wails (`Bind`): `VaultService`,
   `HostService` (hosts e grupos), `CredentialService`, `SessionService`, `SftpService`,
-  `ForwardService`, `ProfileService` **novo**, `AppService`. Nenhuma outra struct é ligada.
+  `ForwardService`, `ProfileService` **novo**, `AppService`, e, desde a 003, `ImportService` e
+  `ExportService`. Nenhuma outra struct é ligada.
   Métodos exportados que não fazem parte deste contrato MUST NOT existir nessas structs (teste
   de reflexão compara a lista de métodos com este documento).
 - A interface recebe sempre `Result<T>` =
@@ -38,6 +39,9 @@ Os da 001 mais **novos**: `NO_COMMON_ALGORITHM` (FR-122), `AGENT_UNAVAILABLE` (F
 `SCHEME_INVALID` (importação de esquema), `ALREADY_EXISTS` (nome já usado),
 `IN_USE` (excluir esquema/perfil em uso),
 `VAULT_MIGRATION_FAILED` (FR-102/103; o arquivo original permanece intacto).
+
+Da 003 (importar e exportar): `IMPORT_TOO_LARGE`, `IMPORT_UNREADABLE`, `IMPORT_FORMAT_NEWER`,
+`FILE_PASSWORD_REQUIRED`, `FILE_PASSWORD_WRONG`, `PREVIEW_EXPIRED`, `UNDO_UNAVAILABLE`.
 
 ## VaultService
 
@@ -127,6 +131,13 @@ Como `app.*` da 001, com:
 | `app:close-requested` / `ConfirmClose(bool)` | igual à 001 (FR-028) |
 | `WindowMinimise()`, `WindowToggleMaximise()`, `WindowClose()` **novo** | botões da barra de título própria (FR-133); `WindowClose` passa pela confirmação de FR-028 |
 | `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (FR-145) |
+
+## ImportService e ExportService 🔒 (003)
+
+Definidos em [`specs/003-host-import-export/contracts/bridge.md`](../../003-host-import-export/contracts/bridge.md).
+Como os demais, escolhem arquivos só por diálogo nativo aberto pelo Go e nunca devolvem chave
+privada, passphrase ou senha. A prévia e o último lote importado ficam só em memória e são
+descartados quando o cofre bloqueia.
 
 ## TestService (somente build com tag `e2e`)
 

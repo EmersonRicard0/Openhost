@@ -137,6 +137,35 @@ npx playwright test
 Remove-Item Env:SHELLVAULT_E2E_SKIP_BUILD
 ```
 
+## Importar e exportar
+
+Em **Configurações › Importar e exportar** (ou no botão de setas da barra de hosts) dá para
+trazer hosts de outros programas:
+
+| Origem | O que é lido |
+|---|---|
+| OpenSSH | `~/.ssh/config`, com `Include`, padrões `Host *` e chaves de `IdentityFile` |
+| PuTTY e KiTTY | sessões SSH do registro (ou a pasta `Sessions` do KiTTY portátil) e chaves `.ppk` |
+| Planilha CSV | UTF-8 ou Windows-1252, separador detectado; há um modelo para baixar |
+| MobaXterm | arquivo `.mxtsessions` ou `MobaXterm.ini`; pastas viram grupos |
+| SecureCRT | XML de *Tools › Export Settings*; pastas viram grupos |
+| OpenHost | arquivo `.openhost` exportado por este app, com ou sem chaves |
+
+Nada é gravado antes da prévia: nela você corrige endereço, porta e usuário, escolhe o que entra,
+decide o que fazer com duplicados (pular, substituir ou manter os dois) e vê avisos de opções que
+não têm equivalente. Senhas salvas nesses programas nunca são lidas; o host pede a senha na
+primeira conexão. A última importação pode ser desfeita.
+
+Para exportar, use **Exportar…** na mesma tela, no menu de um grupo ou no de um host:
+
+- **OpenHost** (`.openhost`): para levar tudo a outro computador. Com *Incluir chaves privadas*,
+  o arquivo inteiro é criptografado com uma senha sua (Argon2id + XChaCha20-Poly1305) e a senha
+  mestra é pedida antes; sem chaves, ele não contém segredo nenhum, mas endereços e usuários
+  ficam legíveis.
+- **OpenSSH**: blocos `Host` para um arquivo novo ou acrescentados ao `~/.ssh/config`, entre
+  marcadores do OpenHost e com cópia de segurança do arquivo antes.
+- **CSV**: no mesmo modelo da importação.
+
 ## Migração do cofre anterior
 
 A versão Wails reconhece automaticamente o cofre da versão 001 no diretório:
