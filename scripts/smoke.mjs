@@ -31,7 +31,6 @@ function build() {
       cwd: ROOT,
       stdio: 'inherit',
       env: { ...process.env, VITE_SMOKE: '1' },
-      shell: OS === 'win32',
     },
   );
   if (OS === 'win32') return join(ROOT, 'build', 'bin', 'shellvault-smoke.exe');

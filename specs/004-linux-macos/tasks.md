@@ -84,7 +84,7 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
   - `main_linux.go`: `Frameless: false`, `linux.Options{ProgramName: "openhost", WindowIsTranslucent: false}`.
   - A tag `webkit2_41` fica documentada no README e no CI.
 - [X] T012 [P] Interface: `useUi.platform` em `frontend/src/stores/ui.ts`, lido em `frontend/src/main.tsx` com `Environment()` do runtime do Wails antes do primeiro render. O padrão em testes é `'windows'`. Teste em `ui.test.ts`.
-- [ ] T013 Go: `main_smoke.go` (`//go:build smoke`), que liga `Smoke.Ready()` (encerra o app com código 0 depois de responder) e uma `TestService` mínima para criar o cofre e um host com senha (reuso de `testsvc`, se couber). Teste do contrato só com a tag.
+- [X] T013 Go: `main_smoke.go` (`//go:build smoke`), que liga `Smoke.Ready()` (encerra o app com código 0 depois de responder) e uma `TestService` mínima para criar o cofre e um host com senha (reuso de `testsvc`, se couber). Teste do contrato só com a tag.
 - [X] T014 Teste de abertura (R11, FR-422):
   - `frontend/src/app/smoke.ts` chama `Smoke.Ready()` quando `import.meta.env.VITE_SMOKE`, depois de montar a tela de criar o cofre;
   - `scripts/smoke.mjs`:
