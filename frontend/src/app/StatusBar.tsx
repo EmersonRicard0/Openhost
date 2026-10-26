@@ -4,10 +4,21 @@ import { focusUnlock } from '../features/vault/UnlockScreen';
 import { t } from '../i18n/pt-BR';
 import { useForwards } from '../stores/forwards';
 import { useSessions } from '../stores/sessions';
+import type { SyncPhase } from '@shared/model/types';
+import { showsStatus, useSync } from '../stores/sync';
 import { hasUpdate, useUpdates } from '../stores/updates';
 import { useVault } from '../stores/vault';
 import { useWorkspace } from '../stores/workspace';
-import { DownloadIcon, ForwardIcon, LockIcon, UnlockIcon } from '../ui/icons';
+import {
+  CloudAlertIcon,
+  CloudCheckIcon,
+  CloudOffIcon,
+  CloudUploadIcon,
+  DownloadIcon,
+  ForwardIcon,
+  LockIcon,
+  UnlockIcon,
+} from '../ui/icons';
 import { latencyLevel } from './latency';
 import s from './statusbar.module.css';
 
@@ -22,6 +33,8 @@ export function StatusBar() {
   const unlocked = vault === 'unlocked';
   const update = useUpdates((u) => u.info);
   const openUpdate = useUpdates((u) => u.setOpen);
+  const sync = useSync((st) => st.info);
+  const openSettings = useWorkspace((w) => w.openSettings);
 
   return (
     <footer className={s.bar} aria-label={t.status.label}>
@@ -36,6 +49,21 @@ export function StatusBar() {
         </span>
       )}
       <span className={s.spacer} />
+      {sync && showsStatus(sync) && (
+        <button
+          type="button"
+          className={s.item}
+          title={t.sync.status.title}
+          data-testid="status-sync"
+          data-sync-state={sync.state}
+          onClick={() => {
+            openSettings('sync');
+          }}
+        >
+          <SyncIcon state={sync.state} />
+          {syncLabel(sync.state)}
+        </button>
+      )}
       {hasUpdate(update) && (
         <button
           type="button"
@@ -80,4 +108,23 @@ export function StatusBar() {
       )}
     </footer>
   );
+}
+
+function syncLabel(state: SyncPhase): string {
+  const ts = t.sync.status;
+  if (state === 'syncing') return ts.syncing;
+  if (state === 'pending') return ts.pending;
+  if (state === 'conflict') return ts.conflict;
+  if (state === 'needsPassword') return ts.needsPassword;
+  if (state === 'locked') return ts.locked;
+  if (state === 'error') return ts.error;
+  return ts.synced;
+}
+
+function SyncIcon({ state }: { state: SyncPhase }) {
+  if (state === 'syncing' || state === 'pending') return <CloudUploadIcon />;
+  if (state === 'error' || state === 'conflict' || state === 'needsPassword')
+    return <CloudAlertIcon />;
+  if (state === 'locked') return <CloudOffIcon />;
+  return <CloudCheckIcon />;
 }

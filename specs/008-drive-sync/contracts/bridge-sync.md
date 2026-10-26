@@ -9,7 +9,7 @@ Todos devolvem o `Result` padrão (`{ok, value}` ou `{ok:false, error}` com cód
 | `Connect()` | — | `{email, cloudHasVault: bool}` | abre o navegador e espera o retorno (≤ 5 min); cancelado ⇒ `SYNC_CANCELLED`, nada muda |
 | `CancelConnect()` | — | — | fecha o listener |
 | `Start(mode, cloudPassword)` | `"upload" \| "replace" \| "merge"`, string | `SyncInfo` | depois de `Connect` com cofre aberto: `upload` (nuvem vazia; senha vazia), `replace` (usa o da nuvem; local vira `vault-backup-<data>.db`), `merge` (junta); `replace`/`merge` conferem `cloudPassword` com o chaveiro |
-| `OpenFromCloud(password)` | string | — | primeira tela, sem cofre local: cria o cofre a partir da nuvem; `VAULT_WRONG_PASSWORD`, `CLOUD_EMPTY` |
+| `OpenFromCloud(password)` | string | — | primeira tela, sem cofre local: cria o cofre a partir da nuvem; `VAULT_BAD_PASSWORD`, `CLOUD_EMPTY` |
 | `SyncNow()` | — | `SyncInfo` | manual; devolve o erro (`NETWORK`, `SYNC_AUTH`, `SYNC_QUOTA`) |
 | `Conflicts()` | — | `ConflictView[]` | segredos mascarados |
 | `Resolve(key, keep)` | `key`, `"local" \| "remote"` | `SyncInfo` | `key` precisa existir em `conflicts` |
@@ -27,7 +27,7 @@ Todos devolvem o `Result` padrão (`{ok, value}` ou `{ok:false, error}` com cód
 
 `SYNC_UNAVAILABLE` (build sem client id), `SYNC_CANCELLED`, `SYNC_AUTH`, `SYNC_QUOTA`,
 `SYNC_FORMAT`, `CLOUD_EMPTY`, `CLOUD_CORRUPT`; reaproveita `NETWORK`, `VAULT_LOCKED`,
-`VAULT_WRONG_PASSWORD`.
+`VAULT_BAD_PASSWORD`.
 
 ## Segurança (revisão obrigatória, Princípio II)
 

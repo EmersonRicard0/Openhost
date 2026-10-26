@@ -87,6 +87,7 @@ export const t = {
       vault: 'Cofre e segurança',
       shortcuts: 'Atalhos',
       importExport: 'Importar e exportar',
+      sync: 'Sincronização',
       about: 'Sobre',
     },
     defaultShell: 'Shell da nova aba',
@@ -507,6 +508,132 @@ export const t = {
       devBuild: 'Esta é uma versão de desenvolvimento; atualizações automáticas ficam desligadas.',
     },
     palette: 'Procurar atualizações',
+  },
+  sync: {
+    unavailable:
+      'Esta versão do OpenHost foi compilada sem a sincronização com o Google Drive. As versões oficiais têm.',
+    locked: 'Desbloqueie o cofre para ver e mudar a sincronização.',
+    intro:
+      'Guarde o cofre no seu Google Drive e use os mesmos hosts, chaves e senhas em qualquer computador. Tudo vai criptografado com a senha mestra: nem o Google nem o projeto conseguem ler.',
+    connect: 'Conectar Google Drive',
+    waiting: 'Continue no navegador para autorizar o OpenHost…',
+    cancel: 'Cancelar',
+    account: (email: string) => `Conta: ${email}`,
+    device: 'Nome deste computador',
+    deviceHint: 'Aparece no histórico de versões.',
+    lastSync: (when: string) => `Última sincronização: ${when}`,
+    never: 'Ainda não sincronizado',
+    syncNow: 'Sincronizar agora',
+    history: 'Versões anteriores',
+    conflicts: (n: number) => (n === 1 ? 'Resolver 1 conflito' : `Resolver ${String(n)} conflitos`),
+    disconnect: 'Desconectar',
+    reconnect: 'Conectar de novo',
+    state: {
+      off: 'Desligada',
+      syncing: 'Sincronizando…',
+      synced: 'Sincronizado',
+      pending: (n: number) =>
+        n === 1
+          ? '1 mudança pendente de sincronizar'
+          : `${String(n)} mudanças pendentes de sincronizar`,
+      conflict: 'Há conflitos para resolver',
+      needsPassword: 'A senha mestra foi trocada em outro computador',
+      locked: 'Parada enquanto o cofre está bloqueado',
+    },
+    failed: {
+      auth: 'Conexão com o Google Drive perdida.',
+      quota: 'Sem espaço no Google Drive. As mudanças ficam guardadas aqui.',
+      format: 'O cofre da nuvem é de uma versão mais nova do OpenHost. Atualize o app.',
+      removed:
+        'O cofre da nuvem foi removido em outro computador. O cofre deste computador continua inteiro.',
+      corrupt: 'O cofre da nuvem está danificado. Restaure uma versão anterior.',
+    },
+    status: {
+      synced: 'Sincronizado',
+      syncing: 'Sincronizando',
+      pending: 'Pendente',
+      conflict: 'Conflito',
+      error: 'Erro de sincronização',
+      needsPassword: 'Senha nova',
+      locked: 'Sincronização parada',
+      title: 'Sincronização com o Google Drive',
+    },
+    start: {
+      title: 'Esta conta já tem um cofre',
+      message: (email: string) =>
+        `${email} já guarda um cofre do OpenHost. O que fazer com o cofre deste computador?`,
+      merge: 'Juntar os dois',
+      mergeHint: 'Itens iguais não duplicam. O cofre passa a usar a senha mestra da nuvem.',
+      replace: 'Usar o do Drive',
+      replaceHint: 'O cofre deste computador é guardado como cópia de segurança na pasta de dados.',
+      password: 'Senha mestra do cofre da nuvem',
+      confirm: 'Continuar',
+    },
+    disconnectDialog: {
+      title: 'Desconectar o Google Drive?',
+      message:
+        'Nada mais será enviado nem recebido. O cofre deste computador continua inteiro e a autorização do OpenHost é removida.',
+      keep: 'Manter cópia no Drive',
+      erase: 'Apagar do Drive',
+      eraseHint: 'Os outros computadores ligados avisam que o cofre da nuvem foi removido.',
+      confirm: 'Desconectar',
+    },
+    openFromCloud: {
+      choose: 'Usar meu cofre do Google Drive',
+      title: 'Abrir o cofre do Google Drive',
+      password: 'Senha mestra do cofre',
+      open: 'Abrir',
+      empty: 'Esta conta não tem cofre do OpenHost. Crie um cofre novo: ele já nasce sincronizado.',
+      createNew: 'Criar cofre novo',
+    },
+    newPassword: {
+      title: 'Senha mestra trocada',
+      message:
+        'A senha mestra foi trocada em outro computador. Digite a nova para continuar sincronizando.',
+      password: 'Nova senha mestra',
+      confirm: 'Continuar',
+    },
+    conflictDialog: {
+      title: 'Conflitos de sincronização',
+      intro:
+        'Estes itens mudaram de jeitos diferentes em dois computadores. Escolha qual versão fica; até lá, nada se perde.',
+      here: 'Neste computador',
+      other: 'No outro computador',
+      deletedHere: 'Excluído neste computador',
+      deletedOther: 'Excluído no outro computador',
+      keep: 'Manter esta',
+      notice: (n: number) =>
+        n === 1
+          ? '1 item mudou em dois computadores.'
+          : `${String(n)} itens mudaram em dois computadores.`,
+      review: 'Revisar',
+      kinds: {
+        group: 'Grupo',
+        host: 'Host',
+        credential: 'Credencial',
+        knownHost: 'Host conhecido',
+        forward: 'Encaminhamento',
+        settings: 'Configurações do cofre',
+        profile: 'Perfil de terminal',
+        scheme: 'Esquema de cores',
+        prefs: 'Preferências',
+      },
+    },
+    historyDialog: {
+      title: 'Versões anteriores',
+      intro:
+        'Restaurar volta o cofre inteiro para a versão escolhida em todos os computadores. Dá para desfazer restaurando outra.',
+      empty: 'Ainda não há versões anteriores.',
+      item: (when: string, device: string, items: number) =>
+        `${when} · ${device} · ${String(items)} itens`,
+      restore: 'Restaurar',
+      confirmTitle: 'Restaurar esta versão?',
+      confirmMessage: (when: string) =>
+        `O cofre volta ao conteúdo de ${when} em todos os computadores ligados. A versão atual continua no histórico.`,
+      done: 'Versão restaurada.',
+    },
+    synced: 'Sincronizado agora.',
+    palette: 'Sincronizar agora',
   },
   status: {
     label: 'Barra de status',

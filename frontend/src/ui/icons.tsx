@@ -2,6 +2,11 @@
 import {
   ArrowLeft,
   CircleAlert,
+  Cloud,
+  CloudAlert,
+  CloudCheck,
+  CloudOff,
+  CloudUpload,
   CircleCheck,
   CircleMinus,
   LoaderCircle,
@@ -70,6 +75,13 @@ export const ImportExportIcon = icon(ArrowDownUp);
 export const SettingsIcon = icon(Settings);
 export const WarningIcon = icon(TriangleAlert);
 export const RefreshIcon = icon(RefreshCw);
+
+// Sincronização pelo Google Drive (specs/008).
+export const CloudIcon = icon(Cloud);
+export const CloudCheckIcon = icon(CloudCheck);
+export const CloudUploadIcon = icon(CloudUpload);
+export const CloudAlertIcon = icon(CloudAlert);
+export const CloudOffIcon = icon(CloudOff);
 export const EyeIcon = icon(Eye);
 export const EyeOffIcon = icon(EyeOff);
 export const ChevronIcon = icon(ChevronRight);

@@ -44,9 +44,9 @@ real com o Drive falso e duas pastas de dados.
 - [ ] T011 [US1] **Go** `internal/cloudsync/oauth.go` + teste: loopback `127.0.0.1:0`, PKCE S256, `state`, uma resposta só, prazo 5 min, cancelamento, e-mail do `id_token`, renovação, revogação; abrir navegador injetado (teste não abre).
 - [ ] T012 [US1] **Go** `internal/cloudsync/syncer.go` + teste com fake: conectar com nuvem vazia (`upload`: chaveiro + 1º snapshot), agrupamento 3 s após `OnChange`, busca a cada 60 s e ao desbloquear, lamport, estados `syncing/synced/pending/error`, retentativa 5 s/15 s/60 s/5 min, parado com cofre bloqueado.
 - [ ] T013 [US1] **Go** `internal/bridge/sync.go`: `SyncService` com `Info`, `Connect`, `CancelConnect`, `Start("upload","")`, `SyncNow`, `SetDeviceName` e evento `sync:state`; mapa no `internal/bridge/contract_test.go`; `TestService.SetCloudEndpoint(url)` só com tag `e2e`; testes.
-- [ ] T014 [P] [US1] Frontend: tipos `SyncInfo`, `ConflictView`, `CloudVersion` em `frontend/src/shared/model/types.ts`; `window.shellvault.sync` em `frontend/src/shared/ipc/api.ts` (+ `API_SHAPE`, `EVENT_NAMES`) e `frontend/src/bridge/index.ts`; store `frontend/src/stores/sync.ts` (+ teste) assinando `sync:state`.
-- [ ] T015 [US1] `frontend/src/features/sync/SyncSettings.tsx` em Configurações → Sincronização: indisponível (build sem client id), "Conectar Google Drive" (espera do navegador com cancelar), conta (e-mail), estado, última sincronização, "Sincronizar agora", nome do computador; i18n `t.sync` em `frontend/src/i18n/pt-BR.ts`.
-- [ ] T016 [US1] Indicador na barra de status (`frontend/src/app/StatusBar.tsx`): sincronizado/sincronizando/pendente/erro/conflito, com rótulo acessível, que abre a seção Sincronização (FR-819).
+- [X] T014 [P] [US1] Frontend: tipos `SyncInfo`, `ConflictView`, `CloudVersion` em `frontend/src/shared/model/types.ts`; `window.shellvault.sync` em `frontend/src/shared/ipc/api.ts` (+ `API_SHAPE`, `EVENT_NAMES`) e `frontend/src/bridge/index.ts`; store `frontend/src/stores/sync.ts` (+ teste) assinando `sync:state`.
+- [X] T015 [US1] `frontend/src/features/sync/SyncSettings.tsx` em Configurações → Sincronização: indisponível (build sem client id), "Conectar Google Drive" (espera do navegador com cancelar), conta (e-mail), estado, última sincronização, "Sincronizar agora", nome do computador; i18n `t.sync` em `frontend/src/i18n/pt-BR.ts`.
+- [X] T016 [US1] Indicador na barra de status (`frontend/src/app/StatusBar.tsx`): sincronizado/sincronizando/pendente/erro/conflito, com rótulo acessível, que abre a seção Sincronização (FR-819).
 - [ ] T017 [US1] E2e `frontend/tests/e2e/sync.spec.ts`: cenários 1–3 do quickstart com o Drive falso.
 
 ---
@@ -55,7 +55,7 @@ real com o Drive falso e duas pastas de dados.
 
 **Independent Test**: quickstart §2 cenários 4–5.
 
-- [ ] T018 [US2] **Go** `internal/cloudsync/onboarding.go` + testes: `OpenFromCloud(password)` (senha errada ⇒ `VAULT_WRONG_PASSWORD` sem gravar; sem nuvem ⇒ `CLOUD_EMPTY`), `Start("replace")` (backup `vault-backup-<data>.db`), `Start("merge")` (recifra com DEK da nuvem via `Rekey`, deduplicação por conteúdo-chave, R6); métodos no `SyncService`.
+- [ ] T018 [US2] **Go** `internal/cloudsync/onboarding.go` + testes: `OpenFromCloud(password)` (senha errada ⇒ `VAULT_BAD_PASSWORD` sem gravar; sem nuvem ⇒ `CLOUD_EMPTY`), `Start("replace")` (backup `vault-backup-<data>.db`), `Start("merge")` (recifra com DEK da nuvem via `Rekey`, deduplicação por conteúdo-chave, R6); métodos no `SyncService`.
 - [ ] T019 [US2] Frontend: "Usar meu cofre do Google Drive" em `frontend/src/features/vault/CreateVaultScreen.tsx` (conectar → senha da nuvem → abre; `CLOUD_EMPTY` oferece criar cofre novo já ligado); `frontend/src/features/sync/StartChoiceDialog.tsx` ao conectar com cofre local e nuvem com cofre: "Juntar os dois", "Usar o do Drive (o local vira backup)", "Cancelar", com senha da nuvem.
 - [ ] T020 [US2] E2e: cenários 4 e 5 com duas pastas de dados.
 

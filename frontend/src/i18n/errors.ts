@@ -39,6 +39,13 @@ export const ERROR_CAUSES: Record<ErrorCode, string> = {
   CANCELLED: 'A operação foi cancelada.',
   NETWORK: 'Sem conexão com a internet ou o serviço não respondeu.',
   RATE_LIMITED: 'Muitas consultas seguidas; tente de novo em alguns minutos.',
+  SYNC_UNAVAILABLE: 'Esta versão do OpenHost não tem a sincronização com o Google Drive.',
+  SYNC_CANCELLED: 'A conexão com o Google foi cancelada.',
+  SYNC_AUTH: 'A conexão com o Google Drive foi perdida. Conecte de novo.',
+  SYNC_QUOTA: 'Sem espaço no Google Drive. Suas mudanças ficam guardadas neste computador.',
+  SYNC_FORMAT: 'O cofre da nuvem foi gravado por uma versão mais nova do OpenHost. Atualize o app.',
+  CLOUD_EMPTY: 'Não há cofre do OpenHost nesta conta Google.',
+  CLOUD_CORRUPT: 'O cofre da nuvem está danificado. Restaure uma versão anterior.',
   INTERNAL: 'Ocorreu um erro inesperado.',
 };
 

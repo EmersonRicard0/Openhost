@@ -37,6 +37,13 @@ export const ERROR_CODES = [
   'CANCELLED',
   'NETWORK',
   'RATE_LIMITED',
+  'SYNC_UNAVAILABLE',
+  'SYNC_CANCELLED',
+  'SYNC_AUTH',
+  'SYNC_QUOTA',
+  'SYNC_FORMAT',
+  'CLOUD_EMPTY',
+  'CLOUD_CORRUPT',
   'INTERNAL',
 ] as const;
 

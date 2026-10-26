@@ -93,7 +93,7 @@ Arquivos em `appDataFolder` (detalhes em [contracts/cloud-format.md](./contracts
 ## R6. Primeiro uso, juntar e trocar de senha
 
 - **Computador novo (FR-813)**: tela inicial → conectar → baixa `keyring.json`; a senha digitada
-  deriva a KEK e abre o chaveiro; senha errada ⇒ `VAULT_WRONG_PASSWORD` e nada gravado. Certo ⇒
+  deriva a KEK e abre o chaveiro; senha errada ⇒ `VAULT_BAD_PASSWORD` e nada gravado. Certo ⇒
   cria o cofre local com a mesma DEK da época atual e aplica o snapshot mais novo.
 - **Sem cofre na conta**: devolve `CLOUD_EMPTY`; a interface oferece criar cofre novo, que já
   nasce ligado (envia chaveiro e primeiro snapshot).

@@ -48,6 +48,11 @@ import type {
   UpdateInfo,
   UpdatePrefs,
   UpdateResult,
+  CloudVersion,
+  ConflictView,
+  SyncConnectResult,
+  SyncInfo,
+  SyncStartMode,
   UpdateStateEvent,
   VaultSettings,
   VaultStatus,
@@ -217,6 +222,26 @@ export interface ShellVaultApi {
     openDownloadFolder: () => R<void>;
     onState: On<UpdateStateEvent>;
   };
+  /** Sincronização pelo Google Drive (specs/008, contracts/bridge-sync.md). */
+  sync: {
+    info: () => R<SyncInfo>;
+    /** Abre o navegador e espera o login (até 5 min); cancelado ⇒ `SYNC_CANCELLED`. */
+    connect: () => R<SyncConnectResult>;
+    cancelConnect: () => R<void>;
+    /** Depois de `connect` com cofre aberto; `replace`/`merge` pedem a senha da nuvem. */
+    start: (mode: SyncStartMode, cloudPassword: string) => R<SyncInfo>;
+    /** Primeira tela, sem cofre: cria o cofre local a partir da nuvem. */
+    openFromCloud: (password: string) => R<void>;
+    syncNow: () => R<SyncInfo>;
+    conflicts: () => R<ConflictView[]>;
+    resolve: (key: string, keep: 'local' | 'remote') => R<SyncInfo>;
+    versions: () => R<CloudVersion[]>;
+    restoreVersion: (name: string) => R<SyncInfo>;
+    providePassword: (password: string) => R<SyncInfo>;
+    setDeviceName: (name: string) => R<void>;
+    disconnect: (deleteCloud: boolean) => R<void>;
+    onState: On<SyncInfo>;
+  };
 }
 
 export type ApiModule = keyof ShellVaultApi;
@@ -356,6 +381,24 @@ export const API_SHAPE = {
       'applyOnQuit',
       'lastResult',
       'openDownloadFolder',
+    ],
+    events: ['onState'],
+  },
+  sync: {
+    invoke: [
+      'info',
+      'connect',
+      'cancelConnect',
+      'start',
+      'openFromCloud',
+      'syncNow',
+      'conflicts',
+      'resolve',
+      'versions',
+      'restoreVersion',
+      'providePassword',
+      'setDeviceName',
+      'disconnect',
     ],
     events: ['onState'],
   },

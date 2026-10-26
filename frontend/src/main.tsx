@@ -11,6 +11,7 @@ import { subscribeProfiles } from './stores/profiles';
 import { subscribeSessions } from './stores/sessions';
 import { subscribeTransfers } from './stores/transfers';
 import { loadUi } from './stores/ui';
+import { loadSync } from './stores/sync';
 import { loadUpdates } from './stores/updates';
 import './styles/fonts.css';
 import './theme/tokens.css';
@@ -36,6 +37,7 @@ async function start(): Promise<void> {
   );
   // Atualizações não atrasam a abertura (FR-701); o Go decide quando consultar a rede.
   void loadUpdates();
+  void loadSync();
   void runSmoke();
 }
 

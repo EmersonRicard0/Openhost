@@ -22,6 +22,7 @@ import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import {
   BackIcon,
+  CloudIcon,
   GeneralIcon,
   ImportExportIcon,
   InfoIcon,
@@ -40,7 +41,9 @@ import { focusTerminal } from '../terminal/terminalRegistry';
 import { ChangePasswordDialog } from '../vault/ChangePasswordDialog';
 import { EraseVaultDialog } from '../vault/EraseVaultDialog';
 import { ImportExportPage } from '../importexport/ImportExportPage';
+import { SyncSection } from '../sync/SyncSettings';
 import { ShortcutsEditor } from './ShortcutsEditor';
+import { Group } from './Group';
 import { GlobalTerminalSettings } from './TerminalSettings';
 import s from './settings.module.css';
 
@@ -54,6 +57,7 @@ const SECTIONS: { id: Section; icon: ReactNode }[] = [
   { id: 'vault', icon: <ShieldIcon /> },
   { id: 'shortcuts', icon: <KeyboardIcon /> },
   { id: 'importExport', icon: <ImportExportIcon /> },
+  { id: 'sync', icon: <CloudIcon /> },
   { id: 'about', icon: <InfoIcon /> },
 ];
 
@@ -115,15 +119,6 @@ async function saveUi(patch: Partial<Omit<Settings, 'window'>>): Promise<void> {
     if (before) useUi.getState().setSettings(before);
     toastError(res.error);
   }
-}
-
-function Group({ title, children }: { title?: string; children: ReactNode }) {
-  return (
-    <div className={s.group}>
-      {title && <h3 className={s.groupTitle}>{title}</h3>}
-      {children}
-    </div>
-  );
 }
 
 function GeneralSection({ settings }: { settings: Settings }) {
@@ -656,6 +651,7 @@ export function SettingsPage() {
           {section === 'vault' && <VaultSection />}
           {section === 'shortcuts' && <ShortcutsSection />}
           {section === 'importExport' && <ImportExportSection />}
+          {section === 'sync' && <SyncSection />}
           {section === 'about' && <AboutSection />}
         </div>
       </div>

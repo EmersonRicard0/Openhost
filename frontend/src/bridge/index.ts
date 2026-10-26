@@ -84,6 +84,7 @@ export const EVENT_NAMES = [
   'app:appearance',
   'app:close-requested',
   'updates:state',
+  'sync:state',
 ] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
@@ -124,6 +125,7 @@ function createApi(): ShellVaultApi {
   const I = 'ImportService';
   const E = 'ExportService';
   const U = 'UpdateService';
+  const Y = 'SyncService';
   return {
     vault: {
       getStatus: () => call(V, 'GetStatus'),
@@ -286,6 +288,22 @@ function createApi(): ShellVaultApi {
       lastResult: () => call(U, 'LastResult'),
       openDownloadFolder: () => call(U, 'OpenDownloadFolder'),
       onState: ev('updates:state'),
+    },
+    sync: {
+      info: () => call(Y, 'Info'),
+      connect: () => call(Y, 'Connect'),
+      cancelConnect: () => call(Y, 'CancelConnect'),
+      start: (mode, cloudPassword) => call(Y, 'Start', mode, cloudPassword),
+      openFromCloud: (password) => call(Y, 'OpenFromCloud', password),
+      syncNow: () => call(Y, 'SyncNow'),
+      conflicts: () => call(Y, 'Conflicts'),
+      resolve: (key, keep) => call(Y, 'Resolve', key, keep),
+      versions: () => call(Y, 'Versions'),
+      restoreVersion: (name) => call(Y, 'RestoreVersion', name),
+      providePassword: (password) => call(Y, 'ProvidePassword', password),
+      setDeviceName: (name) => call(Y, 'SetDeviceName', name),
+      disconnect: (deleteCloud) => call(Y, 'Disconnect', deleteCloud),
+      onState: ev('sync:state'),
     },
   };
 }

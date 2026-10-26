@@ -531,12 +531,7 @@ export type UpdatePhase =
   | 'failed';
 
 export type UpdateFailure =
-  | 'network'
-  | 'diskSpace'
-  | 'signature'
-  | 'checksum'
-  | 'permission'
-  | 'install';
+  'network' | 'diskSpace' | 'signature' | 'checksum' | 'permission' | 'install';
 
 export interface UpdateProgress {
   received: number;
@@ -575,4 +570,62 @@ export interface UpdateResult {
   version: string;
   status: 'ok' | 'failed';
   reason?: UpdateFailure;
+}
+
+// Sincronização pelo Google Drive (specs/008, data-model.md).
+export type SyncPhase =
+  'off' | 'syncing' | 'synced' | 'pending' | 'conflict' | 'needsPassword' | 'error' | 'locked';
+
+export type SyncFailure = 'auth' | 'quota' | 'format' | 'removed' | 'corrupt';
+
+export interface SyncInfo {
+  state: SyncPhase;
+  /** `false` em build sem cliente OAuth: a seção explica e não oferece conectar. */
+  available: boolean;
+  email: string | null;
+  deviceName: string | null;
+  lastSync: string | null;
+  /** Mudanças locais ainda não enviadas. */
+  pending: number;
+  conflicts: number;
+  reason: SyncFailure | null;
+}
+
+export interface SyncConnectResult {
+  email: string;
+  cloudHasVault: boolean;
+}
+
+export type SyncStartMode = 'upload' | 'replace' | 'merge';
+
+export type SyncItemKind =
+  | 'group'
+  | 'host'
+  | 'credential'
+  | 'knownHost'
+  | 'forward'
+  | 'settings'
+  | 'profile'
+  | 'scheme'
+  | 'prefs';
+
+export interface ConflictSide {
+  deleted: boolean;
+  /** Campos legíveis; senhas, passphrases e chaves privadas chegam como "••••". */
+  summary: { field: string; value: string }[];
+}
+
+export interface ConflictView {
+  key: string;
+  kind: SyncItemKind;
+  label: string;
+  local: ConflictSide;
+  remote: ConflictSide;
+}
+
+export interface CloudVersion {
+  name: string;
+  createdAt: string;
+  deviceName: string;
+  items: number;
 }
