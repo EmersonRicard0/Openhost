@@ -119,7 +119,7 @@ Fazer o mesmo no `fedora:39` com o `.rpm`.
   - Ctrl+C (`\x03`) interrompe um `sleep 100`;
   - `exit 3` → código de saída 3;
   - pula se não houver `bash`.
-- [ ] T017 [P] [US1] Go: teste do agente no Unix em `internal/sshx/agent_other_test.go`:
+- [X] T017 [P] [US1] Go: teste do agente no Unix em `internal/sshx/agent_other_test.go`:
   - agente em memória (`golang.org/x/crypto/ssh/agent`) num socket Unix temporário em `SSH_AUTH_SOCK`, com autenticação contra o `sshd` de teste;
   - `SSH_AUTH_SOCK` vazio → `AGENT_UNAVAILABLE`;
   - socket inexistente → `AGENT_UNAVAILABLE` sem o caminho no `detail`.

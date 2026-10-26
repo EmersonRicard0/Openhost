@@ -21,7 +21,7 @@ export const ERROR_CAUSES: Record<ErrorCode, string> = {
   AUTH_FAILED: 'O servidor recusou a autenticação.',
   HOST_KEY_REJECTED: 'A chave do servidor foi recusada.',
   NO_COMMON_ALGORITHM: 'O servidor só aceita algoritmos que não estão ativos para este host.',
-  AGENT_UNAVAILABLE: 'O agente SSH do Windows não está disponível.',
+  AGENT_UNAVAILABLE: 'O agente SSH não está disponível. Confira se o ssh-agent está rodando.',
   SESSION_CLOSED: 'A conexão foi encerrada.',
   SFTP_ERROR: 'A operação de arquivos falhou no servidor.',
   PERMISSION_DENIED: 'Sem permissão para esta operação.',

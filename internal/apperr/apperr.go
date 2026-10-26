@@ -87,7 +87,7 @@ var Messages = map[Code]string{
 	AuthFailed:              "A autenticação falhou.",
 	HostKeyRejected:         "A chave do servidor não foi aceita. Conexão cancelada.",
 	NoCommonAlgorithm:       "O servidor só aceita algoritmos antigos. Ative \"Algoritmos legados (inseguros)\" no host para conectar.",
-	AgentUnavailable:        "O agente SSH do Windows não está em execução.",
+	AgentUnavailable:        "O agente SSH não está em execução.",
 	SessionClosed:           "A sessão foi encerrada.",
 	SftpError:               "A operação de arquivo falhou no servidor.",
 	PermissionDenied:        "Permissão negada.",
