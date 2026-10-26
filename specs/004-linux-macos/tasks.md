@@ -196,14 +196,14 @@ contagens e chaves iguais.
 **Independent Test**: tag `v0.4.0-rc.1` (pré-release) → a página mostra os cinco artefatos
 obrigatórios, `SHA256SUMS.txt` e as notas.
 
-- [ ] T031 [US4] `.github/workflows/release.yml`. Jobs:
+- [X] T031 [US4] `.github/workflows/release.yml`. Jobs:
   - `windows` (atual, renomeando para `OpenHost-<v>-windows-amd64-installer.exe`);
   - `macos` (`macos-14`, universal + `package-macos.sh`);
   - `linux-amd64` (`ubuntu-22.04` + `package-linux.sh`);
   - `linux-arm64` (`ubuntu-24.04-arm`, `continue-on-error: true`);
   - `publish`: baixa os artefatos, gera `SHA256SUMS.txt`, falha se faltar algum dos 5 obrigatórios de `contracts/release.md`, cria a release com `docs/release-notes/<v>.md` e marca como pré-release quando a tag tem `-`.
-- [ ] T032 [P] [US4] Notas `docs/release-notes/0.4.0.md` com as seções de `contracts/release.md`: novidades da 003 e da 004, qual arquivo baixar, requisitos, primeira abertura no macOS e instalação no Linux.
-- [ ] T033 [P] [US4] README: seção "Instalar", com tabela por sistema, versões mínimas, primeira abertura no macOS e build local no Linux (`libwebkit2gtk-4.1-dev`, `-tags webkit2_41`) e no macOS.
+- [X] T032 [P] [US4] Notas `docs/release-notes/0.4.0.md` com as seções de `contracts/release.md`: novidades da 003 e da 004, qual arquivo baixar, requisitos, primeira abertura no macOS e instalação no Linux.
+- [X] T033 [P] [US4] README: seção "Instalar", com tabela por sistema, versões mínimas, primeira abertura no macOS e build local no Linux (`libwebkit2gtk-4.1-dev`, `-tags webkit2_41`) e no macOS.
 - [ ] T034 [US4] Exigir os três jobs do CI na proteção da `main` (`gh api`, com confirmação do usuário antes), publicar a tag `v0.4.0-rc.1` (com confirmação do usuário) e conferir a página da pré-release.
 
 ---
@@ -211,7 +211,7 @@ obrigatórios, `SHA256SUMS.txt` e as notas.
 ## Phase 7: Polish & Cross-Cutting
 
 - [ ] T035 [P] Atualizar `specs/002-wails-migration/contracts/bridge.md`: `Smoke.Ready` só com a tag `smoke` e a nota de plataformas.
-- [ ] T036 [P] Checagem de tamanho no CI de release: falha se algum instalador do Linux ou do macOS passar de 40 MB (SC-406).
+- [X] T036 [P] Checagem de tamanho no CI de release: falha se algum instalador do Linux ou do macOS passar de 40 MB (SC-406).
 - [ ] T037 Rodar `specs/004-linux-macos/quickstart.md` (parte automatizada e Docker) e registrar em `specs/004-linux-macos/validation.md`; cenários manuais de macOS e de Linux com interface ficam marcados para o usuário.
 - [ ] T038 Lançamento 0.4.0 junto com a T051 da 003: `wails.json` 0.4.0 e tag `v0.4.0` depois da validação.
 

@@ -25,7 +25,8 @@ for arch in x86_64 arm64; do
 done
 
 PLIST_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Contents/Info.plist")"
-[ "$PLIST_VERSION" = "$VERSION" ] || { echo "Info.plist diz $PLIST_VERSION, esperado $VERSION" >&2; exit 1; }
+# Pré-release (0.4.0-rc.1) usa a versão base do wails.json.
+[ "$PLIST_VERSION" = "${VERSION%%-*}" ] || { echo "Info.plist diz $PLIST_VERSION, esperado ${VERSION%%-*}" >&2; exit 1; }
 
 STAGE="$(mktemp -d)/OpenHost"
 mkdir -p "$STAGE" "$OUT"

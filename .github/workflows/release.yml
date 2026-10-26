@@ -6,15 +6,49 @@ on:
       - 'v*'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+# Instaladores dos três sistemas (specs/004-linux-macos, contracts/release.md). Cada job sobe o
+# seu artefato; o `publish` confere os cinco obrigatórios, gera SHA256SUMS.txt e cria a release
+# com as notas de docs/release-notes/<versão>.md. Tag com "-" (v0.4.0-rc.1) vira pré-release.
+env:
+  WAILS_VERSION: v2.17.0
+  NFPM_VERSION: v2.43.0
+
 jobs:
-  installer:
-    name: Instalador Windows
+  version:
+    name: Versão
+    runs-on: ubuntu-22.04
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      base: ${{ steps.v.outputs.base }}
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # A tag tem que bater com o wails.json (sem o sufixo de pré-release).
+      - name: Conferir a versão
+        id: v
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          base="${version%%-*}"
+          declared="$(jq -r .info.productVersion wails.json)"
+          if [ "$declared" != "$base" ]; then
+            echo "::error::wails.json tem $declared, a tag é $GITHUB_REF_NAME"
+            exit 1
+          fi
+          test -f "docs/release-notes/$base.md" || { echo "::error::faltam as notas docs/release-notes/$base.md"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+
+  windows:
+    name: Windows
+    needs: version
     runs-on: windows-latest
     timeout-minutes: 45
 
@@ -41,7 +75,7 @@ jobs:
 
       - name: Instalar Wails CLI
         run: |
-          go install github.com/wailsapp/wails/v2/cmd/wails@v2.17.0
+          go install github.com/wailsapp/wails/v2/cmd/wails@${{ env.WAILS_VERSION }}
           "$(go env GOPATH)\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Instalar NSIS
@@ -55,10 +89,184 @@ jobs:
       - name: Verificar o binário de release
         run: node scripts/check-release.mjs --no-build
 
-      - name: Publicar o release
+      - name: Renomear
+        run: |
+          New-Item -ItemType Directory -Force dist | Out-Null
+          Move-Item build/bin/OpenHost-amd64-installer.exe "dist/OpenHost-${{ needs.version.outputs.version }}-windows-amd64-installer.exe"
+
+      - name: Subir o artefato
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows
+          path: dist/*
+          if-no-files-found: error
+
+  macos:
+    name: macOS universal
+    needs: version
+    runs-on: macos-14
+    timeout-minutes: 45
+
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Configurar Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências do frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Instalar Wails CLI
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@${{ env.WAILS_VERSION }}
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Compilar (arm64 + amd64)
+        run: wails build -clean -platform darwin/universal -trimpath -ldflags "-s -w"
+
+      - name: Verificar o binário de release
+        run: node scripts/check-release.mjs --no-build --bin build/bin/OpenHost.app/Contents/MacOS/shellvault
+
+      - name: Gerar o .dmg
+        run: scripts/package-macos.sh "${{ needs.version.outputs.version }}"
+
+      - name: Subir o artefato
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos
+          path: dist/*.dmg
+          if-no-files-found: error
+
+  linux:
+    name: Linux ${{ matrix.arch }}
+    needs: version
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    # arm64 é opcional (contracts/release.md): se falhar, a release sai sem ele.
+    continue-on-error: ${{ matrix.arch == 'arm64' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-22.04
+            appimagetool: x86_64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            appimagetool: aarch64
+
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Instalar GTK e WebKitGTK
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Configurar Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Instalar dependências do frontend
+        working-directory: frontend
+        run: npm ci
+
+      - name: Instalar Wails, nfpm e appimagetool
+        run: |
+          go install github.com/wailsapp/wails/v2/cmd/wails@${{ env.WAILS_VERSION }}
+          go install github.com/goreleaser/nfpm/v2/cmd/nfpm@${{ env.NFPM_VERSION }}
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          sudo curl -fsSL -o /usr/local/bin/appimagetool \
+            "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-${{ matrix.appimagetool }}.AppImage"
+          sudo chmod +x /usr/local/bin/appimagetool
+
+      - name: Compilar
+        run: wails build -clean -tags webkit2_41 -trimpath -ldflags "-s -w"
+
+      - name: Verificar o binário de release
+        run: node scripts/check-release.mjs --no-build --bin build/bin/shellvault
+
+      - name: Gerar .deb, .rpm e AppImage
+        run: scripts/package-linux.sh "${{ needs.version.outputs.version }}" "${{ matrix.arch }}"
+
+      - name: Subir os artefatos
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: linux-${{ matrix.arch }}
+          path: |
+            dist/*.deb
+            dist/*.rpm
+            dist/*.AppImage
+          if-no-files-found: error
+
+  publish:
+    name: Publicar
+    needs: [version, windows, macos, linux]
+    # Roda mesmo com o arm64 falhando; a conferência abaixo exige só os obrigatórios.
+    if: ${{ !cancelled() && needs.windows.result == 'success' && needs.macos.result == 'success' }}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+
+    steps:
+      - name: Obter o código
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Baixar os artefatos
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: dist
+          merge-multiple: true
+
+      # Os cinco obrigatórios de contracts/release.md e o limite de 40 MB (SC-406).
+      - name: Conferir e gerar SHA256SUMS.txt
+        working-directory: dist
+        env:
+          V: ${{ needs.version.outputs.version }}
+        run: |
+          missing=0
+          for f in "OpenHost-$V-windows-amd64-installer.exe" "OpenHost-$V-macos-universal.dmg" \
+                   "OpenHost-$V-x86_64.AppImage" "openhost_${V}_amd64.deb" "openhost-$V-1.x86_64.rpm"; do
+            if [ ! -f "$f" ]; then echo "::error::falta $f"; missing=1; fi
+          done
+          [ "$missing" = 0 ]
+          for f in *.dmg *.deb *.rpm *.AppImage; do
+            size=$(stat -c %s "$f")
+            if [ "$size" -gt $((40 * 1024 * 1024)) ]; then
+              echo "::error::$f tem $((size / 1024 / 1024)) MB, acima de 40 MB"
+              exit 1
+            fi
+          done
+          sha256sum -- * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Publicar a release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
         with:
-          files: build/bin/OpenHost-amd64-installer.exe
+          files: dist/*
           fail_on_unmatched_files: true
-          generate_release_notes: true
-          prerelease: ${{ contains(github.ref_name, '-') || startsWith(github.ref_name, 'v0.') }}
+          body_path: docs/release-notes/${{ needs.version.outputs.base }}.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
