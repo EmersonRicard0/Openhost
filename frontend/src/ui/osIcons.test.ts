@@ -28,4 +28,14 @@ describe('logo do sistema no host (FR-178)', () => {
       expect(dark ?? light, id).not.toBeUndefined();
     }
   });
+
+  it('ZTE, Datacom e Hillstone têm rótulo, desenho próprio e cor quando conhecida (FR-502)', () => {
+    expect(osLabel('zte')).toBe('ZTE');
+    expect(osLabel('datacom')).toBe('Datacom');
+    expect(osLabel('hillstone')).toBe('Hillstone');
+    expect(osLogoColors('zte')).toEqual({ dark: '#008ED3', light: '#008ED3' });
+    // Azul-marinho some no quadrado escuro: lá usa a cor do texto.
+    expect(osLogoColors('hillstone')).toEqual({ dark: null, light: '#003285' });
+    expect(osLogoColors('datacom')).toEqual({ dark: null, light: null });
+  });
 });

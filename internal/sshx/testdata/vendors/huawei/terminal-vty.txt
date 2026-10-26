@@ -1,0 +1,7 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+
+Info: The max number of VTY users is 10, and the number
+      of current VTY users on line is 1.
+      The current login time is 2026-10-20 10:12:01+00:00.
+<NE40-LAB>

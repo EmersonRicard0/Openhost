@@ -3,37 +3,41 @@ package domain
 import "shellvault/internal/model"
 
 const (
-	OSUbuntu   = "ubuntu"
-	OSDebian   = "debian"
-	OSCentOS   = "centos"
-	OSRHEL     = "rhel"
-	OSFedora   = "fedora"
-	OSRocky    = "rocky"
-	OSAlma     = "almalinux"
-	OSAlpine   = "alpine"
-	OSArch     = "arch"
-	OSOpenSUSE = "opensuse"
-	OSOracle   = "oracle"
-	OSAmazon   = "amazon"
-	OSLinux    = "linux"
-	OSFreeBSD  = "freebsd"
-	OSOpenBSD  = "openbsd"
-	OSWindows  = "windows"
-	OSMacOS    = "macos"
-	OSMikroTik = "mikrotik"
-	OSCisco    = "cisco"
-	OSHuawei   = "huawei"
-	OSJuniper  = "juniper"
-	OSHPE      = "hpe"
-	OSFortinet = "fortinet"
-	OSOpenWrt  = "openwrt"
+	OSUbuntu    = "ubuntu"
+	OSDebian    = "debian"
+	OSCentOS    = "centos"
+	OSRHEL      = "rhel"
+	OSFedora    = "fedora"
+	OSRocky     = "rocky"
+	OSAlma      = "almalinux"
+	OSAlpine    = "alpine"
+	OSArch      = "arch"
+	OSOpenSUSE  = "opensuse"
+	OSOracle    = "oracle"
+	OSAmazon    = "amazon"
+	OSLinux     = "linux"
+	OSFreeBSD   = "freebsd"
+	OSOpenBSD   = "openbsd"
+	OSWindows   = "windows"
+	OSMacOS     = "macos"
+	OSMikroTik  = "mikrotik"
+	OSCisco     = "cisco"
+	OSHuawei    = "huawei"
+	OSJuniper   = "juniper"
+	OSHPE       = "hpe"
+	OSFortinet  = "fortinet"
+	OSOpenWrt   = "openwrt"
+	OSZTE       = "zte"
+	OSDatacom   = "datacom"
+	OSHillstone = "hillstone"
 )
 
 var validOSIDs = map[string]struct{}{
 	OSUbuntu: {}, OSDebian: {}, OSCentOS: {}, OSRHEL: {}, OSFedora: {}, OSRocky: {}, OSAlma: {},
 	OSAlpine: {}, OSArch: {}, OSOpenSUSE: {}, OSOracle: {}, OSAmazon: {}, OSLinux: {},
 	OSFreeBSD: {}, OSOpenBSD: {}, OSWindows: {}, OSMacOS: {}, OSMikroTik: {}, OSCisco: {},
-	OSHuawei: {}, OSJuniper: {}, OSHPE: {}, OSFortinet: {}, OSOpenWrt: {},
+	OSHuawei: {}, OSJuniper: {}, OSHPE: {}, OSFortinet: {}, OSOpenWrt: {}, OSZTE: {},
+	OSDatacom: {}, OSHillstone: {},
 }
 
 func ValidOSID(id string) bool {
@@ -43,6 +47,15 @@ func ValidOSID(id string) bool {
 
 func ValidOSIcon(icon string) bool {
 	return icon == model.OSIconAuto || ValidOSID(icon)
+}
+
+func IsNetworkOS(id string) bool {
+	switch id {
+	case OSMikroTik, OSCisco, OSHuawei, OSJuniper, OSHPE, OSFortinet, OSZTE, OSDatacom, OSHillstone:
+		return true
+	default:
+		return false
+	}
 }
 
 // SetDetectedOS altera somente o campo controlado pela detecção do backend.

@@ -1,0 +1,6 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+# os-release: ID="rocky"
+Servidor de logs da VPN Fortinet / FortiGate.
+Coletor syslog de StoneOS e ZXR10 também.
+[syslog@logs-01 ~]$ 

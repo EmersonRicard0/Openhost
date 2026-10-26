@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
@@ -38,25 +38,32 @@ function pasteText(sessionId: string, term: Terminal, text: string): void {
 
 export interface TerminalViewProps {
   tab: Tab;
-  active: boolean;
+  /** Na tela: mede, ajusta e manda o tamanho ao servidor. */
+  visible: boolean;
+  /** Recebe o teclado; numa aba avulsa coincide com `visible`. */
+  focused: boolean;
+  /** Painel de um grupo (specs/006): posição na área, cabeçalho e foco por clique. */
+  pane?: { style: CSSProperties; header?: ReactNode; onActivate: () => void } | undefined;
   /** Faixa sobre o terminal (desconectado, processo encerrado). */
   banner?: ReactNode;
 }
 
-export function TerminalView({ tab, active, banner }: TerminalViewProps) {
+export function TerminalView({ tab, visible, focused, pane, banner }: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const fitNowRef = useRef<() => void>(() => undefined);
-  const activeRef = useRef(active);
+  const visibleRef = useRef(visible);
+  const focusedRef = useRef(focused);
   const profile = useProfiles((p) => effectiveProfile(tab.hostId, p.global, p.overrides));
   const scheme = useProfiles((p) => schemeOf(p.schemes, profile.colorSchemeId));
   const unlocked = useVault((v) => v.status?.state === 'unlocked');
   const zoom = useWorkspace((w) => w.zoom);
   const searching = useWorkspace((w) => w.searchFor === tab.id);
   useEffect(() => {
-    activeRef.current = active;
-  }, [active]);
+    visibleRef.current = visible;
+    focusedRef.current = focused;
+  }, [visible, focused]);
 
   // Cria o terminal uma vez por aba.
   useEffect(() => {
@@ -99,7 +106,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     const api = window.shellvault.sessions;
     let lastSize: { cols: number; rows: number } | null = null;
     const fitAndResize = () => {
-      if (!activeRef.current || container.clientWidth <= 0 || container.clientHeight <= 0) return;
+      if (!visibleRef.current || container.clientWidth <= 0 || container.clientHeight <= 0) return;
       fit.fit();
       const size = { cols: term.cols, rows: term.rows };
       if (size.cols <= 0 || size.rows <= 0) return;
@@ -114,14 +121,30 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       term,
       search,
       focus: () => {
-        if (activeRef.current) term.focus();
+        if (focusedRef.current) term.focus();
       },
+      fit: fitAndResize,
     });
     const detach = attach(sessionId, (data) => {
       term.write(data);
     });
+    // Uma escrita por vez: o Wails atende cada chamada numa goroutine e teclas rápidas chegariam
+    // fora de ordem. O que for digitado durante a escrita vai junto na próxima.
+    let pending = '';
+    let writing = false;
+    const flush = () => {
+      if (writing || !pending) return;
+      const data = pending;
+      pending = '';
+      writing = true;
+      void api.write(sessionId, data).finally(() => {
+        writing = false;
+        flush();
+      });
+    };
     const onData = term.onData((data) => {
-      void api.write(sessionId, data);
+      pending += data;
+      flush();
     });
     const onBell = term.onBell(() => {
       ringBell(behavior()?.bell ?? 'visual', container.parentElement ?? container);
@@ -208,10 +231,11 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     };
   }, [tab.id, tab.hostId]);
 
-  // WebGL só na aba visível (limite de contextos do Chromium; research R4).
+  // WebGL só nos terminais visíveis (limite de contextos do Chromium; research R4): no máximo os
+  // quatro painéis de um grupo.
   useEffect(() => {
     const term = termRef.current;
-    if (!term || !active) return;
+    if (!term || !visible) return;
     let webgl: WebglAddon | null = null;
     try {
       webgl = new WebglAddon();
@@ -225,12 +249,20 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     }
     requestAnimationFrame(() => {
       fitNowRef.current();
-      term.focus();
+      if (focusedRef.current) term.focus();
     });
     return () => {
       webgl?.dispose();
     };
-  }, [active]);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!focused || !visibleRef.current) return;
+    const frame = requestAnimationFrame(() => termRef.current?.focus());
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [focused]);
 
   // Negrito em cores claras (FR-177) muda ao vivo, como o perfil.
   const boldBright = useUi((u) => u.settings?.boldBright ?? true);
@@ -251,7 +283,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     let alive = true;
     void applyProfile(term, profile, scheme, fontSizeOf(tab.id, profile.fontSize, zoom)).then(
       () => {
-        if (alive && activeRef.current) fitNowRef.current();
+        if (alive && visibleRef.current) fitNowRef.current();
       },
     );
     return () => {
@@ -266,11 +298,20 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
 
   return (
     <div
-      className={`${s.view} ${active ? '' : s.hidden}`}
-      role="tabpanel"
+      className={`${s.view} ${pane ? s.pane : ''} ${visible ? '' : s.hidden}`}
+      style={pane?.style}
+      role={pane ? 'group' : 'tabpanel'}
       aria-label={tab.title}
       data-session-id={tab.id}
+      data-pane={pane ? '' : undefined}
+      data-focused={pane && focused ? '' : undefined}
+      onPointerDownCapture={(e) => {
+        // No cabeçalho, mudar o foco no `pointerdown` cancelaria o arrasto: ele ativa no clique.
+        if (!(e.target instanceof Element && e.target.closest('[data-pane-header]')))
+          pane?.onActivate();
+      }}
     >
+      {pane?.header}
       {banner}
       {searching && <SearchBar sessionId={tab.id} />}
       {/* Espaçamento no quadro, não no contêiner do xterm: o FitAddon mede a altura do pai

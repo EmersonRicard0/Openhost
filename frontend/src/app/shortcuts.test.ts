@@ -35,8 +35,20 @@ describe('matchShortcut (FR-173)', () => {
     [key('NumpadSubtract'), 'zoomOut'],
     [key('Digit0'), 'zoomReset'],
     [key('Numpad0'), 'zoomReset'],
+    [key('ArrowLeft', { altKey: true }), 'focusLeft'],
+    [key('ArrowRight', { altKey: true }), 'focusRight'],
+    [key('ArrowUp', { altKey: true }), 'focusUp'],
+    [key('ArrowDown', { altKey: true }), 'focusDown'],
   ] as const)('%o → %s', (event, action) => {
     expect(matchShortcut(event)).toBe(action);
+  });
+
+  it('foco entre painéis não usa Alt+Seta nem Ctrl+Shift+Seta, que são do shell (R6)', () => {
+    for (const code of ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']) {
+      expect(matchShortcut(key(code, { ctrlKey: false, altKey: true }))).toBeNull();
+      expect(matchShortcut(key(code, shift))).toBeNull();
+      expect(matchShortcut(key(code))).toBeNull();
+    }
   });
 
   it('deixa as teclas do readline e do tmux para o terminal', () => {
@@ -102,6 +114,8 @@ describe('macOS (specs/004, contracts/platform.md)', () => {
     [cmd('Equal'), 'zoomIn'],
     [cmd('Minus'), 'zoomOut'],
     [cmd('Digit0'), 'zoomReset'],
+    [cmd('ArrowLeft', { altKey: true }), 'focusLeft'],
+    [cmd('ArrowDown', { altKey: true }), 'focusDown'],
   ] as const)('%o → %s', (event, action) => {
     expect(matchShortcut(event, mac)).toBe(action);
   });

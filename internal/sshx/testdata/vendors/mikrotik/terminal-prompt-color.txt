@@ -1,0 +1,4 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+
+[[32madmin[0m@[32mCCR-LAB[0m] > 

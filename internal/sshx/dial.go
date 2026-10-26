@@ -54,10 +54,11 @@ type Options struct {
 // Client é a conexão autenticada; Close também para o keepalive.
 type Client struct {
 	*ssh.Client
-	stop         chan struct{}
-	term         string
-	once         sync.Once
-	latencyNanos atomic.Int64
+	stop          chan struct{}
+	term          string
+	preAuthBanner string
+	once          sync.Once
+	latencyNanos  atomic.Int64
 }
 
 func (c *Client) Close() error {
@@ -69,6 +70,8 @@ func (c *Client) Close() error {
 func (c *Client) Latency() time.Duration {
 	return time.Duration(c.latencyNanos.Load())
 }
+
+func (c *Client) PreAuthBanner() string { return c.preAuthBanner }
 
 // deadline limita o tempo de rede da conexão e pausa enquanto o usuário responde.
 type deadline struct {
@@ -112,11 +115,19 @@ func Dial(ctx context.Context, o Options, ix session.Interactor) (*Client, error
 	dl.resume()
 
 	hk := &hostKeyCheck{o: o, ix: ix, dl: dl, endpoint: endpoint}
+	var preAuthBanner string
 	cfg := &ssh.ClientConfig{
 		User:              o.Username,
 		Auth:              methods,
 		HostKeyCallback:   hk.callback,
 		HostKeyAlgorithms: hostKeyAlgorithms(o.LegacyAlgorithms, known),
+		BannerCallback: func(message string) error {
+			if len(message) > maxVendorTextBytes {
+				message = message[:maxVendorTextBytes]
+			}
+			preAuthBanner = message
+			return nil
+		},
 	}
 	cfg.KeyExchanges, cfg.Ciphers, cfg.MACs = transportAlgorithms(o.LegacyAlgorithms)
 
@@ -134,7 +145,7 @@ func Dial(ctx context.Context, o Options, ix session.Interactor) (*Client, error
 		return nil, err
 	}
 	_ = conn.SetDeadline(time.Time{})
-	client := &Client{Client: ssh.NewClient(c, chans, reqs), stop: make(chan struct{}), term: o.Term}
+	client := &Client{Client: ssh.NewClient(c, chans, reqs), stop: make(chan struct{}), term: o.Term, preAuthBanner: preAuthBanner}
 	if ctx.Err() != nil {
 		_ = client.Close()
 		return nil, ctx.Err()

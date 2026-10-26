@@ -1,0 +1,4 @@
+# fonte: banner
+# versao: SSH-2.0-OpenSSH_8.0
+Cisco IOS XE Software
+UNAUTHORIZED ACCESS TO THIS DEVICE IS PROHIBITED

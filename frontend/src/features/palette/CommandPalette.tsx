@@ -7,6 +7,10 @@ import { useShells } from '../../stores/shells';
 import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
 import {
+  ChevronDownIcon,
+  ChevronIcon,
+  ChevronLeftIcon,
+  ChevronUpIcon,
   FolderIcon,
   ImportExportIcon,
   LockIcon,
@@ -17,7 +21,8 @@ import {
 } from '../../ui/icons';
 import { connectHost } from '../hosts/connect';
 import { openSftp } from '../sftp/openSftp';
-import { activeTerminalId, openSearch, toggleTheme } from '../terminal/commands';
+import { activeTerminalId, focusDir, openSearch, toggleTheme } from '../terminal/commands';
+import { groupOf, useSessions } from '../../stores/sessions';
 import { openLocal } from '../terminal/openLocal';
 import { useShortcutLabel } from '../../app/useShortcuts';
 import { ShellIcon } from '../../ui/ShellIcon';
@@ -38,6 +43,10 @@ function useCommands(): Entry[] {
   const powershellKey = useShortcutLabel('newPowerShell') ?? '';
   const shells = useShells((x) => x.shells);
   const searchKey = useShortcutLabel('search') ?? '';
+  const focusLeftKey = useShortcutLabel('focusLeft') ?? '';
+  const focusRightKey = useShortcutLabel('focusRight') ?? '';
+  const focusUpKey = useShortcutLabel('focusUp') ?? '';
+  const focusDownKey = useShortcutLabel('focusDown') ?? '';
 
   return useMemo(() => {
     const p = t.palette;
@@ -58,6 +67,30 @@ function useCommands(): Entry[] {
         icon: <SearchIcon />,
         run: openSearch,
       });
+    // Grupo ativo: mover o foco entre painéis (specs/006, contracts/ui.md).
+    const { groups, activeId } = useSessions.getState();
+    if (activeId && groupOf(groups, activeId)) {
+      const names = t.settings.shortcutActions;
+      actions.push(
+        ...(
+          [
+            ['focusLeft', 'left', focusLeftKey, <ChevronLeftIcon key="l" />],
+            ['focusRight', 'right', focusRightKey, <ChevronIcon key="r" />],
+            ['focusUp', 'top', focusUpKey, <ChevronUpIcon key="u" />],
+            ['focusDown', 'bottom', focusDownKey, <ChevronDownIcon key="d" />],
+          ] as const
+        ).map(([id, side, hint, icon]) => ({
+          id,
+          label: names[id],
+          hint,
+          group: 'action' as const,
+          icon,
+          run: () => {
+            focusDir(side);
+          },
+        })),
+      );
+    }
     actions.push(
       {
         id: 'settings',
@@ -119,7 +152,20 @@ function useCommands(): Entry[] {
       ];
     });
     return [...actions, ...hostEntries];
-  }, [shells, unlocked, hosts, lock, setView, openSettings, powershellKey, searchKey]);
+  }, [
+    shells,
+    unlocked,
+    hosts,
+    lock,
+    setView,
+    openSettings,
+    powershellKey,
+    searchKey,
+    focusLeftKey,
+    focusRightKey,
+    focusUpKey,
+    focusDownKey,
+  ]);
 }
 
 export function CommandPalette() {

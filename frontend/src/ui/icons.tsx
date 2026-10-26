@@ -10,6 +10,7 @@ import {
   Palette,
   ShieldCheck,
   SlidersHorizontal,
+  SquareArrowOutUpRight,
   Network,
   CaseSensitive,
   Check,
@@ -100,3 +101,4 @@ export const ConnectingIcon = icon(LoaderCircle);
 export const DisconnectedIcon = icon(Unplug);
 export const ErrorIcon = icon(CircleAlert);
 export const ExitedIcon = icon(CircleMinus);
+export const DetachIcon = icon(SquareArrowOutUpRight);
