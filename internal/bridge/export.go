@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 	"unicode/utf8"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -17,7 +18,27 @@ import (
 
 type ExportFormat string
 
-const ExportFormatOpenHost ExportFormat = "openhost"
+const (
+	ExportFormatOpenHost ExportFormat = "openhost"
+	ExportFormatOpenSSH  ExportFormat = "openssh"
+	ExportFormatCSV      ExportFormat = "csv"
+)
+
+// saveDialogs dá título, nome sugerido e filtro do diálogo de salvar por formato.
+var saveDialogs = map[ExportFormat]wruntime.SaveDialogOptions{
+	ExportFormatOpenHost: {
+		Title: "Exportar hosts", DefaultFilename: "hosts.openhost",
+		Filters: []wruntime.FileFilter{{DisplayName: "Arquivo OpenHost", Pattern: "*.openhost"}},
+	},
+	ExportFormatOpenSSH: {
+		Title: "Exportar para o OpenSSH", DefaultFilename: "config",
+		Filters: []wruntime.FileFilter{{DisplayName: "Configuração do OpenSSH", Pattern: "*"}},
+	},
+	ExportFormatCSV: {
+		Title: "Exportar planilha", DefaultFilename: "hosts.csv",
+		Filters: []wruntime.FileFilter{{DisplayName: "Planilha CSV", Pattern: "*.csv"}},
+	},
+}
 
 type ExportScopeKind string
 
@@ -57,21 +78,28 @@ type ExportResult struct {
 type ExportService struct {
 	store    *vault.Store
 	context  func() context.Context
-	saveFile func(context.Context) (string, error)
+	saveFile func(context.Context, ExportFormat) (string, error)
 	kdf      func([]byte) vault.KDFParams
+	// sshConfigPath é o ~/.ssh/config do usuário, que só recebe o trecho entre marcadores.
+	sshConfigPath func() string
+	now           func() time.Time
 }
 
 func newExportService(store *vault.Store, contextFn func() context.Context) *ExportService {
 	return &ExportService{
-		store: store, context: contextFn, kdf: vault.DefaultKDF,
-		saveFile: func(ctx context.Context) (string, error) {
+		store: store, context: contextFn, kdf: vault.DefaultKDF, now: time.Now,
+		saveFile: func(ctx context.Context, format ExportFormat) (string, error) {
 			if path := os.Getenv("SHELLVAULT_TEST_DIALOG_PATH"); path != "" {
 				return path, nil
 			}
-			return wruntime.SaveFileDialog(ctx, wruntime.SaveDialogOptions{
-				Title: "Exportar hosts", DefaultFilename: "hosts.openhost",
-				Filters: []wruntime.FileFilter{{DisplayName: "Arquivo OpenHost", Pattern: "*.openhost"}},
-			})
+			return wruntime.SaveFileDialog(ctx, saveDialogs[format])
+		},
+		sshConfigPath: func() string {
+			home, err := os.UserHomeDir()
+			if err != nil || home == "" {
+				return ""
+			}
+			return filepath.Join(home, ".ssh", "config")
 		},
 	}
 }
@@ -89,7 +117,15 @@ func (s *ExportService) Count(scope ExportScope) (ExportCount, error) {
 }
 
 func (s *ExportService) Export(request ExportRequest) (*ExportResult, error) {
-	if request.Format != ExportFormatOpenHost {
+	if _, ok := saveDialogs[request.Format]; !ok {
+		return nil, apperr.New(apperr.InvalidInput)
+	}
+	// Chaves só no formato do OpenHost, que pode ser cifrado (FR-326, FR-327).
+	if request.IncludeKeys && request.Format != ExportFormatOpenHost {
+		return nil, apperr.New(apperr.InvalidInput)
+	}
+	mode := exporter.SSHConfigMode(request.SSHConfigMode)
+	if mode != "" && mode != exporter.SSHConfigNewFile && mode != exporter.SSHConfigAppend {
 		return nil, apperr.New(apperr.InvalidInput)
 	}
 	content, err := s.store.Read()
@@ -108,12 +144,28 @@ func (s *ExportService) Export(request ExportRequest) (*ExportResult, error) {
 			return nil, apperr.New(apperr.WeakPassword)
 		}
 	}
-	path, err := s.saveFile(s.context())
+	path, err := s.saveFile(s.context(), request.Format)
 	if err != nil {
 		return nil, clean(err)
 	}
 	if path == "" {
 		return nil, nil
+	}
+	count := countExport(selected)
+	switch request.Format {
+	case ExportFormatOpenSSH:
+		if err := s.writeOpenSSH(path, selected, mode); err != nil {
+			return nil, clean(err)
+		}
+		return &ExportResult{Path: path, Hosts: count.Hosts}, nil
+	case ExportFormatCSV:
+		if !strings.EqualFold(filepath.Ext(path), ".csv") {
+			path += ".csv"
+		}
+		if err := exporter.WriteFile(path, exporter.MarshalCSV(selected)); err != nil {
+			return nil, clean(err)
+		}
+		return &ExportResult{Path: path, Hosts: count.Hosts}, nil
 	}
 	if !strings.EqualFold(filepath.Ext(path), ".openhost") {
 		path += ".openhost"
@@ -139,12 +191,40 @@ func (s *ExportService) Export(request ExportRequest) (*ExportResult, error) {
 	if err := os.WriteFile(path, raw, 0o600); err != nil {
 		return nil, clean(err)
 	}
-	count := countExport(selected)
 	keys := 0
 	if request.IncludeKeys {
 		keys = count.Keys
 	}
 	return &ExportResult{Path: path, Hosts: count.Hosts, Keys: keys}, nil
+}
+
+// writeOpenSSH grava os blocos Host. O ~/.ssh/config do usuário nunca é sobrescrito: exige
+// sshConfigMode e só aceita acrescentar entre marcadores (FR-328); outro destino recebe o
+// arquivo inteiro (o diálogo do sistema já confirmou a substituição).
+func (s *ExportService) writeOpenSSH(path string, content *model.Content, mode exporter.SSHConfigMode) error {
+	blocks := exporter.MarshalOpenSSH(content)
+	if !samePath(path, s.sshConfigPath()) {
+		return exporter.WriteSSHConfig(path, blocks, exporter.SSHConfigNewFile, s.now())
+	}
+	switch mode {
+	case exporter.SSHConfigAppend:
+		return exporter.WriteSSHConfig(path, blocks, exporter.SSHConfigAppend, s.now())
+	case exporter.SSHConfigNewFile:
+		err := apperr.New(apperr.AlreadyExists)
+		err.Detail = "o ~/.ssh/config só pode receber os hosts ao final; salve com outro nome"
+		return err
+	default:
+		return apperr.New(apperr.InvalidInput)
+	}
+}
+
+func samePath(a, b string) bool {
+	if a == "" || b == "" {
+		return false
+	}
+	absA, errA := filepath.Abs(a)
+	absB, errB := filepath.Abs(b)
+	return errA == nil && errB == nil && strings.EqualFold(filepath.Clean(absA), filepath.Clean(absB))
 }
 
 func selectExportContent(content *model.Content, scope ExportScope) (*model.Content, error) {

@@ -157,8 +157,7 @@ test('nenhum segredo legível no diretório de dados após o fluxo completo', as
   }
 });
 
-// Liga quando o Go entregar a origem OpenSSH e os três exportadores (cartões 47, 48 e 52).
-test.fixme('nenhum segredo legível após importar nem nos arquivos exportados sem chaves', async () => {
+test('nenhum segredo legível após importar nem nos arquivos exportados sem chaves', async () => {
   test.setTimeout(120_000);
   const keyPath = join(KEYS_DIR, 'ed25519-passphrase');
   const keyPem = readFileSync(keyPath, 'utf8');

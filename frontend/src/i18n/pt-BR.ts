@@ -746,6 +746,8 @@ export const t = {
       sshAppend: 'Acrescentar ao final',
       sshAppendHint:
         'Os hosts entram entre marcadores do OpenHost e uma cópia de segurança do arquivo é criada antes.',
+      sshConfigProtected:
+        'O ~/.ssh/config não é substituído. Salve com outro nome ou escolha "Acrescentar ao final".',
       submit: 'Exportar',
       saved: (path: string) => `Salvo em ${path}`,
     },

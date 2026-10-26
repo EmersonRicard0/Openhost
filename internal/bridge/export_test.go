@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"shellvault/internal/apperr"
@@ -85,7 +86,7 @@ func TestExportServiceValidatesPasswordsAndSavesOpenHost(t *testing.T) {
 	}
 	request.FilePassword = "senha-arquivo"
 	destination := filepath.Join(t.TempDir(), "backup")
-	services.exportService.saveFile = func(context.Context) (string, error) { return destination, nil }
+	services.exportService.saveFile = func(context.Context, ExportFormat) (string, error) { return destination, nil }
 	result, err := services.exportService.Export(request)
 	if err != nil || result == nil || result.Hosts != 2 || result.Keys != 1 || result.Path != destination+".openhost" {
 		t.Fatalf("Export = %+v, %v", result, err)
@@ -112,5 +113,74 @@ func TestExportServiceValidatesPasswordsAndSavesOpenHost(t *testing.T) {
 	view, err := services.importService.Preview(importer.SourceOpenHost, PreviewOptions{FilePassword: &password})
 	if err != nil || view == nil || len(view.Rows) != 2 || picks != 1 {
 		t.Fatalf("reuso do arquivo = %+v, picks=%d, err=%v", view, picks, err)
+	}
+}
+
+func TestExportServiceSavesOpenSSHAndCSV(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	seedExportContent(t, services)
+	dir := t.TempDir()
+	userConfig := filepath.Join(dir, ".ssh", "config")
+	if err := os.MkdirAll(filepath.Dir(userConfig), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(userConfig, []byte("Host meu\n  HostName meu.example\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	services.exportService.sshConfigPath = func() string { return userConfig }
+	var destination string
+	var formats []ExportFormat
+	services.exportService.saveFile = func(_ context.Context, format ExportFormat) (string, error) {
+		formats = append(formats, format)
+		return destination, nil
+	}
+	all := ExportScope{Kind: ExportScopeAll}
+
+	// Arquivo novo qualquer: grava os blocos; chaves não se aplicam a esse formato.
+	destination = filepath.Join(dir, "hosts.config")
+	if _, err := services.exportService.Export(ExportRequest{Format: ExportFormatOpenSSH, Scope: all, IncludeKeys: true}); apperr.CodeOf(err) != apperr.InvalidInput {
+		t.Fatalf("chaves no OpenSSH = %v", err)
+	}
+	result, err := services.exportService.Export(ExportRequest{Format: ExportFormatOpenSSH, Scope: all, SSHConfigMode: "newFile"})
+	if err != nil || result == nil || result.Path != destination || result.Hosts != 2 || result.Keys != 0 {
+		t.Fatalf("OpenSSH = %+v, %v", result, err)
+	}
+	if raw, _ := os.ReadFile(destination); !strings.Contains(string(raw), "Host Um\n  HostName one.example\n") {
+		t.Fatalf("conteúdo OpenSSH: %s", raw)
+	}
+
+	// O ~/.ssh/config do usuário: só acrescentar; "novo arquivo" nunca o sobrescreve.
+	destination = userConfig
+	if _, err := services.exportService.Export(ExportRequest{Format: ExportFormatOpenSSH, Scope: all}); apperr.CodeOf(err) != apperr.InvalidInput {
+		t.Fatalf("sem sshConfigMode = %v", err)
+	}
+	if _, err := services.exportService.Export(ExportRequest{Format: ExportFormatOpenSSH, Scope: all, SSHConfigMode: "newFile"}); apperr.CodeOf(err) != apperr.AlreadyExists {
+		t.Fatalf("newFile no config do usuário = %v", err)
+	}
+	if _, err := services.exportService.Export(ExportRequest{Format: ExportFormatOpenSSH, Scope: all, SSHConfigMode: "append"}); err != nil {
+		t.Fatal(err)
+	}
+	raw, _ := os.ReadFile(userConfig)
+	if !strings.HasPrefix(string(raw), "Host meu\n") || !strings.Contains(string(raw), "# >>> OpenHost\n") {
+		t.Fatalf("acrescentar ao config do usuário: %s", raw)
+	}
+	if backups, _ := filepath.Glob(userConfig + ".bak-*"); len(backups) != 1 {
+		t.Fatalf("cópia de segurança: %v", backups)
+	}
+
+	// CSV ganha a extensão quando falta.
+	destination = filepath.Join(dir, "planilha")
+	result, err = services.exportService.Export(ExportRequest{Format: ExportFormatCSV, Scope: all})
+	if err != nil || result == nil || result.Path != destination+".csv" {
+		t.Fatalf("CSV = %+v, %v", result, err)
+	}
+	if raw, _ := os.ReadFile(result.Path); !strings.Contains(string(raw), "nome;endereco;porta;usuario;grupo;chave\r\n") {
+		t.Fatalf("conteúdo CSV: %q", raw)
+	}
+	if formats[len(formats)-1] != ExportFormatCSV {
+		t.Fatalf("diálogo de salvar recebeu o formato errado: %v", formats)
 	}
 }

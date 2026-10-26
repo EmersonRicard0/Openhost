@@ -90,7 +90,12 @@ export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDi
     });
     setBusy(false);
     if (!res.ok) {
-      setError(res.error.message);
+      // O Go recusa substituir o ~/.ssh/config do usuário (FR-328).
+      setError(
+        format === 'openssh' && res.error.code === 'ALREADY_EXISTS'
+          ? ex.sshConfigProtected
+          : res.error.message,
+      );
       return;
     }
     if (!res.value) return; // diálogo de salvar cancelado

@@ -123,15 +123,15 @@ antes do código, falhando primeiro.
 
 **Independent Test**: exportar nos dois formatos e reimportar num cofre vazio.
 
-- [ ] T042 [P] [US6] Go: testes em `internal/exporter/openssh_test.go` e `csv_test.go` — bloco por host com `HostName`, `Port` só se ≠ 22, `User`, comentário `# OpenHost: <grupo> / <rótulo>`; apelido com caracteres fora de `[A-Za-z0-9._-]` trocados por `-` e deduplicado `-2`, `-3`; modo `append` cria `config.bak-AAAAMMDD-HHMMSS`, escreve entre `# >>> OpenHost` e `# <<< OpenHost`, reexportação troca só o trecho; gravação por temporário + rename; o arquivo gerado é reimportado pelo `openssh.go` com os mesmos dados; CSV UTF-8 com BOM, `;`, reimportável, coluna `chave` vazia
-- [ ] T043 [US6] Go: `internal/exporter/openssh.go` e `internal/exporter/csv.go`; `Export` com `sshConfigMode` obrigatório quando o destino é o `~/.ssh/config` do usuário (`INVALID_INPUT` sem ele)
-- [ ] T044 [US6] Interface: formatos "OpenSSH" e "CSV" no `ExportDialog`, escolha "Novo arquivo" / "Acrescentar ao ~/.ssh/config" com explicação da cópia de segurança
+- [X] T042 [P] [US6] Go: testes em `internal/exporter/openssh_test.go` e `csv_test.go` — bloco por host com `HostName`, `Port` só se ≠ 22, `User`, comentário `# OpenHost: <grupo> / <rótulo>`; apelido com caracteres fora de `[A-Za-z0-9._-]` trocados por `-` e deduplicado `-2`, `-3`; modo `append` cria `config.bak-AAAAMMDD-HHMMSS`, escreve entre `# >>> OpenHost` e `# <<< OpenHost`, reexportação troca só o trecho; gravação por temporário + rename; o arquivo gerado é reimportado pelo `openssh.go` com os mesmos dados; CSV UTF-8 com BOM, `;`, reimportável, coluna `chave` vazia
+- [X] T043 [US6] Go: `internal/exporter/openssh.go` e `internal/exporter/csv.go`; `Export` com `sshConfigMode` obrigatório quando o destino é o `~/.ssh/config` do usuário (`INVALID_INPUT` sem ele)
+- [X] T044 [US6] Interface: formatos "OpenSSH" e "CSV" no `ExportDialog`, escolha "Novo arquivo" / "Acrescentar ao ~/.ssh/config" com explicação da cópia de segurança
 
 ---
 
 ## Phase 9: Polish & Cross-Cutting
 
-- [ ] T045 [P] Ampliar `frontend/tests/e2e/secrets-scan.spec.ts` para varrer o diretório de dados após importação e os arquivos `.openhost` (sem chaves), OpenSSH e CSV exportados (SC-304)
+- [X] T045 [P] Ampliar `frontend/tests/e2e/secrets-scan.spec.ts` para varrer o diretório de dados após importação e os arquivos `.openhost` (sem chaves), OpenSSH e CSV exportados (SC-304)
 - [ ] T046 [P] Go: teste de desempenho em `internal/importer/perf_test.go` — prévia de 1.000 hosts (CSV e OpenSSH) ≤ 3 s e `Commit` ≤ 5 s (SC-302); E2E mede a renderização da `PreviewTable` com 1.000 linhas
 - [ ] T047 [P] Go: testes de entradas hostis (arquivo de 11 MB, `Include` em ciclo e com 9 níveis, XML com entidades, linhas gigantes) sem pânico nem estouro de memória
 - [X] T048 Atualizar `specs/002-wails-migration/contracts/bridge.md` (lista de serviços ligados inclui `ImportService` e `ExportService`, códigos de erro novos) e o README (seção "Importar e exportar")
