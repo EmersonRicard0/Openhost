@@ -13,7 +13,7 @@
   pesada, e só enxerga a pasta oculta do próprio app (FR-802).
 - **Client id/secret**: o "segredo" de app de desktop não é confidencial (o Google documenta
   isso); entra por `-ldflags -X` na release a partir dos segredos `GOOGLE_CLIENT_ID` e
-  `GOOGLE_CLIENT_SECRET`. Build sem client id mostra a sincronização como indisponível.
+  `GOOGLE_CLIENT_SECRET`. Sem ldflags, o app lê `OPENHOST_GOOGLE_CLIENT_ID`/`OPENHOST_GOOGLE_CLIENT_SECRET` do ambiente (para testar localmente); sem nenhum dos dois, a sincronização aparece como indisponível. Passo a passo do dono do projeto em `docs/setup/google-drive.md`.
 - **Dependência**: `golang.org/x/oauth2` (BSD-3, mesmo mantenedor do `x/crypto` já usado) para
   troca e renovação de token. Nada de SDK do Google: as quatro chamadas da Drive API são REST
   simples (R3).

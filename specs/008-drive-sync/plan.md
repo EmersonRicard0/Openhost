@@ -123,6 +123,9 @@ novos riscos.
 
 ## Pré-requisitos do dono do projeto
 
+Passo a passo completo em [docs/setup/google-drive.md](../../docs/setup/google-drive.md).
+
+
 - Criar projeto no Google Cloud, ativar a Drive API, configurar a tela de consentimento
   (escopos `drive.appdata`, `openid`, `email`; não sensíveis) e criar um cliente OAuth do tipo
   **App para computador**.

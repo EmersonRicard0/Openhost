@@ -17,7 +17,7 @@ real com o Drive falso e duas pastas de dados.
 
 ## Phase 1: Setup
 
-- [ ] T001 **Go** Adicionar `golang.org/x/oauth2` ao `go.mod` (justificado no plano) e criar `internal/cloudsync/config.go` com `ClientID`/`ClientSecret` vazios sobrescritos por `-ldflags -X`, `Available() bool`, e a base da API (`https://www.googleapis.com`) só alterável com tag `e2e`.
+- [ ] T001 **Go** Adicionar `golang.org/x/oauth2` ao `go.mod` (justificado no plano) e criar `internal/cloudsync/config.go` com `ClientID`/`ClientSecret` vazios sobrescritos por `-ldflags -X` (release) ou, se vazios, lidos de `OPENHOST_GOOGLE_CLIENT_ID`/`OPENHOST_GOOGLE_CLIENT_SECRET` (build local, ver `docs/setup/google-drive.md`), `Available() bool`, e a base da API (`https://www.googleapis.com`) só alterável com tag `e2e`.
 - [ ] T002 [P] **Go** `internal/apperr`: `SYNC_UNAVAILABLE`, `SYNC_CANCELLED`, `SYNC_AUTH`, `SYNC_QUOTA`, `SYNC_FORMAT`, `CLOUD_EMPTY`, `CLOUD_CORRUPT`; frontend: os mesmos em `frontend/src/shared/ipc/errors.ts` e causas em `frontend/src/i18n/errors.ts`.
 - [X] T003 [P] Workflow `.github/workflows/release.yml`: passar `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (segredos) como `-ldflags "-X …/cloudsync.ClientID=… -X …/cloudsync.ClientSecret=…"` nos três builds; ausentes ⇒ build segue com sincronização indisponível e aviso `::warning::`.
 
