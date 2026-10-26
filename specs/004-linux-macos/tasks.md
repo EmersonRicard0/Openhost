@@ -163,11 +163,11 @@ Os cenários 4–7 do quickstart ficam com o usuário.
   - toda combinação com Ctrl vai para o xterm.
   - Testes no `TerminalView.test.tsx` ou extraídos para uma função pura.
 - [X] T024 [P] [US2] Interface: no macOS, `TitleBar.tsx` reserva 76 px à esquerda, sem botões próprios e com `--wails-draggable: drag` no cabeçalho (os botões e campos ficam `no-drag`). ⌘, abre as configurações pela ação de atalho `openSettings` (T011). Teste Vitest.
-- [ ] T025 [US2] `scripts/package-macos.sh <versão>`:
+- [X] T025 [US2] `scripts/package-macos.sh <versão>`:
   - a partir de `build/bin/OpenHost.app` (universal), monta pasta temporária com o `.app`, o link `Applications` e o `LEIA-ME`;
   - `hdiutil create -volname OpenHost -format UDZO` gera `OpenHost-<v>-macos-universal.dmg`;
   - confere com `lipo -archs` e com o tamanho até 40 MB.
-- [ ] T026 [US2] Confirmar que ⌘Q e o botão vermelho passam pelo `OnBeforeClose` (confirmação com sessões ativas, FR-414) e que `HideWindowOnClose` está falso. Documentar em `validation.md` como cenário manual do usuário.
+- [X] T026 [US2] Confirmar que ⌘Q e o botão vermelho passam pelo `OnBeforeClose` (confirmação com sessões ativas, FR-414) e que `HideWindowOnClose` está falso. Documentar em `validation.md` como cenário manual do usuário.
 
 **Checkpoint**: o macOS compila universal, abre no CI e tem `.dmg`.
 
