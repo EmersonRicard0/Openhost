@@ -83,6 +83,7 @@ function SourceCard({
       <div className={s.cardBody}>
         <h4 className={s.cardTitle}>{text.title}</h4>
         <p className={s.cardText}>{text.description}</p>
+        {'where' in text && <p className={s.hint}>{text.where}</p>}
         <div className={s.cardActions}>
           {canDefault && (
             <Button

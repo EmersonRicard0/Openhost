@@ -602,11 +602,14 @@ export const t = {
       mobaxterm: {
         title: 'MobaXterm',
         description: 'Arquivo .mxtsessions ou MobaXterm.ini; pastas viram grupos.',
+        where:
+          'No MobaXterm, clique com o botão direito em "User sessions" › "Export all sessions to file". O MobaXterm.ini fica ao lado do programa portátil.',
         useDefault: '',
       },
       securecrt: {
         title: 'SecureCRT',
         description: 'XML gerado em Tools › Export Settings; pastas viram grupos.',
+        where: 'No SecureCRT, abra Tools › Export Settings… e marque Sessions.',
         useDefault: '',
       },
       openhost: {
@@ -714,6 +717,8 @@ export const t = {
         n === 1
           ? '1 host vai pedir a senha na primeira conexão.'
           : `${count(n)} hosts vão pedir a senha na primeira conexão.`,
+      passwordsNotImported: (source: string) =>
+        `Senhas salvas no ${source} não são importadas: digite-as na primeira conexão.`,
     },
     undo: 'Desfazer importação',
     undone: (removed: number, kept: number) =>

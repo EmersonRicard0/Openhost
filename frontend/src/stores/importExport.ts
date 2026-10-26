@@ -68,6 +68,8 @@ interface ImportExportState {
   busy: boolean;
   error: AppError | null;
   result: ImportResult | null;
+  /** Origem do último lote importado, para o resumo. */
+  resultKind: SourceKind | null;
   /** Lote que ainda pode ser desfeito. */
   undoable: string | null;
   loadSources: () => Promise<void>;
@@ -95,6 +97,7 @@ const initial = {
   busy: false,
   error: null,
   result: null,
+  resultKind: null,
 };
 
 function replaceKey(preview: PreviewView, key: PreviewKey): PreviewView {
@@ -215,6 +218,7 @@ export const useImportExport = create<ImportExportState>((set, get) => ({
       preview: null,
       step: 'summary',
       result: res.value,
+      resultKind: preview.kind,
       undoable: res.value.batchId,
     });
     await useHosts.getState().reload();

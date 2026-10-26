@@ -113,7 +113,7 @@ antes do código, falhando primeiro.
 - [X] T038 [P] [US5] Fixtures em `internal/importer/testdata/mobaxterm/` (`.mxtsessions` e `MobaXterm.ini` gerados pelo MobaXterm, com pastas aninhadas, SSH com chave, RDP, Telnet, seção `[Passwords]` com valor fictício) e `testdata/securecrt/` (XML de "Export Settings" com pastas, SSH2 com `Identity Filename V2`, Telnet, Serial, `Password V2` fictício)
 - [X] T039 [P] [US5] Go: testes em `internal/importer/mobaxterm_test.go` e `securecrt_test.go` — só SSH viram hosts, pastas viram `groupPath`, protocolos ignorados com nome, chave lida quando presente (aviso "chave não lida" quando o campo não bate), `[Passwords]`/`Password V2` nunca lidos (o valor fictício não aparece em nenhuma estrutura), UTF-8 com BOM e Windows-1252
 - [X] T040 [US5] Go: `internal/importer/mobaxterm.go` (R8) e `internal/importer/securecrt.go` (R9); origens `mobaxterm` e `securecrt`
-- [ ] T041 [US5] Interface: cartões "MobaXterm" e "SecureCRT" com a dica de onde achar o arquivo; resumo final avisa que senhas precisarão ser digitadas na primeira conexão
+- [X] T041 [US5] Interface: cartões "MobaXterm" e "SecureCRT" com a dica de onde achar o arquivo; resumo final avisa que senhas precisarão ser digitadas na primeira conexão
 
 ---
 
@@ -133,7 +133,7 @@ antes do código, falhando primeiro.
 
 - [X] T045 [P] Ampliar `frontend/tests/e2e/secrets-scan.spec.ts` para varrer o diretório de dados após importação e os arquivos `.openhost` (sem chaves), OpenSSH e CSV exportados (SC-304)
 - [X] T046 [P] Go: teste de desempenho em `internal/importer/perf_test.go` — prévia de 1.000 hosts (CSV e OpenSSH) ≤ 3 s e `Commit` ≤ 5 s (SC-302); E2E mede a renderização da `PreviewTable` com 1.000 linhas
-- [ ] T047 [P] Go: testes de entradas hostis (arquivo de 11 MB, `Include` em ciclo e com 9 níveis, XML com entidades, linhas gigantes) sem pânico nem estouro de memória
+- [X] T047 [P] Go: testes de entradas hostis (arquivo de 11 MB, `Include` em ciclo e com 9 níveis, XML com entidades, linhas gigantes) sem pânico nem estouro de memória
 - [X] T048 Atualizar `specs/002-wails-migration/contracts/bridge.md` (lista de serviços ligados inclui `ImportService` e `ExportService`, códigos de erro novos) e o README (seção "Importar e exportar")
 - [X] T049 Polimento visual com capturas via E2E (tema claro e escuro, 1.000 linhas, estados vazios "Nenhum host encontrado", erros) e revisão de acessibilidade por teclado
 - [ ] T050 Rodar `specs/003-host-import-export/quickstart.md` e registrar em `specs/003-host-import-export/validation.md`

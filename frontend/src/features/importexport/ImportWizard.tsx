@@ -1,7 +1,7 @@
 // Etapas da importação depois de escolher a origem: prévia (FR-302 a FR-306) e resumo
 // (FR-309, FR-310). A gravação só acontece em "Importar".
 import { useState } from 'react';
-import type { CsvField, CsvMapping, PreviewView } from '@shared/model/types';
+import type { CsvField, CsvMapping, PreviewView, SourceKind } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
 import {
@@ -243,6 +243,15 @@ export function PreviewStep({ preview }: { preview: PreviewView }) {
   );
 }
 
+/** Programas que guardam senhas; o OpenHost nunca as lê. */
+const SAVES_PASSWORDS = new Set<SourceKind>([
+  'putty',
+  'kitty',
+  'kittyPortable',
+  'mobaxterm',
+  'securecrt',
+]);
+
 export function SummaryStep() {
   const st = useImportExport();
   const result = st.result;
@@ -269,6 +278,9 @@ export function SummaryStep() {
         )}
       </ul>
       {result.askPassword > 0 && <p className={s.hint}>{sm.askPassword(result.askPassword)}</p>}
+      {st.resultKind && SAVES_PASSWORDS.has(st.resultKind) && (
+        <p className={s.hint}>{sm.passwordsNotImported(ie.sources[st.resultKind].title)}</p>
+      )}
       {st.error && (
         <p role="alert" className={s.error}>
           {st.error.message}
