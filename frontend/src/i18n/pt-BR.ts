@@ -558,6 +558,7 @@ export const t = {
     exportAction: 'Exportar…',
     chooseFile: 'Escolher arquivo…',
     chooseFolder: 'Escolher pasta…',
+    noSessions: 'Nenhuma sessão encontrada neste computador.',
     sources: {
       openssh: {
         title: 'Configuração do OpenSSH',

@@ -91,6 +91,9 @@ function SourceCard({
               )}
             </Button>
           )}
+          {REGISTRY_ONLY.has(kind) && source && !source.defaultFound && (
+            <span className={s.hint}>{ie.noSessions}</span>
+          )}
           {kind === 'csv' && (
             <Button variant="ghost" onClick={() => void saveTemplate()}>
               {ie.csvTemplate}
