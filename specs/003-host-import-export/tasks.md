@@ -82,12 +82,12 @@ antes do código, falhando primeiro.
 
 **Independent Test**: sessões de teste no registro (SSH com e sem `.ppk`, Telnet, "Default Settings") e conferência da prévia.
 
-- [ ] T028 [P] [US3] Fixtures `.ppk` em `internal/importer/testdata/ppk/` geradas pelo PuTTYgen: v2 e v3, `ssh-rsa`, `ssh-ed25519`, `ecdsa-sha2-nistp256`, sem cifra e `aes256-cbc` com passphrase conhecida de teste, mais cópias com MAC adulterado; equivalentes OpenSSH para comparar impressão digital
-- [ ] T029 [P] [US3] Go: testes em `internal/importer/ppk_test.go` — conversão de cada fixture com impressão digital igual à equivalente OpenSSH; passphrase errada e MAC adulterado → `KEY_BAD_PASSPHRASE`; tipo/cifra desconhecidos → `KEY_UNSUPPORTED`; tamanho acima de `MaxKeyBytes` recusado
-- [ ] T030 [US3] Go: `internal/importer/ppk.go` (R6) e integração com `keys.go` (detecção pelo cabeçalho `PuTTY-User-Key-File-`)
-- [ ] T031 [P] [US3] Go: testes em `internal/importer/putty_test.go` com leitor de registro falso: `Protocol` `ssh` entra, `telnet`/`serial`/`raw`/`rlogin` ignorados com motivo, "Default Settings" ignorada, `HostName` com `user@host`, `PortNumber` DWORD, nome `%20` decodificado, origem PuTTY vs KiTTY; KiTTY portátil a partir de pasta `Sessions` com linhas `Chave\valor\`
-- [ ] T032 [US3] Go: `internal/importer/putty.go`, `putty_windows.go` (`golang.org/x/sys/windows/registry`, `HKCU\Software\SimonTatham\PuTTY\Sessions` e `HKCU\Software\9bis.com\KiTTY\Sessions`) e `putty_other.go` (indisponível); registro das origens `putty`, `kitty`, `kittyPortable`
-- [ ] T033 [US3] Interface: cartão "PuTTY / KiTTY" (só quando `available`), opção "Pasta do KiTTY portátil…", seção "Ignorados" com motivo na prévia
+- [X] T028 [P] [US3] Fixtures `.ppk` em `internal/importer/testdata/ppk/` geradas pelo PuTTYgen: v2 e v3, `ssh-rsa`, `ssh-ed25519`, `ecdsa-sha2-nistp256`, sem cifra e `aes256-cbc` com passphrase conhecida de teste, mais cópias com MAC adulterado; equivalentes OpenSSH para comparar impressão digital
+- [X] T029 [P] [US3] Go: testes em `internal/importer/ppk_test.go` — conversão de cada fixture com impressão digital igual à equivalente OpenSSH; passphrase errada e MAC adulterado → `KEY_BAD_PASSPHRASE`; tipo/cifra desconhecidos → `KEY_UNSUPPORTED`; tamanho acima de `MaxKeyBytes` recusado
+- [X] T030 [US3] Go: `internal/importer/ppk.go` (R6) e integração com `keys.go` (detecção pelo cabeçalho `PuTTY-User-Key-File-`)
+- [X] T031 [P] [US3] Go: testes em `internal/importer/putty_test.go` com leitor de registro falso: `Protocol` `ssh` entra, `telnet`/`serial`/`raw`/`rlogin` ignorados com motivo, "Default Settings" ignorada, `HostName` com `user@host`, `PortNumber` DWORD, nome `%20` decodificado, origem PuTTY vs KiTTY; KiTTY portátil a partir de pasta `Sessions` com linhas `Chave\valor\`
+- [X] T032 [US3] Go: `internal/importer/putty.go`, `putty_windows.go` (`golang.org/x/sys/windows/registry`, `HKCU\Software\SimonTatham\PuTTY\Sessions` e `HKCU\Software\9bis.com\KiTTY\Sessions`) e `putty_other.go` (indisponível); registro das origens `putty`, `kitty`, `kittyPortable`
+- [X] T033 [US3] Interface: cartão "PuTTY / KiTTY" (só quando `available`), opção "Pasta do KiTTY portátil…", seção "Ignorados" com motivo na prévia
 
 ---
 
