@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
 	"strings"
 	"testing"
 	"time"
@@ -30,17 +31,19 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 	app := services.appService
 
 	preferences, err := app.GetPreferences()
-	if err != nil || preferences.DefaultShell != "powershell" || !preferences.GlassEnabled || preferences.SidebarCollapsed ||
+	if err != nil || preferences.DefaultShell != localpty.DefaultShellID() || !preferences.GlassEnabled || preferences.SidebarCollapsed ||
 		preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect {
 		t.Fatalf("preferências %+v, %v", preferences, err)
 	}
+	alternative := testAlternativeLocalShell()
+	app.localShells = func() []localpty.LocalShell { return []localpty.LocalShell{alternative} }
 	groupID := "4ce66518-3068-4bef-ad0b-eb3f0141443d"
 	updated, err := app.UpdatePreferences(PreferencesPatch{
 		"theme":            "light",
 		"glassEnabled":     false,
 		"sidebarCollapsed": true,
 		"accent":           "brand-violet",
-		"defaultShell":     "cmd",
+		"defaultShell":     alternative.ID,
 		"collapsedGroups":  []any{groupID},
 		"shortcuts":        map[string]any{"closeTab": "Ctrl+Alt+W", "palette": ""},
 		"copyOnSelect":     true,
@@ -49,7 +52,7 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		"boldBright":       false,
 		"autoReconnect":    true,
 	})
-	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 || updated.Shortcuts["closeTab"] != "Ctrl+Alt+W" ||
+	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != alternative.ID || len(updated.CollapsedGroups) != 1 || updated.Shortcuts["closeTab"] != "Ctrl+Alt+W" ||
 		!updated.CopyOnSelect || updated.RightClickPaste || updated.Bell != "sound" || updated.BoldBright || !updated.AutoReconnect {
 		t.Fatalf("preferências atualizadas %+v, %v", updated, err)
 	}
@@ -72,7 +75,7 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		t.Fatalf("erro de shortcut = %+v", err)
 	}
 	wantBridgeCode(t, func() error {
-		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "bash"})
+		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "definitely-missing-shell"})
 		return err
 	}(), apperr.InvalidInput)
 	wantBridgeCode(t, func() error {
@@ -95,36 +98,41 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 func TestAppServiceLocalShellsAndMissingDefaultFallback(t *testing.T) {
 	services := testServices(t)
 	app := services.appService
+	defaultID := localpty.DefaultShellID()
+	alternative := testAlternativeLocalShell()
 	app.localShells = func() []localpty.LocalShell {
 		return []localpty.LocalShell{
-			{ID: "powershell", Label: "Windows PowerShell", Kind: localpty.KindPowerShell},
-			{ID: "gitbash", Label: "Git Bash", Kind: localpty.KindGitBash},
-			{ID: "wsl:Ubuntu", Label: "Ubuntu", Kind: localpty.KindWSL},
+			{ID: defaultID, Label: defaultID, Kind: alternative.Kind},
+			alternative,
 		}
 	}
 
 	shells, err := app.ListLocalShells()
-	if err != nil || len(shells) != 3 || shells[1].Kind != localpty.KindGitBash {
+	if err != nil || len(shells) != 2 || shells[1].ID != alternative.ID {
 		t.Fatalf("shells = %+v, %v", shells, err)
 	}
-	updated, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "wsl:Ubuntu"})
-	if err != nil || updated.DefaultShell != "wsl:Ubuntu" {
+	updated, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": alternative.ID})
+	if err != nil || updated.DefaultShell != alternative.ID {
 		t.Fatalf("preferência = %+v, %v", updated, err)
 	}
 	wantBridgeCode(t, func() error {
-		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "pwsh"})
+		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "definitely-missing-shell"})
 		return err
 	}(), apperr.InvalidInput)
 
 	app.localShells = func() []localpty.LocalShell {
-		return []localpty.LocalShell{{ID: "powershell", Label: "Windows PowerShell", Kind: localpty.KindPowerShell}}
+		return []localpty.LocalShell{{ID: defaultID, Label: defaultID, Kind: alternative.Kind}}
 	}
+	var warning strings.Builder
+	previousLogOutput := log.Writer()
+	log.SetOutput(&warning)
+	t.Cleanup(func() { log.SetOutput(previousLogOutput) })
 	got, err := app.GetPreferences()
-	if err != nil || got.DefaultShell != "powershell" {
-		t.Fatalf("fallback = %+v, %v", got, err)
+	if err != nil || got.DefaultShell != defaultID || !strings.Contains(warning.String(), alternative.ID) {
+		t.Fatalf("fallback = %+v, aviso = %q, erro = %v", got, warning.String(), err)
 	}
 	persisted, err := app.preferences.Get()
-	if err != nil || persisted.DefaultShell != "powershell" {
+	if err != nil || persisted.DefaultShell != defaultID {
 		t.Fatalf("fallback persistido = %+v, %v", persisted, err)
 	}
 }
@@ -199,7 +207,7 @@ func TestSessionServiceLocalLifecycle(t *testing.T) {
 	services := testServices(t)
 	sessions := services.sessionService
 
-	opened, err := sessions.OpenLocal("cmd")
+	opened, err := sessions.OpenLocal(testOpenLocalShellID())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +221,7 @@ func TestSessionServiceLocalLifecycle(t *testing.T) {
 	if services.sessions.Count() != 0 {
 		t.Fatal("sessão local não foi removida")
 	}
-	_, err = sessions.OpenLocal("bash")
+	_, err = sessions.OpenLocal("definitely-missing-shell")
 	wantBridgeCode(t, err, apperr.InvalidInput)
 	wantBridgeCode(t, sessions.SendKeys(opened.SessionID, "ctrl+x"), apperr.InvalidInput)
 }

@@ -2,6 +2,7 @@ package bridge
 
 import (
 	"context"
+	"log"
 	"net/url"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
@@ -59,8 +60,10 @@ func (s *AppService) GetPreferences() (appwin.Preferences, error) {
 	if err != nil {
 		return appwin.Preferences{}, clean(err)
 	}
-	if preferences.DefaultShell != string(localpty.PowerShell) && !shellAvailable(s.localShells(), preferences.DefaultShell) {
-		preferences.DefaultShell = string(localpty.PowerShell)
+	defaultShell := localpty.DefaultShellID()
+	if preferences.DefaultShell != defaultShell && !shellAvailable(s.localShells(), preferences.DefaultShell) {
+		log.Printf("bridge: shell padrão %q indisponível; usando %q", preferences.DefaultShell, defaultShell)
+		preferences.DefaultShell = defaultShell
 		if err := s.preferences.Save(preferences); err != nil {
 			return appwin.Preferences{}, clean(err)
 		}

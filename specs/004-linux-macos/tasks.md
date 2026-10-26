@@ -39,11 +39,11 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
 
 **Checkpoint**: `GOOS=linux go vet ./...` e `GOOS=darwin go vet ./...` passam, e o job de CI de cada sistema fica verde.
 
-- [ ] T004 Go: dividir `internal/localpty/shells.go`, sem mudar o comportamento no Windows:
+- [X] T004 Go: dividir `internal/localpty/shells.go`, sem mudar o comportamento no Windows:
   - `shells.go`: tipos comuns (`Shell`, `ShellKind` com o novo `KindUnix ShellKind = "unix"`, `LocalShell`, `shellReaders`);
   - `shells_windows.go`: registro, PowerShell, cmd, Git Bash e WSL.
   - A parte de Windows de `shells_test.go` vai para `shells_windows_test.go`. `go test ./internal/localpty` continua verde no Windows.
-- [ ] T005 [P] Go: testes em `internal/localpty/shells_unix_test.go` (`//go:build !windows`), com `/etc/shells` e sistema de arquivos falsos via `shellReaders`. Casos:
+- [X] T005 [P] Go: testes em `internal/localpty/shells_unix_test.go` (`//go:build !windows`), com `/etc/shells` e sistema de arquivos falsos via `shellReaders`. Casos:
   - comentários e linhas vazias ignorados;
   - só executáveis existentes entram;
   - `/bin/bash` e `/usr/bin/bash` iguais pelo caminho real viram um item;
@@ -53,7 +53,7 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
   - sem `/etc/shells`, cai em `bash`, `zsh`, `fish` e `sh` do `PATH`;
   - id do Windows salvo (`powershell`) resolve para o padrão com aviso;
   - `args` = `["-l"]`.
-- [ ] T006 Go: `internal/localpty/shells_unix.go` (`//go:build !windows`) conforme `data-model.md` (Shell local) e R2. Em `pty.go`, no Unix, `cmd.Env` recebe `TERM=xterm-256color`, e o comentário do pacote passa a citar o PTY Unix. Shell padrão por sistema: `localpty.DefaultShellID()` (`powershell` no Windows; no Unix o id do shell de login) passa a ser o padrão de `DefaultShell` em `internal/appwin/preferences.go` e o substituto em `internal/bridge/app.go` (`GetPreferences`), no lugar do `PowerShell` fixo; `ValidShellID` aceita os ids do Unix.
+- [X] T006 Go: `internal/localpty/shells_unix.go` (`//go:build !windows`) conforme `data-model.md` (Shell local) e R2. Em `pty.go`, no Unix, `cmd.Env` recebe `TERM=xterm-256color`, e o comentário do pacote passa a citar o PTY Unix. Shell padrão por sistema: `localpty.DefaultShellID()` (`powershell` no Windows; no Unix o id do shell de login) passa a ser o padrão de `DefaultShell` em `internal/appwin/preferences.go` e o substituto em `internal/bridge/app.go` (`GetPreferences`), no lugar do `PowerShell` fixo; `ValidShellID` aceita os ids do Unix.
 - [X] T007 [P] Go: testes de aparência com leitor falso, nos três arquivos abaixo. Valores fora do domínio esperado viram o padrão.
   - `internal/appwin/appearance_linux_test.go` (portal):
     - `color-scheme` 1 → escuro, 2 → claro, 0 → claro;

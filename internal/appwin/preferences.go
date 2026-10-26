@@ -61,7 +61,7 @@ func DefaultPreferences() Preferences {
 		GlassEnabled:       true,
 		SidebarCollapsed:   false,
 		Accent:             "laranja",
-		DefaultShell:       "powershell",
+		DefaultShell:       localpty.DefaultShellID(),
 		CollapsedGroups:    []string{},
 		Shortcuts:          map[string]string{},
 		CopyOnSelect:       false,
