@@ -724,6 +724,7 @@ export const t = {
       scope: 'O que exportar',
       scopeAll: 'Todos os hosts',
       scopeGroup: 'Um grupo',
+      scopeHosts: (n: number) => (n === 1 ? 'Este host' : `${String(n)} hosts selecionados`),
       group: 'Grupo',
       count: (hosts: number, groups: number) =>
         `${String(hosts)} ${hosts === 1 ? 'host' : 'hosts'} em ${String(groups)} ${groups === 1 ? 'grupo' : 'grupos'}`,

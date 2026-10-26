@@ -20,13 +20,19 @@ const MIN_PASSWORD = 8;
 export interface ExportDialogProps {
   /** Grupo já escolhido quando o diálogo vem do menu de um grupo. */
   groupId?: string | null;
+  /** Hosts já escolhidos quando o diálogo vem do menu de um host. */
+  hostIds?: readonly string[];
   onClose: () => void;
 }
 
-export function ExportDialog({ groupId = null, onClose }: ExportDialogProps) {
+type ScopeKind = ExportScope['kind'];
+
+export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDialogProps) {
   const groups = useHosts((h) => h.groups);
   const [format, setFormat] = useState<ExportFormat>('openhost');
-  const [scopeKind, setScopeKind] = useState<'all' | 'group'>(groupId ? 'group' : 'all');
+  const [scopeKind, setScopeKind] = useState<ScopeKind>(
+    hostIds.length > 0 ? 'hosts' : groupId ? 'group' : 'all',
+  );
   const [group, setGroup] = useState<string>(groupId ?? groups[0]?.id ?? '');
   const [count, setCount] = useState<ExportCount | null>(null);
   const [includeKeys, setIncludeKeys] = useState(false);
@@ -38,14 +44,17 @@ export function ExportDialog({ groupId = null, onClose }: ExportDialogProps) {
   const [error, setError] = useState<string | null>(null);
 
   const scope: ExportScope =
-    scopeKind === 'group' && group ? { kind: 'group', groupId: group } : { kind: 'all' };
-  const scopeKey = scope.kind === 'group' ? scope.groupId : 'all';
+    scopeKind === 'hosts' && hostIds.length > 0
+      ? { kind: 'hosts', hostIds: [...hostIds] }
+      : scopeKind === 'group' && group
+        ? { kind: 'group', groupId: group }
+        : { kind: 'all' };
+  // Chave estável do escopo: a contagem só é refeita quando ele muda de fato.
+  const scopeKey = JSON.stringify(scope);
 
   useEffect(() => {
     let alive = true;
-    const req: ExportScope =
-      scopeKey === 'all' ? { kind: 'all' } : { kind: 'group', groupId: scopeKey };
-    void window.shellvault.exports.count(req).then((res) => {
+    void window.shellvault.exports.count(JSON.parse(scopeKey) as ExportScope).then((res) => {
       if (alive && res.ok) setCount(res.value);
     });
     return () => {
@@ -106,10 +115,13 @@ export function ExportDialog({ groupId = null, onClose }: ExportDialogProps) {
         hint={ex.formatHints[format]}
         onChange={setFormat}
       />
-      <Segmented<'all' | 'group'>
+      <Segmented<ScopeKind>
         label={ex.scope}
         value={scopeKind}
         options={[
+          ...(hostIds.length > 0
+            ? [{ value: 'hosts' as const, label: ex.scopeHosts(hostIds.length) }]
+            : []),
           { value: 'all', label: ex.scopeAll },
           ...(groups.length > 0 ? [{ value: 'group' as const, label: ex.scopeGroup }] : []),
         ]}
