@@ -26,12 +26,12 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
 ## Phase 1: Setup
 
 - [X] T001 Emenda da constituição 1.0.1 → 1.1.0 (R13) em `.specify/memory/constitution.md` (arquivo local, fora do repositório público)
-- [ ] T002 [P] Recursos de build em `build/linux/` e `build/darwin/`. Arquivos:
+- [X] T002 [P] Recursos de build em `build/linux/` e `build/darwin/`. Arquivos:
   - `build/linux/openhost.desktop`, com `Name=OpenHost`, `Exec=openhost`, `Icon=openhost`, `Categories=Network;RemoteAccess;System;TerminalEmulator;` e `StartupWMClass=openhost`;
   - ícones `build/linux/icons/128x128/openhost.png` e `512x512/openhost.png`, gerados de `build/appicon.png`;
   - `build/darwin/Info.plist`, com `CFBundleName` `OpenHost` e `LSMinimumSystemVersion` `12.0`;
   - `build/darwin/LEIA-ME — primeira abertura.txt`, com os três caminhos de `contracts/release.md` (botão direito → Abrir; Privacidade e Segurança → "Abrir Mesmo Assim"; `xattr -dr com.apple.quarantine`).
-- [ ] T003 [P] Registrar em `docs/licenses.md`: `github.com/creack/pty` (MIT, via `go-pty`), `github.com/godbus/dbus/v5` (BSD-2, passa a direta), `nfpm` (MIT) e `appimagetool` (MIT), estes dois só no CI.
+- [X] T003 [P] Registrar em `docs/licenses.md`: `github.com/creack/pty` (MIT, via `go-pty`), `github.com/godbus/dbus/v5` (BSD-2, passa a direta), `nfpm` (MIT) e `appimagetool` (MIT), estes dois só no CI.
 
 ---
 
