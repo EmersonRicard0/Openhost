@@ -113,7 +113,7 @@ instalação e teste de abertura com `xvfb-run`). O macOS é validado só pelo C
 
 Fazer o mesmo no `fedora:39` com o `.rpm`.
 
-- [ ] T016 [P] [US1] Go: integração do PTY Unix em `internal/localpty/pty_integration_unix_test.go` (`//go:build !windows`):
+- [X] T016 [P] [US1] Go: integração do PTY Unix em `internal/localpty/pty_integration_unix_test.go` (`//go:build !windows`):
   - abre `bash -l`, escreve `echo $TERM` e lê `xterm-256color`;
   - `Resize(100, 30)` e depois `stty size` → `30 100`;
   - Ctrl+C (`\x03`) interrompe um `sleep 100`;
