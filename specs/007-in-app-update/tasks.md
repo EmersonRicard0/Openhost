@@ -17,7 +17,7 @@ real com servidor de releases local.
 ## Phase 1: Setup
 
 - [ ] T001 **Go** `scripts/sign-sums/main.go`: `-gen` grava `update-signing.key` (privada, base64, permissão 0600) e imprime a pública em base64; `-sign <SHA256SUMS.txt>` lê a privada de `UPDATE_SIGNING_KEY` (base64) e grava `SHA256SUMS.txt.sig` (base64 da assinatura Ed25519); teste com chave temporária (R2).
-- [ ] T002 [P] Workflow `.github/workflows/release.yml`: depois de gerar `SHA256SUMS.txt`, assinar com `go run ./scripts/sign-sums -sign` usando o segredo `UPDATE_SIGNING_KEY` e publicar `SHA256SUMS.txt.sig`; falhar se o segredo faltar em tags de versão.
+- [X] T002 [P] Workflow `.github/workflows/release.yml`: depois de gerar `SHA256SUMS.txt`, assinar com `go run ./scripts/sign-sums -sign` usando o segredo `UPDATE_SIGNING_KEY` e publicar `SHA256SUMS.txt.sig`; falhar se o segredo faltar em tags de versão.
 
 ---
 

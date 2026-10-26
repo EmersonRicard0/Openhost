@@ -263,6 +263,24 @@ jobs:
           sha256sum -- * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
+      - name: Instalar Go
+        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version-file: go.mod
+          cache: false
+
+      # Assinatura Ed25519 do SHA256SUMS.txt conferida pela atualização no app (specs/007, R2).
+      - name: Assinar SHA256SUMS.txt
+        env:
+          UPDATE_SIGNING_KEY: ${{ secrets.UPDATE_SIGNING_KEY }}
+        run: |
+          if [ -z "$UPDATE_SIGNING_KEY" ]; then
+            echo "::error::segredo UPDATE_SIGNING_KEY ausente; o app recusaria esta versão"
+            exit 1
+          fi
+          go run ./scripts/sign-sums -sign dist/SHA256SUMS.txt
+          test -s dist/SHA256SUMS.txt.sig
+
       - name: Publicar a release
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631 # v2.2.2
         with:
