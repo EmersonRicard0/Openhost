@@ -33,15 +33,17 @@ controle removidas (R3). Assinaturas iniciais:
 
 | Fabricante (id) | Versão SSH | Pré-login / terminal |
 |---|---|---|
-| Huawei (`huawei`) | `huawei` | `huawei versatile routing platform`, `vrp (r) software`, `huawei technologies` |
-| ZTE (`zte`) | `zte` | `zxr10`, `zxan`, `zte corporation` |
-| Datacom (`datacom`) | `datacom`, `dmos` | `dmos`, `datacom`, `dmswitch` |
-| Cisco (`cisco`) | `cisco` | `cisco ios`, `cisco nexus`, `cisco adaptive security appliance`, `ios-xe`, `ios xr`, `nx-os` |
+| Huawei (`huawei`) | `huawei` | `huawei versatile routing platform`, `vrp (r) software`, `huawei technologies`, `the max number of vty users`, `the initial password poses security risks` |
+| ZTE (`zte`) | `zte` (inclui `ZTE_SSH`) | `zxr10`, `zxan`, `zte corporation` |
+| Datacom (`datacom`) | `datacom`, `dmos` | `dmos`, `dmswitch`, `datacom dm` |
+| Cisco (`cisco`) | `cisco` | `cisco ios`, `cisco nexus`, `cisco adaptive security appliance`, `ios-xe`, `ios xr`, `nx-os`, `type help or '?' for a list of available commands` (ASA) |
 | Juniper (`juniper`) | `junos`, `juniper` | `junos`, `juniper networks` |
-| Hillstone (`hillstone`) | `hillstone` | `hillstone networks`, `stoneos` |
-| Fortinet (`fortinet`) | `fortigate`, `fortinet`, `fortissh` | `fortigate`, `fortios`, prompt `^fgt[0-9a-z-]* (#|\$) ?$` |
+| Hillstone (`hillstone`) | `hillstone` | `hillstone networks`, `stoneos`, prompt `^sg-6000[\w-]*[#>] ?$` |
+| Fortinet (`fortinet`) | `fortigate`, `fortinet`, `fortissh` | `fortios`, prompt `^[\w.-]+ (\([\w-]+\) )?# ?$` (nome, espaço e `#`: o FortiOS separa o nome do `#`, Cisco e Linux não) |
 | MikroTik (`mikrotik`) | `rosssh`, `routeros` | `mikrotik routeros`, prompt `^\[[^@\]]+@[^\]]+\] > ?$` |
-| HPE (`hpe`) | `comware`, `aruba`, `procurve` | `comware software`, `arubaos`, `procurve` |
+| HPE (`hpe`) | `comware`, `aruba`, `procurve` | `comware software`, `hewlett packard enterprise development`, `arubaos`, `procurve` |
+
+O prompt `<nome>` (Huawei VRP e Comware) **não** é assinatura: os dois fabricantes o usam.
 
 Só assinaturas compostas ou próprias do sistema do equipamento valem no texto do terminal
 (ex.: `cisco ios`, não `cisco`), para não reconhecer um servidor Linux cuja mensagem de
