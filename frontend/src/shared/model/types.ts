@@ -227,12 +227,12 @@ export interface QuickTarget {
   username: string;
 }
 
-/** Recente local (specs/010, não sincroniza): host salvo ou alvo rápido. */
-/** Entrada enviada ao Go; a data é dele. */
+/** Entrada de recente enviada ao Go; a data é dele. */
 export type RecentEntryInput =
   | { kind: 'host'; hostId: string }
   | { kind: 'quick'; address: string; port: number; username: string };
 
+/** Recente local (specs/010, não sincroniza): host salvo ou alvo rápido. */
 export type RecentEntry =
   | { kind: 'host'; hostId: string; at: string }
   | { kind: 'quick'; address: string; port: number; username: string; at: string };
