@@ -52,6 +52,8 @@ const (
 	FilePasswordWrong       Code = "FILE_PASSWORD_WRONG"
 	PreviewExpired          Code = "PREVIEW_EXPIRED"
 	UndoUnavailable         Code = "UNDO_UNAVAILABLE"
+	Network                 Code = "NETWORK"
+	RateLimited             Code = "RATE_LIMITED"
 	Internal                Code = "INTERNAL"
 )
 
@@ -61,9 +63,9 @@ var Codes = []Code{
 	VaultUnsupportedVersion, VaultMigrationFailed, WeakPassword, NotFound, GroupCycle,
 	KeyUnsupported, KeyBadPassphrase, ConnectTimeout, ConnectRefused, HostUnreachable,
 	AuthFailed, HostKeyRejected, NoCommonAlgorithm, AgentUnavailable, SessionClosed, SftpError,
-	PermissionDenied, PortInUse, SchemeInvalid, AlreadyExists, InUse, Cancelled,
+	PermissionDenied, PortInUse, SchemeInvalid, AlreadyExists, InUse,
 	ImportTooLarge, ImportUnreadable, ImportFormatNewer, FilePasswordRequired,
-	FilePasswordWrong, PreviewExpired, UndoUnavailable, Internal,
+	FilePasswordWrong, PreviewExpired, UndoUnavailable, Cancelled, Network, RateLimited, Internal,
 }
 
 // Messages: texto pt-BR fixo por código (FR-005 da 001). Nunca contém dados do erro original.
@@ -103,6 +105,8 @@ var Messages = map[Code]string{
 	FilePasswordWrong:       "Senha incorreta.",
 	PreviewExpired:          "A prévia expirou. Escolha a origem de novo.",
 	UndoUnavailable:         "Não há importação para desfazer.",
+	Network:                 "Não foi possível verificar as atualizações. Confira a conexão.",
+	RateLimited:             "O serviço de atualizações está temporariamente limitado. Tente mais tarde.",
 	Internal:                "Ocorreu um erro inesperado.",
 }
 

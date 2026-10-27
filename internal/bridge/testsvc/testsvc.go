@@ -6,6 +6,7 @@ package testsvc
 
 import (
 	"context"
+	"errors"
 	"os"
 	"runtime"
 
@@ -25,12 +26,33 @@ type Size struct {
 }
 
 type TestService struct {
-	ctx      func() context.Context
-	sessions func() Sessions
+	ctx             func() context.Context
+	sessions        func() Sessions
+	setUpdateSource func(string, string) error
+	setInstallKind  func(string) error
 }
 
-func New(ctx func() context.Context, sessions func() Sessions) *TestService {
-	return &TestService{ctx: ctx, sessions: sessions}
+func New(
+	ctx func() context.Context,
+	sessions func() Sessions,
+	setUpdateSource func(string, string) error,
+	setInstallKind func(string) error,
+) *TestService {
+	return &TestService{ctx: ctx, sessions: sessions, setUpdateSource: setUpdateSource, setInstallKind: setInstallKind}
+}
+
+func (t *TestService) SetUpdateSource(url, pubkeyB64 string) error {
+	if t.setUpdateSource == nil {
+		return errors.New("update controls unavailable")
+	}
+	return t.setUpdateSource(url, pubkeyB64)
+}
+
+func (t *TestService) SetInstallKind(kind string) error {
+	if t.setInstallKind == nil {
+		return errors.New("update controls unavailable")
+	}
+	return t.setInstallKind(kind)
 }
 
 func (t *TestService) Maximise() { wruntime.WindowMaximise(t.ctx()) }

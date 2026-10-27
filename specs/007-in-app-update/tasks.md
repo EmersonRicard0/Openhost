@@ -16,7 +16,7 @@ real com servidor de releases local.
 
 ## Phase 1: Setup
 
-- [ ] T001 **Go** `scripts/sign-sums/main.go`: `-gen` grava `update-signing.key` (privada, base64, permissão 0600) e imprime a pública em base64; `-sign <SHA256SUMS.txt>` lê a privada de `UPDATE_SIGNING_KEY` (base64) e grava `SHA256SUMS.txt.sig` (base64 da assinatura Ed25519); teste com chave temporária (R2).
+- [X] T001 **Go** `scripts/sign-sums/main.go`: `-gen` grava `update-signing.key` (privada, base64, permissão 0600) e imprime a pública em base64; `-sign <SHA256SUMS.txt>` lê a privada de `UPDATE_SIGNING_KEY` (base64) e grava `SHA256SUMS.txt.sig` (base64 da assinatura Ed25519); teste com chave temporária (R2).
 - [X] T002 [P] Workflow `.github/workflows/release.yml`: depois de gerar `SHA256SUMS.txt`, assinar com `go run ./scripts/sign-sums -sign` usando o segredo `UPDATE_SIGNING_KEY` e publicar `SHA256SUMS.txt.sig`; falhar se o segredo faltar em tags de versão.
 
 ---
@@ -25,11 +25,11 @@ real com servidor de releases local.
 
 **Checkpoint**: `go test ./internal/updater/...` verde no Windows e `GOOS=linux|darwin go vet`.
 
-- [ ] T003 **Go** `internal/updater/releases.go` + teste com `httptest`: `FetchReleases(ctx, cfg, etag)` (User-Agent, `If-None-Match`, 304, 403/429 → `RATE_LIMITED`), `Pick(releases, current, prerelease, install, goos, goarch) *Choice` (maior SemVer elegível; nunca igual/menor; exige pacote do formato; rascunhos fora) (R1, FR-702, FR-703).
-- [ ] T004 **Go** `internal/updater/verify.go` + teste: `Verify(sums, sig []byte, pub ed25519.PublicKey, name string, file io.Reader) error` com erros `signature`/`checksum`; `pubkey.go` com a chave do projeto (placeholder até T001 rodar no dono) (R2, FR-710).
-- [ ] T005 **Go** `internal/updater/install_{windows,darwin,linux}.go` + testes por tag: `DetectInstall() Install{Kind, Target, Writable, ManualCommand}` conforme a tabela de R3; `dev` para builds com tag `e2e` ou sem versão.
-- [ ] T006 **Go** `internal/updater/download.go` + teste: `.part`, `Range`, conferência de tamanho, progresso limitado a 250 ms, cancelamento apaga o parcial, espaço livre ×2, limpeza de versões antigas (R5).
-- [ ] T007 **Go** Preferências `updates` em `internal/appwin/preferences.go` (data-model `UpdatePrefs`, padrões `auto: true`, `prerelease: false`) com teste de validação e de leitura com cofre bloqueado (R6).
+- [X] T003 **Go** `internal/updater/releases.go` + teste com `httptest`: `FetchReleases(ctx, cfg, etag)` (User-Agent, `If-None-Match`, 304, 403/429 → `RATE_LIMITED`), `Pick(releases, current, prerelease, install, goos, goarch) *Choice` (maior SemVer elegível; nunca igual/menor; exige pacote do formato; rascunhos fora) (R1, FR-702, FR-703).
+- [X] T004 **Go** `internal/updater/verify.go` + teste: `Verify(sums, sig []byte, pub ed25519.PublicKey, name string, file io.Reader) error` com erros `signature`/`checksum`; `pubkey.go` com a chave do projeto (placeholder até T001 rodar no dono) (R2, FR-710).
+- [X] T005 **Go** `internal/updater/install_{windows,darwin,linux}.go` + testes por tag: `DetectInstall() Install{Kind, Target, Writable, ManualCommand}` conforme a tabela de R3; `dev` para builds com tag `e2e` ou sem versão.
+- [X] T006 **Go** `internal/updater/download.go` + teste: `.part`, `Range`, conferência de tamanho, progresso limitado a 250 ms, cancelamento apaga o parcial, espaço livre ×2, limpeza de versões antigas (R5).
+- [X] T007 **Go** Preferências `updates` em `internal/appwin/preferences.go` (data-model `UpdatePrefs`, padrões `auto: true`, `prerelease: false`) com teste de validação e de leitura com cofre bloqueado (R6).
 
 ---
 
@@ -37,7 +37,7 @@ real com servidor de releases local.
 
 **Independent Test**: quickstart §2, cenários 1, 2 e 6.
 
-- [ ] T008 [US1] **Go** `internal/bridge/updates.go`: `UpdateService` com `Info`, `Check(manual)`, `Remind`, `Skip`, `Prefs`/`SetPrefs` e evento `updates:state`; verificação ao iniciar (depois da janela pronta) e a cada 6 h com `auto`; falha calada no automático (FR-701–FR-707); `TestService.SetUpdateSource` só com tag `e2e`; testes em `internal/bridge/updates_test.go`.
+- [X] T008 [US1] **Go** `internal/bridge/updates.go`: `UpdateService` com `Info`, `Check(manual)`, `Remind`, `Skip`, `Prefs`/`SetPrefs` e evento `updates:state`; verificação ao iniciar (depois da janela pronta) e a cada 6 h com `auto`; falha calada no automático (FR-701–FR-707); `TestService.SetUpdateSource` só com tag `e2e`; testes em `internal/bridge/updates_test.go`.
 - [X] T009 [P] [US1] Frontend: tipos e `window.shellvault.updates` em `frontend/src/bridge/index.ts` e `frontend/src/shared/ipc/api.ts`; store `frontend/src/stores/updates.ts` (+ teste) assinando `updates:state`.
 - [X] T010 [US1] `frontend/src/features/updates/UpdateToast.tsx`: aviso não bloqueante (sem roubar foco do terminal) com versão, selo "versão de teste", notas expansíveis (Markdown simples, sem HTML), "Atualizar", "Lembrar depois", "Pular esta versão"; i18n em `frontend/src/i18n/pt-BR.ts`; acessível (`role="status"`, foco só por Tab/atalho).
 - [X] T011 [US1] Indicador na barra de status (`frontend/src/app/StatusBar.tsx`) enquanto há versão disponível/pronta, que reabre o aviso (FR-708).
@@ -49,8 +49,8 @@ real com servidor de releases local.
 
 **Independent Test**: quickstart §2, cenários 3–5; §3 manual.
 
-- [ ] T013 [US2] **Go** `Download`, `Cancel`, verificação após o download (T004), estados `downloading/verifying/ready/failed` no `UpdateService`.
-- [ ] T014 [US2] **Go** Auxiliar `--apply-update` em `main.go` (antes do Wails) e `internal/updater/apply_{windows,darwin,linux}.go`: manifesto só em `updates/`, reverificação, espera do PID, NSIS `/S`, troca atômica do `.app` a partir do `.dmg`, troca do AppImage, `last-update.json`, reabrir; `RestartNow`, `ApplyOnQuit`, `LastResult` (R4, FR-711–FR-714). Testes da lógica de manifesto/troca com arquivos temporários.
+- [X] T013 [US2] **Go** `Download`, `Cancel`, verificação após o download (T004), estados `downloading/verifying/ready/failed` no `UpdateService`.
+- [X] T014 [US2] **Go** Auxiliar `--apply-update` em `main.go` (antes do Wails) e `internal/updater/apply_{windows,darwin,linux}.go`: manifesto só em `updates/`, reverificação, espera do PID, NSIS `/S`, troca atômica do `.app` a partir do `.dmg`, troca do AppImage, `last-update.json`, reabrir; `RestartNow`, `ApplyOnQuit`, `LastResult` (R4, FR-711–FR-714). Testes da lógica de manifesto/troca com arquivos temporários.
 - [ ] T015 [US2] Frontend: progresso e cancelar no aviso; "Reiniciar para atualizar" com confirmação que conta sessões abertas (`useSessions`) e oferece "Reiniciar agora"/"Atualizar ao fechar"; mensagem de falha por motivo; aviso de sucesso/falha no início seguinte (`LastResult`).
 - [ ] T016 [US2] E2e: cenários 3, 4 e 5 (progresso até "pronto", assinatura inválida recusada, contagem de sessões na confirmação, sem reiniciar de fato).
 
