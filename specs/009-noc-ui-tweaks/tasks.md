@@ -35,7 +35,7 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 ## Phase 2: Foundational — Frontend (Claude)
 
 - [ ] T007 Tipos em `frontend/src/shared/model/types.ts` (`Host.environmentId/tags/notes`, `Environment`, `EnvironmentColor`, `VaultSettings.environments`, `Settings.hostDensity/promptTitle`) e chaves de texto em `frontend/src/i18n/pt-BR.ts`.
-- [ ] T008 [P] `frontend/src/theme/environments.ts`: valor de cada id de cor por tema (escuro, claro, alto contraste) e teste em `environments.test.ts` conferindo contraste ≥ 3:1 com o fundo da barra de abas de cada tema.
+- [X] T008 [P] `frontend/src/theme/environments.ts`: valor de cada id de cor por tema (escuro, claro, alto contraste) e teste em `environments.test.ts` conferindo contraste ≥ 3:1 com o fundo da barra de abas de cada tema.
 
 ---
 
@@ -59,9 +59,9 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 **Independent Test**: quickstart, cenário 2.
 
-- [ ] T014 [US2] Testes e depois `settingsOpen`/`settingsActive` em `frontend/src/stores/workspace.ts`: abrir (ativa a existente), ativar sessão, fechar (volta ao id ativo anterior ou à tela vazia), sem persistir.
-- [ ] T015 [US2] `TabBar.tsx`: item "Configurações" com ícone e botão "Fechar Configurações", fora do arrastar e dos grupos; com ele ativo nenhuma sessão tem `aria-selected="true"`.
-- [ ] T016 [US2] `Workspace.tsx`: com `settingsActive`, terminais ocultos mas montados e `SettingsPage` no lugar; atalhos de terminal em `frontend/src/features/terminal/commands.ts` não agem; Ctrl+W e Esc fecham as Configurações; botão, atalho e paleta passam a abrir a aba.
+- [X] T014 [US2] Testes e depois `settingsOpen`/`settingsActive` em `frontend/src/stores/workspace.ts`: abrir (ativa a existente), ativar sessão, fechar (volta ao id ativo anterior ou à tela vazia), sem persistir.
+- [X] T015 [US2] `TabBar.tsx`: item "Configurações" com ícone e botão "Fechar Configurações", fora do arrastar e dos grupos; com ele ativo nenhuma sessão tem `aria-selected="true"`.
+- [X] T016 [US2] `Workspace.tsx`: com `settingsActive`, terminais ocultos mas montados e `SettingsPage` no lugar; atalhos de terminal em `frontend/src/features/terminal/commands.ts` não agem; Ctrl+W e Esc fecham as Configurações; botão, atalho e paleta passam a abrir a aba.
 
 ---
 
@@ -71,7 +71,7 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 **Independent Test**: quickstart, cenário 3.
 
-- [ ] T017 [P] [US3] Barra vertical na cor de destaque no item selecionado (`data-selected`) em `frontend/src/features/sidebar/sidebar.module.css` e `frontend/src/features/hosts/HostList.tsx`.
+- [X] T017 [P] [US3] Barra vertical na cor de destaque no item selecionado (`data-selected`) em `frontend/src/features/sidebar/sidebar.module.css` e `frontend/src/features/hosts/HostList.tsx`.
 - [ ] T018 [US3] Densidade (`data-density`): item compacto de 28 px com ícone menor, rótulo e endereço na mesma linha e reticências; rádio "Densidade da lista" em Configurações → Aparência gravando `hostDensity`.
 
 ---
@@ -94,8 +94,8 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 **Independent Test**: quickstart, cenário 5.
 
-- [ ] T022 [P] [US5] Testes e depois `frontend/src/features/terminal/promptTitle.ts` (`extractPromptName`): `<BNG.PINDORETAMA>`, `[~BNG.PINDORETAMA]`, `[*OLT-01]`, `[OLT-01]`, `R1#`, `R1>`, `R1(config-if)#`, `user@srv:~$`, `root@srv:/etc#`, `[admin@MikroTik] >`; recusar linhas de saída comuns, controle e > 64 caracteres.
-- [ ] T023 [US5] `Tab.promptTitle` e `manualTitle` em `frontend/src/stores/sessions.ts` (renomear à mão grava `manualTitle`), título exibido manual > prompt > rótulo, com teste em `sessions.test.ts`.
+- [X] T022 [P] [US5] Testes e depois `frontend/src/features/terminal/promptTitle.ts` (`extractPromptName`): `<BNG.PINDORETAMA>`, `[~BNG.PINDORETAMA]`, `[*OLT-01]`, `[OLT-01]`, `R1#`, `R1>`, `R1(config-if)#`, `user@srv:~$`, `root@srv:/etc#`, `[admin@MikroTik] >`; recusar linhas de saída comuns, controle e > 64 caracteres.
+- [X] T023 [US5] `Tab.promptTitle` e `manualTitle` em `frontend/src/stores/sessions.ts` (renomear à mão grava `manualTitle`), título exibido manual > prompt > rótulo, com teste em `sessions.test.ts`.
 - [ ] T024 [US5] `TerminalView.tsx`: ler a linha do cursor após escrita, no máximo 1×/s, só com o cursor no fim da linha, só em sessões SSH; dica da aba com `rótulo — usuário@endereço:porta`; checkbox "Nome da aba pelo prompt" em `TerminalSettings.tsx`.
 
 ---
@@ -106,7 +106,7 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 **Independent Test**: quickstart, cenário 6.
 
-- [ ] T025 [P] [US6] `steppers={false}` em `frontend/src/ui/NumberField.tsx` (setas do teclado mantidas) e seleção do valor ao focar; uso no campo de porta de `HostForm.tsx`.
+- [X] T025 [P] [US6] `steppers={false}` em `frontend/src/ui/NumberField.tsx` (setas do teclado mantidas) e seleção do valor ao focar; uso no campo de porta de `HostForm.tsx`.
 
 ---
 

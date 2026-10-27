@@ -179,6 +179,8 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             value={port}
             error={portValid ? null : '1–65535'}
             onChange={setPort}
+            steppers={false}
+            selectOnFocus
           />
         </div>
         <TextField

@@ -21,6 +21,8 @@ interface WorkspaceState {
   /** Diálogo de encaminhamentos ativos (barra de status). */
   forwardsOpen: boolean;
   view: MainView;
+  /** A aba "Configurações" está na barra (ativa ou não); `view` diz se é ela que aparece (FR-908). */
+  settingsTab: boolean;
   /** Seção a abrir na próxima vez que as configurações aparecerem. */
   settingsSection: string | null;
   pendingPaste: PendingPaste | null;
@@ -33,6 +35,8 @@ interface WorkspaceState {
   setForwardsOpen: (open: boolean) => void;
   setView: (view: MainView) => void;
   openSettings: (section: string) => void;
+  /** Fecha a aba "Configurações" e volta à sessão que estava ativa (FR-911). */
+  closeSettings: () => void;
   setPendingPaste: (paste: PendingPaste | null) => void;
   setConfirmClose: (sessionId: string | null) => void;
 }
@@ -43,6 +47,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   paletteOpen: false,
   forwardsOpen: false,
   view: 'terminal',
+  settingsTab: false,
   settingsSection: null,
   pendingPaste: null,
   confirmClose: null,
@@ -66,10 +71,13 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     set({ forwardsOpen });
   },
   setView(view) {
-    set({ view });
+    set(view === 'settings' ? { view, settingsTab: true } : { view });
   },
   openSettings(section) {
-    set({ view: 'settings', settingsSection: section });
+    set({ view: 'settings', settingsTab: true, settingsSection: section });
+  },
+  closeSettings() {
+    set({ view: 'terminal', settingsTab: false, settingsSection: null });
   },
   setPendingPaste(pendingPaste) {
     set({ pendingPaste });

@@ -140,3 +140,37 @@ describe('grupos de sessões no store (006, data-model)', () => {
     expect(membersOf('C')).toEqual(['C', 'B', 'D']);
   });
 });
+
+describe('nome da aba pelo prompt (009, FR-922–FR-925)', () => {
+  const title = (id: string) => state().tabs.find((t) => t.id === id)?.title;
+
+  beforeEach(() => {
+    useSessions.setState({ tabs: [], activeId: null, groups: {}, promptTitles: true });
+    open('A', 'ssh');
+    open('B', 'ssh');
+  });
+
+  it('o prompt troca o título; sem prompt volta o rótulo', () => {
+    state().setPromptTitle('A', 'BNG.PINDORETAMA');
+    expect(title('A')).toBe('BNG.PINDORETAMA');
+    state().setPromptTitle('A', null);
+    expect(title('A')).toBe('A');
+  });
+
+  it('aba renomeada à mão não muda com o prompt', () => {
+    state().rename('A', 'meu nome');
+    state().setPromptTitle('A', 'R1');
+    expect(title('A')).toBe('meu nome');
+  });
+
+  it('desligar devolve o rótulo às abas não renomeadas; religar volta o prompt', () => {
+    state().setPromptTitle('A', 'R1');
+    state().rename('B', 'manual');
+    state().setPromptTitles(false);
+    expect([title('A'), title('B')]).toEqual(['A', 'manual']);
+    state().setPromptTitle('A', 'R2');
+    expect(title('A')).toBe('A');
+    state().setPromptTitles(true);
+    expect(title('A')).toBe('R2');
+  });
+});

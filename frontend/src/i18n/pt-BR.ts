@@ -76,6 +76,7 @@ export const t = {
   },
   settings: {
     title: 'Configurações',
+    closeTab: 'Fechar Configurações',
     back: 'Voltar ao terminal',
     autosave: 'As alterações são salvas automaticamente.',
     sectionsLabel: 'Seções das configurações',

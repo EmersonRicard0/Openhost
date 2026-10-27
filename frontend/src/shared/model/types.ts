@@ -22,6 +22,19 @@ export interface VaultSettings {
   legacyDefault: boolean;
   /** `$TERM` enviado no pedido de PTY. */
   term: TermType;
+  /** Ambientes que classificam hosts (specs/009); padrões quando o cofre não tem a lista. */
+  environments: Environment[];
+}
+
+/** Cores fixas de ambiente; o valor de cada uma depende do tema (`theme/environments.ts`). */
+export type EnvironmentColor =
+  'red' | 'orange' | 'amber' | 'green' | 'teal' | 'blue' | 'slate' | 'pink';
+
+export interface Environment {
+  id: string;
+  /** 1–24 caracteres, único sem diferenciar maiúsculas. */
+  name: string;
+  color: EnvironmentColor;
 }
 
 export type TermType = 'xterm-256color' | 'xterm' | 'vt100' | 'linux';
@@ -52,6 +65,12 @@ export interface Host {
   detectedOs?: OsId | null;
   /** Ícone escolhido no formulário; `auto` usa o detectado. */
   osIcon?: OsId | 'auto';
+  /** Ambiente (specs/009); id sem ambiente correspondente vale como nenhum. */
+  environmentId?: string | null;
+  /** 0–20 tags de 1–32 caracteres. */
+  tags?: string[];
+  /** Até 2.000 caracteres. */
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -189,7 +208,13 @@ export interface Settings {
   bell: BellMode;
   boldBright: boolean;
   autoReconnect: boolean;
+  /** Densidade da lista de hosts (specs/009); ausente até o Go gravar. */
+  hostDensity?: HostDensity;
+  /** Nome da aba pelo prompt do equipamento (specs/009); ausente vale `true`. */
+  promptTitle?: boolean;
 }
+
+export type HostDensity = 'comfortable' | 'compact';
 
 export type BellMode = 'off' | 'sound' | 'visual';
 

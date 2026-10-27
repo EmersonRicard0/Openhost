@@ -50,6 +50,23 @@
   pointer-events: none;
 }
 
+/* Barra na cor de destaque na borda esquerda da linha selecionada (specs/009, FR-913). */
+.list[data-indicator]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  width: 3px;
+  height: var(--indicator-size);
+  border-radius: 9px 0 0 9px;
+  background: var(--accent);
+  transform: translateY(var(--indicator-offset));
+  transition:
+    transform var(--motion-base) var(--ease-emphasized),
+    height var(--motion-base) var(--ease-emphasized);
+  pointer-events: none;
+}
+
 .list[data-indicator] > * {
   position: relative;
 }
@@ -75,7 +92,9 @@
 
 .item[aria-selected='true'] {
   background: var(--selected);
-  box-shadow: var(--inset-accent-soft);
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    var(--inset-accent-soft);
 }
 
 .itemIcon {

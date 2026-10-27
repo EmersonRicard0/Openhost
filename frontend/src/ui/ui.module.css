@@ -305,6 +305,12 @@ textarea.input {
   font-variant-numeric: tabular-nums;
 }
 
+/* Sem −/+ (porta): número alinhado como um campo de texto. */
+.numberPlain .numberInput {
+  padding: 0 7px;
+  text-align: left;
+}
+
 .unit {
   padding-right: 4px;
   color: var(--text-secondary);

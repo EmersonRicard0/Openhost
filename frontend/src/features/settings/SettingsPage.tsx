@@ -529,7 +529,7 @@ function UpdatesGroup() {
 }
 
 export function SettingsPage() {
-  const setView = useWorkspace((w) => w.setView);
+  const closeSettings = useWorkspace((w) => w.closeSettings);
   const settings = useUi((u) => u.settings);
   const [section, setSection] = useState<Section>(() => {
     const wanted = useWorkspace.getState().settingsSection;
@@ -539,8 +539,21 @@ export function SettingsPage() {
   const navRef = useRef<HTMLElement>(null);
   const indicator = useSlidingIndicator(navRef, section, 'y', '[aria-current="page"]');
 
+  // Trocar para uma sessão desmonta a página; com a aba ainda aberta, volta na mesma seção.
+  const sectionRef = useRef(section);
+  useEffect(() => {
+    sectionRef.current = section;
+  }, [section]);
+  useEffect(
+    () => () => {
+      if (useWorkspace.getState().settingsTab)
+        useWorkspace.setState({ settingsSection: sectionRef.current });
+    },
+    [],
+  );
+
   function close() {
-    setView('terminal');
+    closeSettings();
     const active = useSessions.getState().activeId;
     if (active) {
       requestAnimationFrame(() => {

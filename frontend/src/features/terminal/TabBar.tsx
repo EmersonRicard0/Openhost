@@ -10,6 +10,7 @@ import {
 import { t } from '../../i18n/pt-BR';
 import type { Platform, SendKeysCombo } from '@shared/model/types';
 import {
+  accessibleTitle,
   closeTab,
   isLive,
   stripItems,
@@ -29,10 +30,11 @@ import {
   KeyboardIcon,
   PlusIcon,
   RenameIcon,
+  SettingsIcon,
 } from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { toastError } from '../../ui/Toast';
-import { closeActiveTab, closeGroup } from './commands';
+import { closeGroup, closeSession } from './commands';
 import { endDrag, startDrag } from './dragState';
 import { StateIcon } from './StateIcon';
 import s from './terminal.module.css';
@@ -103,11 +105,46 @@ function tabMenu(
         closeGroup(groupId);
         return;
       }
-      useSessions.getState().activate(tab.id);
-      closeActiveTab();
+      closeSession(tab.id);
     },
   });
   return items;
+}
+
+/** Aba "Configurações" (FR-908): não arrasta, não entra em grupo, fecha sem confirmar. */
+function SettingsTabItem({ active }: { active: boolean }) {
+  const { setView, closeSettings } = useWorkspace();
+  return (
+    <div
+      role="tab"
+      aria-selected={active}
+      tabIndex={active ? 0 : -1}
+      aria-label={t.settings.title}
+      data-settings-tab=""
+      className={`${s.tab} ${active ? s.tabActive : ''} no-drag`}
+      onClick={() => {
+        setView('settings');
+      }}
+      onAuxClick={(e) => {
+        if (e.button === 1) closeSettings();
+      }}
+    >
+      <SettingsIcon width={14} height={14} aria-hidden />
+      <span className={s.tabTitle}>{t.settings.title}</span>
+      <Button
+        variant="ghost"
+        iconOnly
+        className={s.tabClose}
+        aria-label={t.settings.closeTab}
+        onClick={(e) => {
+          e.stopPropagation();
+          closeSettings();
+        }}
+      >
+        <CloseIcon width={12} height={12} />
+      </Button>
+    </div>
+  );
 }
 
 function TabItem({ item, activeId }: { item: StripItem; activeId: string | null }) {
@@ -128,7 +165,11 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
       tabIndex={active ? 0 : -1}
       title={stateLabel(tab)}
       aria-label={
-        item.kind === 'group' ? t.terminal.group.label(tab.title, members.length - 1) : undefined
+        item.kind === 'group'
+          ? t.terminal.group.label(tab.title, members.length - 1)
+          : tab.title === tab.baseTitle
+            ? undefined
+            : accessibleTitle(tab)
       }
       data-group={item.kind === 'group' ? '' : undefined}
       className={`${s.tab} ${active ? s.tabActive : ''} ${dropTarget ? s.dropBefore : ''} no-drag`}
@@ -336,15 +377,19 @@ function scrollByPage(bar: HTMLDivElement | null, dir: -1 | 1) {
 }
 
 export function TabBar({ newTabItems, trailing }: TabBarProps) {
-  const { tabs, groups, activeId, activate } = useSessions();
+  const { tabs, groups, activeId: sessionId, activate } = useSessions();
+  const settingsTab = useWorkspace((w) => w.settingsTab);
+  const settingsActive = useWorkspace((w) => w.view === 'settings');
+  // Com as Configurações à frente, nenhuma sessão aparece como ativa (FR-909).
+  const activeId = settingsActive ? null : sessionId;
   const items = stripItems(tabs, groups);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [listAnchor, setListAnchor] = useState<HTMLElement | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   // Ordem e títulos mudam a posição da aba ativa sem trocar o id: entram na chave.
-  const layoutKey = `${activeId ?? ''}|${items.map((it) => `${it.id}:${it.kind === 'tab' ? it.tab.title : `${it.focus.title}+${String(it.members.length)}`}`).join('|')}`;
+  const layoutKey = `${settingsActive ? 'settings' : (activeId ?? '')}|${settingsTab ? 's' : ''}|${items.map((it) => `${it.id}:${it.kind === 'tab' ? it.tab.title : `${it.focus.title}+${String(it.members.length)}`}`).join('|')}`;
   const indicator = useSlidingIndicator(barRef, layoutKey, 'x');
-  const overflow = useTabScroll(barRef, activeId);
+  const overflow = useTabScroll(barRef, settingsActive ? 'settings' : activeId);
   const overflowing = overflow.start || overflow.end;
 
   return (
@@ -389,6 +434,7 @@ export function TabBar({ newTabItems, trailing }: TabBarProps) {
         {items.map((item) => (
           <TabItem key={item.id} item={item} activeId={activeId} />
         ))}
+        {settingsTab && <SettingsTabItem active={settingsActive} />}
       </div>
       {overflowing && (
         <>
