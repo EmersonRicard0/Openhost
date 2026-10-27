@@ -54,6 +54,13 @@ const (
 	UndoUnavailable         Code = "UNDO_UNAVAILABLE"
 	Network                 Code = "NETWORK"
 	RateLimited             Code = "RATE_LIMITED"
+	SyncUnavailable         Code = "SYNC_UNAVAILABLE"
+	SyncCancelled           Code = "SYNC_CANCELLED"
+	SyncAuth                Code = "SYNC_AUTH"
+	SyncQuota               Code = "SYNC_QUOTA"
+	SyncFormat              Code = "SYNC_FORMAT"
+	CloudEmpty              Code = "CLOUD_EMPTY"
+	CloudCorrupt            Code = "CLOUD_CORRUPT"
 	Internal                Code = "INTERNAL"
 )
 
@@ -65,7 +72,8 @@ var Codes = []Code{
 	AuthFailed, HostKeyRejected, NoCommonAlgorithm, AgentUnavailable, SessionClosed, SftpError,
 	PermissionDenied, PortInUse, SchemeInvalid, AlreadyExists, InUse,
 	ImportTooLarge, ImportUnreadable, ImportFormatNewer, FilePasswordRequired,
-	FilePasswordWrong, PreviewExpired, UndoUnavailable, Cancelled, Network, RateLimited, Internal,
+	FilePasswordWrong, PreviewExpired, UndoUnavailable, Cancelled, Network, RateLimited,
+	SyncUnavailable, SyncCancelled, SyncAuth, SyncQuota, SyncFormat, CloudEmpty, CloudCorrupt, Internal,
 }
 
 // Messages: texto pt-BR fixo por código (FR-005 da 001). Nunca contém dados do erro original.
@@ -107,6 +115,13 @@ var Messages = map[Code]string{
 	UndoUnavailable:         "Não há importação para desfazer.",
 	Network:                 "Não foi possível verificar as atualizações. Confira a conexão.",
 	RateLimited:             "O serviço de atualizações está temporariamente limitado. Tente mais tarde.",
+	SyncUnavailable:         "A sincronização com o Google Drive não está disponível neste build.",
+	SyncCancelled:           "A conexão com o Google Drive foi cancelada.",
+	SyncAuth:                "A conexão com o Google Drive foi perdida. Conecte a conta novamente.",
+	SyncQuota:               "Não há espaço disponível no Google Drive.",
+	SyncFormat:              "Este cofre na nuvem exige uma versão mais nova do OpenHost.",
+	CloudEmpty:              "Não há um cofre do OpenHost nesta conta.",
+	CloudCorrupt:            "O cofre na nuvem está corrompido e não foi aplicado.",
 	Internal:                "Ocorreu um erro inesperado.",
 }
 

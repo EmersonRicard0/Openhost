@@ -188,7 +188,11 @@ func (s *Store) SaveGlobalProfile(p model.TerminalProfile) error {
 		return err
 	}
 	p.ID, p.IsGlobal = id, true
-	return putTerminalProfile(s.db, p)
+	if err := putTerminalProfile(s.db, p); err != nil {
+		return err
+	}
+	s.markChanged()
+	return nil
 }
 
 func (s *Store) HostProfile(hostID string) (*model.TerminalProfile, error) {
@@ -260,6 +264,7 @@ func (s *Store) SetHostProfile(hostID string, p *model.TerminalProfile) error {
 		return err
 	}
 	s.content, s.sigs = draft, sigs
+	s.markChanged()
 	return nil
 }
 
@@ -297,6 +302,7 @@ func (s *Store) SaveColorScheme(item model.ColorScheme) error {
 	if err := putColorScheme(s.db, item); err != nil {
 		return apperr.New(apperr.InvalidInput)
 	}
+	s.markChanged()
 	return nil
 }
 
@@ -329,6 +335,7 @@ func (s *Store) DeleteColorScheme(id string) error {
 	if n == 0 {
 		return apperr.New(apperr.NotFound)
 	}
+	s.markChanged()
 	return nil
 }
 
@@ -354,5 +361,9 @@ func (s *Store) ApplyLegacyTerminalFont(family string, size int) error {
 		_ = tx.Rollback()
 		return err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	s.markChanged()
+	return nil
 }

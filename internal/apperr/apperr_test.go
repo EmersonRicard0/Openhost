@@ -25,7 +25,7 @@ func TestEveryCodeHasMessage(t *testing.T) {
 func TestNewCodesExist(t *testing.T) {
 	for _, c := range []Code{NoCommonAlgorithm, AgentUnavailable, SchemeInvalid, AlreadyExists, InUse, VaultMigrationFailed,
 		ImportTooLarge, ImportUnreadable, ImportFormatNewer, FilePasswordRequired, FilePasswordWrong, PreviewExpired, UndoUnavailable,
-		Network, RateLimited} {
+		Network, RateLimited, SyncUnavailable, SyncCancelled, SyncAuth, SyncQuota, SyncFormat, CloudEmpty, CloudCorrupt} {
 		if _, ok := Messages[c]; !ok {
 			t.Errorf("código novo %s ausente", c)
 		}

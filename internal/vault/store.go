@@ -69,18 +69,20 @@ func (m meta) wrapAD() []byte {
 // cofre); as tabelas cifradas só são lidas e escritas com o cofre desbloqueado.
 // Os ouvintes de OnStatus rodam depois que o Store libera o lock e podem chamá-lo de volta.
 type Store struct {
-	mu        sync.Mutex
-	dir       string
-	kdf       func(salt []byte) KDFParams
-	now       func() string
-	db        *sql.DB
-	status    Status
-	dek       []byte
-	meta      *meta
-	content   *model.Content
-	sigs      map[string]map[string]string
-	listeners []func(Status)
-	pending   []Status
+	mu              sync.Mutex
+	dir             string
+	kdf             func(salt []byte) KDFParams
+	now             func() string
+	db              *sql.DB
+	status          Status
+	dek             []byte
+	meta            *meta
+	content         *model.Content
+	sigs            map[string]map[string]string
+	listeners       []func(Status)
+	pending         []Status
+	changeListeners []func()
+	pendingChange   bool
 }
 
 // Open abre (ou cria) o banco em dir. kdf define o custo do Argon2id para cofres novos e trocas
@@ -171,6 +173,16 @@ func (s *Store) OnStatus(fn func(Status)) {
 	s.listeners = append(s.listeners, fn)
 }
 
+// OnChange registra um ouvinte de mudanças locais persistidas. Os callbacks rodam depois de
+// liberar o lock e podem chamar o Store novamente.
+func (s *Store) OnChange(fn func()) {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	s.changeListeners = append(s.changeListeners, fn)
+}
+
+func (s *Store) markChanged() { s.pendingChange = true }
+
 func (s *Store) setStatus(st Status) {
 	s.status = st
 	s.pending = append(s.pending, st)
@@ -179,11 +191,18 @@ func (s *Store) setStatus(st Status) {
 // unlockAndNotify libera o lock e só então avisa os ouvintes das mudanças de estado.
 func (s *Store) unlockAndNotify() {
 	pending, listeners := s.pending, append([]func(Status){}, s.listeners...)
+	changed, changeListeners := s.pendingChange, append([]func(){}, s.changeListeners...)
 	s.pending = nil
+	s.pendingChange = false
 	s.mu.Unlock()
 	for _, st := range pending {
 		for _, l := range listeners {
 			l(st)
+		}
+	}
+	if changed {
+		for _, listener := range changeListeners {
+			listener()
 		}
 	}
 }
@@ -411,7 +430,7 @@ func (s *Store) Erase() error {
 	if err != nil {
 		return err
 	}
-	for _, t := range []string{"forward_rules", "hosts", "known_hosts", "credentials", "groups", "vault_settings", "vault_meta"} {
+	for _, t := range []string{"sync_state", "forward_rules", "hosts", "known_hosts", "credentials", "groups", "vault_settings", "vault_meta"} {
 		if _, err := tx.Exec(`DELETE FROM ` + t); err != nil {
 			_ = tx.Rollback()
 			return err
@@ -480,6 +499,27 @@ func (s *Store) MutateWithProfiles(fn func(c *model.Content) (ProfileChanges, er
 		return err
 	}
 	s.content, s.sigs = draft, sigs
+	s.markChanged()
+	return nil
+}
+
+// Apply persiste conteúdo vindo da nuvem sem disparar OnChange e, portanto, sem criar um ciclo
+// de upload. O chamador deve validar todos os itens antes de chamar este método.
+func (s *Store) Apply(content *model.Content) error {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	if s.status.State != StateUnlocked {
+		return apperr.New(apperr.VaultLocked)
+	}
+	if content == nil {
+		return apperr.New(apperr.InvalidInput)
+	}
+	draft := content.Clone()
+	sigs, err := s.persist(nil, s.dek, s.sigs, draft)
+	if err != nil {
+		return err
+	}
+	s.content, s.sigs = draft, sigs
 	return nil
 }
 
@@ -513,6 +553,9 @@ func (s *Store) SetPreference(key string, value any) error {
 	}
 	_, err = s.db.Exec(`INSERT INTO preferences (key, value) VALUES (?, ?)
 		ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, string(raw))
+	if err == nil {
+		s.markChanged()
+	}
 	return err
 }
 

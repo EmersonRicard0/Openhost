@@ -17,8 +17,8 @@ real com o Drive falso e duas pastas de dados.
 
 ## Phase 1: Setup
 
-- [ ] T001 **Go** Adicionar `golang.org/x/oauth2` ao `go.mod` (justificado no plano) e criar `internal/cloudsync/config.go` com `ClientID`/`ClientSecret` vazios sobrescritos por `-ldflags -X` (release) ou, se vazios, lidos de `OPENHOST_GOOGLE_CLIENT_ID`/`OPENHOST_GOOGLE_CLIENT_SECRET` (build local, ver `docs/setup/google-drive.md`), `Available() bool`, e a base da API (`https://www.googleapis.com`) só alterável com tag `e2e`.
-- [ ] T002 [P] **Go** `internal/apperr`: `SYNC_UNAVAILABLE`, `SYNC_CANCELLED`, `SYNC_AUTH`, `SYNC_QUOTA`, `SYNC_FORMAT`, `CLOUD_EMPTY`, `CLOUD_CORRUPT`; frontend: os mesmos em `frontend/src/shared/ipc/errors.ts` e causas em `frontend/src/i18n/errors.ts`.
+- [X] T001 **Go** Adicionar `golang.org/x/oauth2` ao `go.mod` (justificado no plano) e criar `internal/cloudsync/config.go` com `ClientID`/`ClientSecret` vazios sobrescritos por `-ldflags -X` (release) ou, se vazios, lidos de `OPENHOST_GOOGLE_CLIENT_ID`/`OPENHOST_GOOGLE_CLIENT_SECRET` (build local, ver `docs/setup/google-drive.md`), `Available() bool`, e a base da API (`https://www.googleapis.com`) só alterável com tag `e2e`.
+- [X] T002 [P] **Go** `internal/apperr`: `SYNC_UNAVAILABLE`, `SYNC_CANCELLED`, `SYNC_AUTH`, `SYNC_QUOTA`, `SYNC_FORMAT`, `CLOUD_EMPTY`, `CLOUD_CORRUPT`; frontend: os mesmos em `frontend/src/shared/ipc/errors.ts` e causas em `frontend/src/i18n/errors.ts`.
 - [X] T003 [P] Workflow `.github/workflows/release.yml`: passar `GOOGLE_CLIENT_ID`/`GOOGLE_CLIENT_SECRET` (segredos) como `-ldflags "-X …/cloudsync.ClientID=… -X …/cloudsync.ClientSecret=…"` nos três builds; ausentes ⇒ build segue com sincronização indisponível e aviso `::warning::`.
 
 ---
@@ -27,13 +27,13 @@ real com o Drive falso e duas pastas de dados.
 
 **Checkpoint**: `go test ./internal/cloudsync/... ./internal/vault/...` verde e `GOOGLE_CLIENT_ID` vazio não quebra nada.
 
-- [ ] T004 **Go** Migração 1→2 em `internal/vault/schema.go` (`sync_state`, R7) + teste com banco da versão 1; `Store.SyncState()/SetSyncState()` selando com AD `sync_state:1`; `Erase` apaga a linha.
-- [ ] T005 **Go** `Store.OnChange(func())` disparado após `Mutate`/`MutateWithProfiles`/perfis/esquemas bem-sucedidos (não em falha nem no `Apply` vindo da nuvem); `Store.Rekey(password, newDEK)` recifra todas as linhas numa transação; testes.
-- [ ] T006 [P] **Go** `internal/cloudsync/drivefake`: servidor `httptest` com list (q por nome, `orderBy=name desc`, `pageSize`), get `alt=media`, create multipart/resumable, update media, delete, token, revoke, falhas injetáveis (rede, 401, 403 `storageQuotaExceeded`) (R9).
-- [ ] T007 **Go** `internal/cloudsync/drive.go` + teste contra o fake: `List`, `Get`, `Create`, `UpdateKeyring`, `Delete`, só `spaces=appDataFolder`; erros mapeados para `NETWORK`/`SYNC_AUTH`/`SYNC_QUOTA`.
-- [ ] T008 **Go** `internal/cloudsync/format.go` + teste: keyring (`format`, `epoch`, `kdf`, `sealedKeys` com AD `keyring:<epoch>`) e snapshot (`"OHS1"`, cabeçalho, AD = cabeçalho, gzip, `contentHash`); recusa `format > 1` (`SYNC_FORMAT`), AD/hash errados (`CLOUD_CORRUPT`); teste SC-804: bytes do snapshot não contêm rótulo, endereço, usuário nem senha conhecidos.
-- [ ] T009 **Go** `internal/cloudsync/items.go` + teste: `Content` + perfis + esquemas + prefs sincronizáveis (R8: `shortcuts`, `copyOnSelect`, `rightClickPaste`, `bell`, `boldBright`, `autoReconnect`) ↔ itens `kind:id` com hash estável; aplicar itens recebidos passa por `internal/validate`.
-- [ ] T010 **Go** `internal/cloudsync/merge.go` + testes de tabela: dominância, concorrentes iguais, conflito, edição × exclusão, lápides (180 dias), dependências (grupo ausente, credencial ausente, regra órfã) (R4); propriedade: nenhuma versão perdida sem conflito.
+- [X] T004 **Go** Migração 1→2 em `internal/vault/schema.go` (`sync_state`, R7) + teste com banco da versão 1; `Store.SyncState()/SetSyncState()` selando com AD `sync_state:1`; `Erase` apaga a linha.
+- [X] T005 **Go** `Store.OnChange(func())` disparado após `Mutate`/`MutateWithProfiles`/perfis/esquemas bem-sucedidos (não em falha nem no `Apply` vindo da nuvem); `Store.Rekey(password, newDEK)` recifra todas as linhas numa transação; testes.
+- [X] T006 [P] **Go** `internal/cloudsync/drivefake`: servidor `httptest` com list (q por nome, `orderBy=name desc`, `pageSize`), get `alt=media`, create multipart/resumable, update media, delete, token, revoke, falhas injetáveis (rede, 401, 403 `storageQuotaExceeded`) (R9).
+- [X] T007 **Go** `internal/cloudsync/drive.go` + teste contra o fake: `List`, `Get`, `Create`, `UpdateKeyring`, `Delete`, só `spaces=appDataFolder`; erros mapeados para `NETWORK`/`SYNC_AUTH`/`SYNC_QUOTA`.
+- [X] T008 **Go** `internal/cloudsync/format.go` + teste: keyring (`format`, `epoch`, `kdf`, `sealedKeys` com AD `keyring:<epoch>`) e snapshot (`"OHS1"`, cabeçalho, AD = cabeçalho, gzip, `contentHash`); recusa `format > 1` (`SYNC_FORMAT`), AD/hash errados (`CLOUD_CORRUPT`); teste SC-804: bytes do snapshot não contêm rótulo, endereço, usuário nem senha conhecidos.
+- [X] T009 **Go** `internal/cloudsync/items.go` + teste: `Content` + perfis + esquemas + prefs sincronizáveis (R8: `shortcuts`, `copyOnSelect`, `rightClickPaste`, `bell`, `boldBright`, `autoReconnect`) ↔ itens `kind:id` com hash estável; aplicar itens recebidos passa por `internal/validate`.
+- [X] T010 **Go** `internal/cloudsync/merge.go` + testes de tabela: dominância, concorrentes iguais, conflito, edição × exclusão, lápides (180 dias), dependências (grupo ausente, credencial ausente, regra órfã) (R4); propriedade: nenhuma versão perdida sem conflito.
 
 ---
 
