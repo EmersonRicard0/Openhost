@@ -200,8 +200,11 @@ valor e digita a porta nova.
 - Prompt que muda a cada linha (saída de comando parecida com um prompt): a aba só troca de nome
   com um prompt no fim da tela, à espera de digitação, e não troca mais de uma vez por segundo.
 - Prompt com caracteres de controle ou mais de 64 caracteres: ignorado.
-- Cofre aberto por uma versão antiga do app depois de ganhar tags e notas: a versão antiga recusa
-  abrir com o aviso de versão mais nova (como já faz hoje), sem perder dados.
+- Cofre aberto por uma versão antiga do app depois de ganhar tags e notas: a versão antiga abre e
+  ignora os campos novos; se ela editar o host, os campos novos daquele host se perdem. Registrado
+  nas notas de versão (o app se atualiza sozinho desde a 0.6.0).
+- Arquivo de exportação com tags e notas aberto por uma versão antiga: recusado com o aviso de
+  arquivo de versão mais nova.
 
 ## Requirements *(mandatory)*
 
@@ -258,8 +261,8 @@ valor e digita a porta nova.
 - **FR-918**: As tags MUST aparecer no item do host na lista lateral.
 - **FR-919**: Tags e nota MUST ser guardadas no cofre criptografado e seguir com o host na
   sincronização, na exportação e importação no formato próprio do OpenHost e ao duplicar o host.
-- **FR-920**: A mudança do cofre MUST seguir o versionamento de esquema existente, com migração
-  automática a partir da versão anterior e teste da migração.
+- **FR-920**: Cofres existentes MUST abrir sem migração manual, com hosts sem tags, nota nem
+  ambiente; a ida e volta (salvar, sincronizar, exportar e importar) MUST ter teste.
 
 **Porta (US6)**
 
