@@ -17,3 +17,12 @@
   endereço, usuário ou senha do host de teste.
 
 Sem achados.
+
+## Quickstart §1–§2 (T029), 2026-10-27
+
+- `go test ./internal/cloudsync/... ./internal/vault/... ./internal/bridge/...`: ok.
+- `npm run typecheck`, `npm run lint`: ok. `npm test`: 175 testes ok.
+- E2e `sync.spec.ts` + `sync-devices.spec.ts` com o Drive falso: 9 passaram (cenários 1–10).
+  A primeira rodada achou a lista de hosts desatualizada depois de aplicar mudanças da nuvem
+  (corrigido em aa93f54).
+- §3 (conta Google real) pendente: depende do client id do dono do projeto.
