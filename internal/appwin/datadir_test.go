@@ -8,12 +8,43 @@ import (
 	"testing"
 )
 
+func TestDataDirDefaultsByBuildType(t *testing.T) {
+	root := t.TempDir()
+	t.Setenv("SHELLVAULT_DATA_DIR", "")
+	t.Setenv("APPDATA", filepath.Join(root, "appdata"))
+	t.Setenv("XDG_CONFIG_HOME", filepath.Join(root, "xdg"))
+	t.Setenv("HOME", filepath.Join(root, "home"))
+
+	base, err := os.UserConfigDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name      string
+		isRelease bool
+		dirName   string
+	}{
+		{name: "release", isRelease: true, dirName: "ShellVault"},
+		{name: "development", isRelease: false, dirName: "ShellVault-dev"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			want := filepath.Join(base, tc.dirName)
+			got, err := DataDir(tc.isRelease)
+			if err != nil || got != want {
+				t.Fatalf("got %q, %v; want %q", got, err, want)
+			}
+		})
+	}
+}
+
 func TestDataDirOverride(t *testing.T) {
 	want := filepath.Join(t.TempDir(), "dados")
 	t.Setenv("SHELLVAULT_DATA_DIR", want)
-	got, err := DataDir()
-	if err != nil || got != want {
-		t.Fatalf("got %q, %v", got, err)
+	for _, isRelease := range []bool{false, true} {
+		got, err := DataDir(isRelease)
+		if err != nil || got != want {
+			t.Fatalf("isRelease=%t: got %q, %v", isRelease, got, err)
+		}
 	}
 	if st, err := os.Stat(want); err != nil || !st.IsDir() {
 		t.Fatal("diretório não foi criado")
@@ -22,8 +53,10 @@ func TestDataDirOverride(t *testing.T) {
 
 func TestDataDirRejectsRelative(t *testing.T) {
 	t.Setenv("SHELLVAULT_DATA_DIR", "relativo")
-	if _, err := DataDir(); err == nil {
-		t.Fatal("aceitou caminho relativo")
+	for _, isRelease := range []bool{false, true} {
+		if _, err := DataDir(isRelease); err == nil {
+			t.Fatalf("isRelease=%t: aceitou caminho relativo", isRelease)
+		}
 	}
 }
 
