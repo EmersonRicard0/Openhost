@@ -1,0 +1,96 @@
+/* Diálogos da sincronização (specs/008). */
+.intro {
+  margin: 0;
+  color: var(--text-secondary);
+}
+
+.conflicts,
+.versions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.conflict {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.conflictTitle {
+  margin: 0;
+  font-weight: 600;
+}
+
+.kind {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.sides {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.sideTitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin: 0;
+  font-size: 12px;
+}
+
+.field {
+  display: flex;
+  gap: 8px;
+}
+
+.field dt {
+  flex: none;
+  min-width: 80px;
+  color: var(--text-secondary);
+}
+
+.field dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.deleted {
+  margin: 0;
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.version {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 13px;
+}

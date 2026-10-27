@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"shellvault/internal/vault"
 )
 
 func TestValidateShortcuts(t *testing.T) {
@@ -13,6 +15,13 @@ func TestValidateShortcuts(t *testing.T) {
 		{"closeTab": "Ctrl+Shift+W", "palette": ""},
 		{"newTab": "Ctrl+Alt+T", "nextTab": "Ctrl+Tab", "search": "F5"},
 		{"zoomIn": "Alt+Equal", "zoomOut": "Ctrl+Minus", "zoomReset": "Ctrl+Digit0"},
+		{
+			"openSettings": "Ctrl+Comma",
+			"focusLeft":    "Alt+ArrowLeft",
+			"focusRight":   "Alt+ArrowRight",
+			"focusUp":      "Alt+ArrowUp",
+			"focusDown":    "Alt+ArrowDown",
+		},
 	}
 	for _, shortcuts := range valid {
 		if err := ValidateShortcuts(shortcuts); err != nil {
@@ -62,7 +71,83 @@ func TestPreferencesWithoutTerminalOptionsKeepDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 	preferences = normalizedPreferences(preferences)
-	if preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect {
+	if preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect ||
+		preferences.HostDensity != "comfortable" || !preferences.PromptTitle {
 		t.Fatalf("preferências migradas = %+v", preferences)
+	}
+}
+
+func TestHostDensityAndPromptTitleDefaults(t *testing.T) {
+	preferences := DefaultPreferences()
+	if preferences.HostDensity != "comfortable" || !preferences.PromptTitle {
+		t.Fatalf("padrões da interface = %+v", preferences)
+	}
+	preferences.HostDensity = "dense"
+	preferences.PromptTitle = false
+	got := normalizedPreferences(preferences)
+	if got.HostDensity != "comfortable" || got.PromptTitle {
+		t.Fatalf("preferências normalizadas = %+v", got)
+	}
+}
+
+func TestRecentEntryJSONAndDefaults(t *testing.T) {
+	preferences := DefaultPreferences()
+	if preferences.Recents == nil || len(preferences.Recents) != 0 {
+		t.Fatalf("recents padrão = %#v", preferences.Recents)
+	}
+	raw, err := json.Marshal(RecentEntry{Kind: "quick", Address: "router.example", Port: 2222, Username: "ops", At: "2026-10-28T12:00:00Z"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{`"kind":"quick"`, `"address":"router.example"`, `"port":2222`, `"username":"ops"`, `"at":"2026-10-28T12:00:00Z"`} {
+		if !strings.Contains(string(raw), field) {
+			t.Fatalf("campo %s ausente: %s", field, raw)
+		}
+	}
+}
+
+func TestUpdatePreferencesDefaultsAndValidation(t *testing.T) {
+	preferences := DefaultPreferences()
+	if !preferences.Updates.Auto || preferences.Updates.Prerelease {
+		t.Fatalf("padrões de update = %+v", preferences.Updates)
+	}
+
+	preferences.Updates = UpdatePrefs{
+		Auto:        false,
+		Prerelease:  true,
+		Skipped:     "não-é-versão",
+		RemindAfter: "amanhã",
+		LastCheck:   "ontem",
+		ETag:        strings.Repeat("x", 2048),
+	}
+	got := normalizedPreferences(preferences).Updates
+	if got.Auto || !got.Prerelease || got.Skipped != "" || got.RemindAfter != "" || got.LastCheck != "" || got.ETag != "" {
+		t.Fatalf("updates normalizadas = %+v", got)
+	}
+}
+
+func TestUpdatePreferencesReadWhileVaultLocked(t *testing.T) {
+	store, err := vault.Open(t.TempDir(), vault.TestKDF)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	if err := store.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	preferenceStore := NewPreferenceStore(store)
+	preferences := DefaultPreferences()
+	preferences.Updates = UpdatePrefs{Auto: false, Prerelease: true, Skipped: "0.6.0"}
+	if err := preferenceStore.Save(preferences); err != nil {
+		t.Fatal(err)
+	}
+	store.Lock()
+
+	got, err := preferenceStore.Get()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Updates != preferences.Updates {
+		t.Fatalf("updates com cofre bloqueado = %+v", got.Updates)
 	}
 }

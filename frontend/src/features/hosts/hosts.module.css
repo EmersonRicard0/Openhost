@@ -50,6 +50,23 @@
   pointer-events: none;
 }
 
+/* Barra na cor de destaque na borda esquerda da linha selecionada (specs/009, FR-913). */
+.list[data-indicator]::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 8px;
+  width: 3px;
+  height: var(--indicator-size);
+  border-radius: 9px 0 0 9px;
+  background: var(--accent);
+  transform: translateY(var(--indicator-offset));
+  transition:
+    transform var(--motion-base) var(--ease-emphasized),
+    height var(--motion-base) var(--ease-emphasized);
+  pointer-events: none;
+}
+
 .list[data-indicator] > * {
   position: relative;
 }
@@ -75,7 +92,9 @@
 
 .item[aria-selected='true'] {
   background: var(--selected);
-  box-shadow: var(--inset-accent-soft);
+  box-shadow:
+    inset 3px 0 0 var(--accent),
+    var(--inset-accent-soft);
 }
 
 .itemIcon {
@@ -363,4 +382,77 @@
   margin: 0;
   color: var(--text-secondary);
   font-size: 12px;
+}
+
+/* Tags do host (specs/009). */
+.tagInput {
+  flex-wrap: wrap;
+  gap: 4px;
+  min-height: 34px;
+  padding: 3px 4px;
+}
+
+.tagInput input {
+  flex: 1 0 80px;
+  height: 26px;
+  padding: 0 6px;
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 22px;
+  padding: 0 2px 0 8px;
+  border-radius: 6px;
+  background: var(--hover);
+  color: var(--text-primary);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.tagRemove {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.tagRemove:hover {
+  background: var(--selected);
+  color: var(--text-primary);
+}
+
+.environmentDot {
+  display: inline-block;
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--environment);
+}
+
+/* Tags no item da lista (specs/009, FR-918): uma linha, cortada no fim. */
+.tags {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  overflow: hidden;
+  mask-image: linear-gradient(to right, #000 85%, transparent);
+}
+
+.tag {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--hover);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  line-height: 15px;
 }

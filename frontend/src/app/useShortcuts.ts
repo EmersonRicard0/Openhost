@@ -14,14 +14,15 @@ function overridesOf(source: Record<string, string> | undefined): ShortcutOverri
   return source ?? {};
 }
 
-let cached: { source: unknown; keymap: Map<Combo, ShortcutAction> } | null = null;
+let cached: { source: unknown; platform: string; keymap: Map<Combo, ShortcutAction> } | null = null;
 
 /** Mapa atual, recalculado só quando as preferências mudam. */
 export function currentKeymap(): Map<Combo, ShortcutAction> {
-  const source = useUi.getState().settings?.shortcuts;
-  if (cached && cached.source === source) return cached.keymap;
-  const keymap = buildKeymap(overridesOf(source));
-  cached = { source, keymap };
+  const { settings, platform } = useUi.getState();
+  const source = settings?.shortcuts;
+  if (cached && cached.source === source && cached.platform === platform) return cached.keymap;
+  const keymap = buildKeymap(overridesOf(source), platform);
+  cached = { source, platform, keymap };
   return keymap;
 }
 
@@ -31,8 +32,9 @@ export function useShortcutOverrides(): ShortcutOverrides {
 
 /** Rótulo da primeira combinação da ação, ou `null` se estiver desativada. */
 export function useShortcutLabel(action: ShortcutAction): string | null {
-  const first = effectiveShortcuts(useShortcutOverrides())[action][0];
-  return first ? comboLabel(first) : null;
+  const platform = useUi((u) => u.platform);
+  const first = effectiveShortcuts(useShortcutOverrides(), platform)[action][0];
+  return first ? comboLabel(first, platform) : null;
 }
 
 /** "Texto (Ctrl+Shift+B)" quando há atalho; só o texto quando está desativado. */

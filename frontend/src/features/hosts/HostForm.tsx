@@ -1,6 +1,6 @@
 // Criar/editar host (FR-007).
 import { useEffect, useState } from 'react';
-import type { AuthMethod, HostInput, HostView, OsId } from '@shared/model/types';
+import type { AuthMethod, HostInput, HostView, OsId, QuickTarget } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
 import { useProfiles } from '../../stores/profiles';
@@ -10,10 +10,15 @@ import { Checkbox } from '../../ui/Checkbox';
 import { Dialog } from '../../ui/Dialog';
 import { NumberField } from '../../ui/NumberField';
 import { Select } from '../../ui/Select';
-import { TextField } from '../../ui/TextField';
+import { TextAreaField, TextField } from '../../ui/TextField';
 import { WarningIcon } from '../../ui/icons';
-import { OS_ICON_EDITABLE, OS_OPTIONS, OsLogo, osLabel } from '../../ui/osIcons';
+import { OS_OPTIONS, OsLogo, osLabel } from '../../ui/osIcons';
 import { toastError } from '../../ui/Toast';
+import { useUi } from '../../stores/ui';
+import { environmentColor } from '../../theme/environments';
+import { environmentsOf } from './environment';
+import { MAX_NOTES, runeCount } from './tags';
+import { TagInput } from './TagInput';
 import { HostTerminalDialog } from './HostTerminalDialog';
 import s from './hosts.module.css';
 
@@ -29,16 +34,18 @@ const METHODS: { value: AuthMethod; label: string }[] = [
 
 export interface HostFormProps {
   host: HostView | null;
+  /** Host novo já preenchido com o alvo de uma conexão rápida (specs/010). */
+  draft?: QuickTarget | undefined;
   onClose: () => void;
   onManageCredentials: () => void;
 }
 
-export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) {
+export function HostForm({ host, draft, onClose, onManageCredentials }: HostFormProps) {
   const { credentials, reload } = useHosts();
-  const [label, setLabel] = useState(host?.label ?? '');
-  const [address, setAddress] = useState(host?.address ?? '');
-  const [port, setPort] = useState(String(host?.port ?? 22));
-  const [username, setUsername] = useState(host?.username ?? '');
+  const [label, setLabel] = useState(host?.label ?? draft?.address ?? '');
+  const [address, setAddress] = useState(host?.address ?? draft?.address ?? '');
+  const [port, setPort] = useState(String(host?.port ?? draft?.port ?? 22));
+  const [username, setUsername] = useState(host?.username ?? draft?.username ?? '');
   const [method, setMethod] = useState<AuthMethod>(host?.authMethod ?? 'password');
   const [credentialId, setCredentialId] = useState<string>(
     host?.credentialId ?? (host ? NONE : NEW_PASSWORD),
@@ -50,6 +57,11 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
   const [osIcon, setOsIcon] = useState<OsId | 'auto'>(host?.osIcon ?? 'auto');
   const [legacyChoice, setLegacy] = useState<boolean | null>(host?.legacyAlgorithms ?? null);
   const legacy = legacyChoice ?? legacyDefault;
+  const environments = environmentsOf(useVault((v) => v.settings));
+  const dark = useUi((u) => u.dark);
+  const [environmentId, setEnvironmentId] = useState(host?.environmentId ?? NONE);
+  const [tags, setTags] = useState<string[]>(host?.tags ?? []);
+  const [notes, setNotes] = useState(host?.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const hasOwnProfile = useProfiles((p) => (host ? Boolean(p.overrides[host.id]) : false));
@@ -62,8 +74,8 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
   }, [hostId, loadOverride]);
 
   useEffect(() => {
-    if (!host) void loadVaultSettings();
-  }, [host, loadVaultSettings]);
+    void loadVaultSettings();
+  }, [loadVaultSettings]);
 
   const kind = method === 'key' ? 'key' : 'password';
   const options = [
@@ -82,6 +94,7 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
     address.trim() !== '' &&
     username.trim() !== '' &&
     portValid &&
+    runeCount(notes) <= MAX_NOTES &&
     (!needsCredential || (selected === NEW_PASSWORD ? newPassword !== '' : selected !== NONE));
 
   async function submit() {
@@ -106,7 +119,10 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
       credentialId: credId,
       groupId: host?.groupId ?? null,
       legacyAlgorithms: legacy,
-      ...(OS_ICON_EDITABLE ? { osIcon } : {}),
+      osIcon,
+      environmentId: environments.some((e) => e.id === environmentId) ? environmentId : null,
+      tags,
+      notes,
     };
     const res = host
       ? await window.shellvault.hosts.update(host.id, input)
@@ -145,26 +161,42 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             setLabel(e.target.value);
           }}
         />
-        {OS_ICON_EDITABLE && (
-          <Select
-            label={t.hosts.osIcon}
-            value={osIcon}
-            options={[
-              {
-                value: 'auto',
-                label: host?.detectedOs
-                  ? t.hosts.osIconAutoDetected(osLabel(host.detectedOs))
-                  : t.hosts.osIconAuto,
-              },
-              ...OS_OPTIONS.map((os) => ({
-                value: os.id,
-                label: os.label,
-                icon: <OsLogo id={os.id} />,
-              })),
-            ]}
-            onChange={setOsIcon}
-          />
-        )}
+        <Select
+          label={t.hosts.osIcon}
+          value={osIcon}
+          options={[
+            {
+              value: 'auto',
+              label: host?.detectedOs
+                ? t.hosts.osIconAutoDetected(osLabel(host.detectedOs))
+                : t.hosts.osIconAuto,
+            },
+            ...OS_OPTIONS.map((os) => ({
+              value: os.id,
+              label: os.label,
+              icon: <OsLogo id={os.id} />,
+            })),
+          ]}
+          onChange={setOsIcon}
+        />
+        <Select
+          label={t.hosts.environment}
+          value={environments.some((e) => e.id === environmentId) ? environmentId : NONE}
+          options={[
+            { value: NONE, label: t.hosts.environmentNone },
+            ...environments.map((e) => ({
+              value: e.id,
+              label: e.name,
+              icon: (
+                <span
+                  className={s.environmentDot}
+                  style={{ ['--environment' as string]: environmentColor(e.color, dark) }}
+                />
+              ),
+            })),
+          ]}
+          onChange={setEnvironmentId}
+        />
         <div className={s.row}>
           <TextField
             label={t.hosts.address}
@@ -181,6 +213,8 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             value={port}
             error={portValid ? null : '1–65535'}
             onChange={setPort}
+            steppers={false}
+            selectOnFocus
           />
         </div>
         <TextField
@@ -230,6 +264,18 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             <p>{t.hosts.legacyHint}</p>
           </div>
         )}
+        <TagInput tags={tags} onChange={setTags} />
+        <TextAreaField
+          label={t.hosts.notes}
+          hint={t.hosts.notesCount(runeCount(notes))}
+          error={runeCount(notes) > MAX_NOTES ? t.hosts.notesCount(runeCount(notes)) : null}
+          rows={3}
+          style={{ fontFamily: 'inherit', fontSize: 13, minHeight: 64 }}
+          value={notes}
+          onChange={(e) => {
+            setNotes(e.target.value);
+          }}
+        />
         {host && (
           <div className={s.terminalProfile} role="group" aria-label={t.hosts.terminalProfile}>
             <p>{hasOwnProfile ? t.hosts.terminalProfileOwn : t.hosts.terminalProfileGlobal}</p>

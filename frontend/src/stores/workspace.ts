@@ -1,5 +1,6 @@
 // Estado de interface do espaço de trabalho que atalhos, paleta e terminais compartilham.
 import { create } from 'zustand';
+import type { QuickTarget } from '@shared/model/types';
 
 export const FONT_MIN = 8;
 export const FONT_MAX = 32;
@@ -21,15 +22,25 @@ interface WorkspaceState {
   /** Diálogo de encaminhamentos ativos (barra de status). */
   forwardsOpen: boolean;
   view: MainView;
+  /** A aba "Configurações" está na barra (ativa ou não); `view` diz se é ela que aparece (FR-908). */
+  settingsTab: boolean;
+  /** Seção a abrir na próxima vez que as configurações aparecerem. */
+  settingsSection: string | null;
   pendingPaste: PendingPaste | null;
   /** Aba esperando confirmação para fechar (Ctrl+W com conexão ativa). */
   confirmClose: string | null;
+  /** "Salvar como host" de uma sessão rápida: a lateral abre o editor preenchido (specs/010). */
+  hostDraft: QuickTarget | null;
+  setHostDraft: (draft: QuickTarget | null) => void;
   zoomBy: (sessionId: string, delta: number, base: number) => void;
   zoomReset: (sessionId: string) => void;
   setSearchFor: (sessionId: string | null) => void;
   setPaletteOpen: (open: boolean) => void;
   setForwardsOpen: (open: boolean) => void;
   setView: (view: MainView) => void;
+  openSettings: (section: string) => void;
+  /** Fecha a aba "Configurações" e volta à sessão que estava ativa (FR-911). */
+  closeSettings: () => void;
   setPendingPaste: (paste: PendingPaste | null) => void;
   setConfirmClose: (sessionId: string | null) => void;
 }
@@ -40,8 +51,14 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   paletteOpen: false,
   forwardsOpen: false,
   view: 'terminal',
+  settingsTab: false,
+  settingsSection: null,
   pendingPaste: null,
   confirmClose: null,
+  hostDraft: null,
+  setHostDraft(hostDraft) {
+    set({ hostDraft });
+  },
   zoomBy(sessionId, delta, base) {
     const current = get().zoom[sessionId] ?? 0;
     const size = Math.min(FONT_MAX, Math.max(FONT_MIN, base + current + delta));
@@ -62,7 +79,13 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
     set({ forwardsOpen });
   },
   setView(view) {
-    set({ view });
+    set(view === 'settings' ? { view, settingsTab: true } : { view });
+  },
+  openSettings(section) {
+    set({ view: 'settings', settingsTab: true, settingsSection: section });
+  },
+  closeSettings() {
+    set({ view: 'terminal', settingsTab: false, settingsSection: null });
   },
   setPendingPaste(pendingPaste) {
     set({ pendingPaste });

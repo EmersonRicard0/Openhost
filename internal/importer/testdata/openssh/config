@@ -1,0 +1,28 @@
+# Fixture anonimizada baseada em configurações OpenSSH usuais de operação.
+Host web1 web2 web3
+    HostName edge.example.test
+    User deploy
+    User ignored-second-value
+    Port=2222
+    IdentityFile "%d/.ssh/keys/%h-%u"
+    ProxyJump bastion.example.test
+    ProxyCommand ssh -W %h:%p bastion.example.test
+    LocalForward 127.0.0.1:8080 app.example.test:80
+    DynamicForward 1080
+
+Host app1.interno secret.interno
+
+Host=equals-host
+    HostName=equals.example.test
+    IdentityFile ~/.ssh/keys/missing_ed25519
+
+Host token-host
+    HostName token.example.test
+    IdentityFile ~/.ssh/keys/%x-unsupported
+
+Include config.d/*.conf
+
+Match host web1
+    User should-not-be-read
+    Port 65000
+

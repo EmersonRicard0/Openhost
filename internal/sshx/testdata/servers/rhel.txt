@@ -1,0 +1,6 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+# os-release: ID="rhel"
+Activate the web console with: systemctl enable --now cockpit.socket
+
+[ops@app-03 ~]$ 

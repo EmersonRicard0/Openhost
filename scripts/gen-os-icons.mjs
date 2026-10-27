@@ -1,4 +1,5 @@
-// Gera frontend/src/ui/osIcons.gen.ts com os logos de sistema do Simple Icons (CC0) (FR-178).
+// Gera frontend/src/ui/osIcons.gen.ts com os logos de sistema e a cor oficial de cada marca, do
+// Simple Icons (CC0) (FR-178).
 // Uso: node scripts/gen-os-icons.mjs <pasta node_modules com simple-icons@16.36.0>
 // O app não depende do pacote: só os caminhos usados entram no repositório.
 import { execFileSync } from 'node:child_process';
@@ -51,7 +52,9 @@ const lines = [
 for (const [id, name] of Object.entries(MAP)) {
   const icon = si[name];
   if (!icon) throw new Error(`${name} não existe em simple-icons@${version}`);
-  lines.push(`  ${id}: { title: ${JSON.stringify(icon.title)}, path: ${JSON.stringify(icon.path)} },`);
+  lines.push(
+    `  ${id}: { title: ${JSON.stringify(icon.title)}, hex: ${JSON.stringify(`#${icon.hex}`)}, path: ${JSON.stringify(icon.path)} },`,
+  );
 }
 lines.push('} as const;', '');
 const out = join(root, 'frontend', 'src', 'ui', 'osIcons.gen.ts');

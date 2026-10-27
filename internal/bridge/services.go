@@ -11,6 +11,7 @@ import (
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/appwin"
+	"shellvault/internal/cloudsync"
 	"shellvault/internal/forwarding"
 	"shellvault/internal/session"
 	"shellvault/internal/sftpx"
@@ -18,7 +19,7 @@ import (
 	"shellvault/internal/vault"
 )
 
-// allServicesWired passa a true quando os 8 serviços do contrato estiverem ligados (T094).
+// allServicesWired indica que todos os serviços atuais do contrato estão ligados.
 const allServicesWired = true
 
 // Services agrupa os serviços ligados ao Wails e o estado compartilhado entre eles.
@@ -43,6 +44,10 @@ type Services struct {
 	forwardService    *ForwardService
 	profileService    *ProfileService
 	appService        *AppService
+	importService     *ImportService
+	exportService     *ExportService
+	updateService     *UpdateService
+	syncService       *SyncService
 	closeGuard        *appwin.CloseGuard
 }
 
@@ -61,7 +66,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.vaultService = newVaultService(store, s.autoLock)
 	s.hostService = newHostService(store)
 	s.credentialService = newCredentialService(store, s.Context)
-	s.sessionService = newSessionService(store, s.sessions)
+	s.sessionService = newSessionService(store, s.sessions, s.emit)
 	s.transfers = sftpx.NewTransferManager(sftpx.TransferEvents{
 		Transfer: func(transfer sftpx.Transfer) { s.emit("sftp:transfer", transfer) },
 		Conflict: func(conflict sftpx.ConflictEvent) { s.emit("sftp:conflict", conflict) },
@@ -78,7 +83,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.forwardService = newForwardService(store, s.forwards)
 	s.profileService = newProfileService(store, s.sessions, s.Context, s.emit)
 	preferences := appwin.NewPreferenceStore(store)
-	appearance := appwin.NewAppearanceMonitor(appwin.RegistryAppearanceReader{}, preferences.Get,
+	appearance := appwin.NewAppearanceMonitor(appwin.SystemAppearanceReader(), preferences.Get,
 		func(value appwin.Appearance) { s.emit("app:appearance", value) })
 	s.closeGuard = appwin.NewCloseGuard(
 		func() appwin.ActiveSummary {
@@ -92,7 +97,40 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 		},
 	)
 	s.appService = newAppService(preferences, appearance, s.closeGuard, s.Context)
-	store.OnStatus(func(status vault.Status) { s.emit("vault:state", status) })
+	s.importService = newImportService(store, s.Context)
+	s.exportService = newExportService(store, s.Context)
+	s.updateService = newUpdateService(dataDir, preferences, s.Context, s.emit)
+	s.updateService.configureForTest()
+	s.updateService.quit = func() {
+		if ctx := s.Context(); ctx != nil {
+			wruntime.Quit(ctx)
+		}
+	}
+	openBrowser := syncBrowserOpener(s.Context)
+	var syncService *SyncService
+	oauth := cloudsync.NewOAuth(openBrowser)
+	syncer := cloudsync.NewSyncer(store, preferences, func(ctx context.Context, token string) *cloudsync.Drive {
+		syncService.mu.Lock()
+		authorizer := syncService.oauth
+		syncService.mu.Unlock()
+		return cloudsync.NewDrive(authorizer.Client(ctx, refreshToken(token)))
+	}, func(info cloudsync.SyncInfo) { s.emit(EventSyncState, info) })
+	syncService = newSyncService(s.Context, openBrowser, oauth, syncer, cloudsync.NewDrive)
+	s.syncService = syncService
+	s.vaultService.changePassword = func(current, next, confirmation string) error {
+		ctx := s.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		return syncer.ChangePassword(ctx, current, next, confirmation)
+	}
+	s.syncService.configureForTest()
+	store.OnStatus(func(status vault.Status) {
+		if status.State != vault.StateUnlocked {
+			s.importService.coordinator.Clear()
+		}
+		s.emit("vault:state", status)
+	})
 	return s, nil
 }
 
@@ -112,7 +150,7 @@ func (s *Services) connectForward(hostID string) (forwarding.Client, error) {
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
 func (s *Services) Bound() []any {
-	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService}
+	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService, s.exportService, s.updateService, s.syncService}
 }
 
 // Context é o contexto do Wails, disponível depois de Startup.
@@ -135,15 +173,23 @@ func (s *Services) Startup(ctx context.Context) {
 	s.appService.appearance.Start(ctx)
 }
 
+// DomReady inicia tarefas de rede somente depois que a janela está pronta.
+func (s *Services) DomReady(ctx context.Context) {
+	s.updateService.start(ctx)
+}
+
 // BeforeClose devolve true para impedir o fechamento (confirmação de FR-028, T038).
 func (s *Services) BeforeClose(ctx context.Context) bool {
 	return s.closeGuard.Intercept()
 }
 
 func (s *Services) Shutdown(ctx context.Context) {
+	s.updateService.stop()
+	s.syncService.syncer.Close()
 	s.forwards.CloseAll()
 	s.sessions.CloseAll()
 	_ = s.store.Close()
+	s.updateService.launchPendingOnShutdown()
 }
 
 // SessionStats é o que os testes E2E leem do gerenciador de sessões.

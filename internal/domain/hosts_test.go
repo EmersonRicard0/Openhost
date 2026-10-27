@@ -2,10 +2,12 @@ package domain
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"unicode/utf8"
 
+	"shellvault/internal/apperr"
 	"shellvault/internal/model"
 	"shellvault/internal/validate"
 )
@@ -19,7 +21,7 @@ func TestCreateHost(t *testing.T) {
 	if h.Label != "Servidor" || h.CreatedAt != t0 || h.UpdatedAt != t0 || validate.UUID(h.ID) != nil {
 		t.Fatalf("host: %+v", h)
 	}
-	if h.LegacyAlgorithms || h.ProfileID != nil {
+	if h.LegacyAlgorithms || h.ProfileID != nil || h.DetectedOS != nil || h.OSIcon != model.OSIconAuto {
 		t.Fatal("campos novos devem vir com padrão")
 	}
 	if len(c.Hosts) != 1 {
@@ -132,6 +134,7 @@ func TestUpdateHost(t *testing.T) {
 	c := testContent()
 	h, _ := CreateHost(c, baseInput(), t0)
 	c.Hosts[0].ProfileID = model.Ptr("perfil-do-host")
+	c.Hosts[0].DetectedOS = model.Ptr(OSAlpine)
 	in := baseInput()
 	in.Port = 2222
 	u, err := UpdateHost(c, h.ID, in, t1)
@@ -142,6 +145,9 @@ func TestUpdateHost(t *testing.T) {
 	// O override de perfil é do ProfileService; editar o host não o perde.
 	if u.ProfileID == nil || *u.ProfileID != "perfil-do-host" {
 		t.Fatal("update perdeu o profileId")
+	}
+	if u.DetectedOS == nil || *u.DetectedOS != OSAlpine {
+		t.Fatal("update aceitou/perdeu detectedOs")
 	}
 	_, err = UpdateHost(c, missing, baseInput(), t1)
 	wantCode(t, err, "NOT_FOUND")
@@ -204,13 +210,16 @@ func TestDuplicateHost(t *testing.T) {
 	in.LegacyAlgorithms = true
 	h, _ := CreateHost(c, in, t0)
 	c.Hosts[0].ProfileID = model.Ptr("perfil")
+	c.Hosts[0].DetectedOS = model.Ptr(OSAlpine)
+	c.Hosts[0].OSIcon = OSUbuntu
 	c.ForwardRules = append(c.ForwardRules, model.ForwardRule{ID: "00000000-0000-4000-8000-0000000000b1",
 		HostID: h.ID, Label: model.Ptr("db"), BindAddress: "127.0.0.1", BindPort: 15432,
 		DestHost: "db.internal", DestPort: 5432})
 	cp, err := DuplicateHost(c, h.ID, t1)
 	mustOK(t, err)
 	if cp.ID == h.ID || cp.Label != "Servidor (cópia)" || *cp.CredentialID != pwCred ||
-		*cp.GroupID != g.ID || cp.CreatedAt != t1 || !cp.LegacyAlgorithms || cp.ProfileID == nil {
+		*cp.GroupID != g.ID || cp.CreatedAt != t1 || !cp.LegacyAlgorithms || cp.ProfileID == nil ||
+		cp.DetectedOS == nil || *cp.DetectedOS != OSAlpine || cp.OSIcon != OSUbuntu {
 		t.Fatalf("cópia: %+v", cp)
 	}
 	var copied []model.ForwardRule
@@ -225,6 +234,38 @@ func TestDuplicateHost(t *testing.T) {
 	}
 }
 
+func TestOSIconValidationAndDetectedOSIsNotEditable(t *testing.T) {
+	c := testContent()
+	var create HostInput
+	if err := json.Unmarshal([]byte(`{"label":"Servidor","address":"localhost","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"detectedOs":"cisco","osIcon":"ubuntu"}`), &create); err != nil {
+		t.Fatal(err)
+	}
+	host, err := CreateHost(c, create, t0)
+	mustOK(t, err)
+	if host.DetectedOS != nil || host.OSIcon != OSUbuntu {
+		t.Fatalf("host criado = %+v", host)
+	}
+	changed, err := SetDetectedOS(c, host.ID, model.Ptr(OSAlpine), t1)
+	mustOK(t, err)
+	if !changed {
+		t.Fatal("detecção não alterou o host")
+	}
+	var update HostInput
+	if err := json.Unmarshal([]byte(`{"label":"Servidor","address":"localhost","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"detectedOs":"cisco","osIcon":"auto"}`), &update); err != nil {
+		t.Fatal(err)
+	}
+	host, err = UpdateHost(c, host.ID, update, t1)
+	mustOK(t, err)
+	if host.DetectedOS == nil || *host.DetectedOS != OSAlpine || host.OSIcon != model.OSIconAuto {
+		t.Fatalf("host atualizado = %+v", host)
+	}
+	invalid := baseInput()
+	invalid.OSIcon = "solaris"
+	if _, err := CreateHost(testContent(), invalid, t0); err == nil {
+		t.Fatal("osIcon desconhecido foi aceito")
+	}
+}
+
 func TestDuplicateLabelLimit(t *testing.T) {
 	c := testContent()
 	in := baseInput()
@@ -233,5 +274,133 @@ func TestDuplicateLabelLimit(t *testing.T) {
 	cp, _ := DuplicateHost(c, h.ID, t1)
 	if utf8.RuneCountInString(cp.Label) > 100 || !strings.HasSuffix(cp.Label, " (cópia)") {
 		t.Fatalf("rótulo: %q", cp.Label)
+	}
+}
+
+func TestHostMetadataRoundTripAndValidation(t *testing.T) {
+	environmentID := "prod"
+	in := baseInput()
+	in.EnvironmentID = &environmentID
+	in.Tags = []string{"  OLT  ", "Cliente-X"}
+	in.Notes = "VLAN 100\nJanela às 2h"
+	host, err := CreateHost(testContent(), in, t0)
+	mustOK(t, err)
+	if host.EnvironmentID == nil || *host.EnvironmentID != environmentID ||
+		len(host.Tags) != 2 || host.Tags[0] != "OLT" || host.Tags[1] != "Cliente-X" ||
+		host.Notes != in.Notes {
+		t.Fatalf("metadados do host: %+v", host)
+	}
+
+	cases := []struct {
+		name  string
+		field string
+		patch func(*HostInput)
+	}{
+		{name: "21 tags", field: "tags", patch: func(in *HostInput) { in.Tags = make([]string, 21) }},
+		{name: "tag vazia", field: "tags", patch: func(in *HostInput) { in.Tags = []string{"  "} }},
+		{name: "tag longa", field: "tags", patch: func(in *HostInput) { in.Tags = []string{strings.Repeat("á", 33)} }},
+		{name: "tag com controle", field: "tags", patch: func(in *HostInput) { in.Tags = []string{"olt\u0007"} }},
+		{name: "tag repetida", field: "tags", patch: func(in *HostInput) { in.Tags = []string{"OLT", "olt"} }},
+		{name: "nota longa", field: "notes", patch: func(in *HostInput) { in.Notes = strings.Repeat("segredo", 2001) }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			in := baseInput()
+			tc.patch(&in)
+			_, err := CreateHost(testContent(), in, t0)
+			var appErr *apperr.Error
+			if !errors.As(err, &appErr) || appErr.Code != apperr.InvalidInput ||
+				!strings.Contains(appErr.Detail, tc.field) {
+				t.Fatalf("erro = %#v; esperado campo %q", err, tc.field)
+			}
+			if strings.Contains(appErr.Detail, "segredo") {
+				t.Fatalf("erro revelou conteúdo da nota: %q", appErr.Detail)
+			}
+		})
+	}
+}
+
+func TestUpdateHostMetadataOmittedAndExplicitlyCleared(t *testing.T) {
+	c := testContent()
+	in := baseInput()
+	in.EnvironmentID = model.Ptr("prod")
+	in.Tags = []string{"olt"}
+	in.Notes = "VLAN 100"
+	host, err := CreateHost(c, in, t0)
+	mustOK(t, err)
+
+	var omitted HostInput
+	err = json.Unmarshal([]byte(`{"label":"Servidor","address":"srv.example.com","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"osIcon":"auto"}`), &omitted)
+	mustOK(t, err)
+	updated, err := UpdateHost(c, host.ID, omitted, t1)
+	mustOK(t, err)
+	if updated.EnvironmentID == nil || *updated.EnvironmentID != "prod" || len(updated.Tags) != 1 || updated.Notes != "VLAN 100" {
+		t.Fatalf("campos omitidos não foram preservados: %+v", updated)
+	}
+
+	var cleared HostInput
+	err = json.Unmarshal([]byte(`{"label":"Servidor","address":"srv.example.com","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"osIcon":"auto","environmentId":null,"tags":[],"notes":""}`), &cleared)
+	mustOK(t, err)
+	updated, err = UpdateHost(c, host.ID, cleared, t1)
+	mustOK(t, err)
+	if updated.EnvironmentID != nil || updated.Tags == nil || len(updated.Tags) != 0 || updated.Notes != "" {
+		t.Fatalf("campos explícitos não foram limpos: %+v", updated)
+	}
+}
+
+func TestDuplicateAndViewPreserveHostMetadata(t *testing.T) {
+	c := testContent()
+	in := baseInput()
+	in.EnvironmentID = model.Ptr("prod")
+	in.Tags = []string{"olt", "cliente-x"}
+	in.Notes = "VLAN 100"
+	host, err := CreateHost(c, in, t0)
+	mustOK(t, err)
+	duplicate, err := DuplicateHost(c, host.ID, t1)
+	mustOK(t, err)
+	if duplicate.EnvironmentID == nil || *duplicate.EnvironmentID != "prod" ||
+		len(duplicate.Tags) != 2 || duplicate.Notes != "VLAN 100" {
+		t.Fatalf("cópia perdeu metadados: %+v", duplicate)
+	}
+	duplicate.Tags[0] = "alterada"
+	if c.Hosts[0].Tags[0] != "olt" {
+		t.Fatal("cópia compartilhou o slice de tags com o original")
+	}
+
+	old := model.Host{ID: "antigo"}
+	view := ToHostView(c, old)
+	if view.Tags == nil || view.Notes != "" {
+		t.Fatalf("view antiga não normalizada: %+v", view)
+	}
+}
+
+func TestFavoriteUpdatePreservesWhenOmittedAndDuplicateCopies(t *testing.T) {
+	c := testContent()
+	in := baseInput()
+	in.Favorite = true
+	host, err := CreateHost(c, in, t0)
+	mustOK(t, err)
+	if !host.Favorite {
+		t.Fatal("favorite não foi criado")
+	}
+
+	var omitted HostInput
+	err = json.Unmarshal([]byte(`{"label":"Servidor","address":"srv.example.com","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"osIcon":"auto"}`), &omitted)
+	mustOK(t, err)
+	updated, err := UpdateHost(c, host.ID, omitted, t1)
+	mustOK(t, err)
+	if !updated.Favorite {
+		t.Fatal("Update sem favorite apagou o valor salvo")
+	}
+
+	duplicate, err := DuplicateHost(c, host.ID, t1)
+	mustOK(t, err)
+	if !duplicate.Favorite {
+		t.Fatal("Duplicate não copiou favorite")
+	}
+
+	view := ToHostView(c, duplicate)
+	if !view.Favorite {
+		t.Fatal("HostView não expôs favorite")
 	}
 }

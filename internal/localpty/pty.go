@@ -1,5 +1,5 @@
-// Package localpty abre shells locais num pseudo terminal (ConPTY no Windows) e implementa
-// session.Conn.
+// Package localpty abre shells locais num pseudo terminal (ConPTY no Windows e PTY no Unix) e
+// implementa session.Conn.
 package localpty
 
 import (
@@ -50,7 +50,7 @@ func (p *Process) Start(cols, rows int, out io.Writer) error {
 		return err
 	}
 	cmd := pt.Command(p.path, p.args...)
-	cmd.Env = os.Environ()
+	cmd.Env = ptyEnvironment(os.Environ())
 	if home, err := os.UserHomeDir(); err == nil {
 		cmd.Dir = home
 	}

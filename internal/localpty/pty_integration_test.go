@@ -36,7 +36,8 @@ func (b *buf) String() string {
 
 func waitText(t *testing.T, b *buf, text string, n int) {
 	t.Helper()
-	deadline := time.Now().Add(15 * time.Second)
+	// Folga para o runner do CI, onde o PowerShell chega a levar mais de 15 s para abrir.
+	deadline := time.Now().Add(60 * time.Second)
 	for strings.Count(b.String(), text) < n {
 		if time.Now().After(deadline) {
 			t.Fatalf("%q não apareceu %d vezes em %q", text, n, b.String())
@@ -106,6 +107,8 @@ func TestCmdEchoAndExitCode(t *testing.T) {
 
 func TestPowerShellEchoAndExitCode(t *testing.T) {
 	p, out, done := start(t, PowerShell)
+	// Escrever antes do prompt perde a linha enquanto o PowerShell ainda carrega.
+	waitText(t, out, "PS ", 1)
 	_ = p.Write([]byte("Write-Output ('marcador' + '-ps-2')\r"))
 	waitText(t, out, "marcador-ps-2", 1)
 	_ = p.Write([]byte("exit 3\r"))

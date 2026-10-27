@@ -10,7 +10,9 @@ Operações sem marcação mantêm assinatura e semântica da 001.
 
 - Cada grupo de operações é uma struct Go ligada ao Wails (`Bind`): `VaultService`,
   `HostService` (hosts e grupos), `CredentialService`, `SessionService`, `SftpService`,
-  `ForwardService`, `ProfileService` **novo**, `AppService`. Nenhuma outra struct é ligada.
+  `ForwardService`, `ProfileService` **novo**, `AppService`, e, desde a 003, `ImportService` e
+  `ExportService`. Nenhuma outra struct é ligada no binário de release (os builds de teste
+  ligam também `TestService` e `Smoke`, abaixo).
   Métodos exportados que não fazem parte deste contrato MUST NOT existir nessas structs (teste
   de reflexão compara a lista de métodos com este documento).
 - A interface recebe sempre `Result<T>` =
@@ -39,6 +41,9 @@ Os da 001 mais **novos**: `NO_COMMON_ALGORITHM` (FR-122), `AGENT_UNAVAILABLE` (F
 `IN_USE` (excluir esquema/perfil em uso),
 `VAULT_MIGRATION_FAILED` (FR-102/103; o arquivo original permanece intacto).
 
+Da 003 (importar e exportar): `IMPORT_TOO_LARGE`, `IMPORT_UNREADABLE`, `IMPORT_FORMAT_NEWER`,
+`FILE_PASSWORD_REQUIRED`, `FILE_PASSWORD_WRONG`, `PREVIEW_EXPIRED`, `UNDO_UNAVAILABLE`.
+
 ## VaultService
 
 Como `vault.*` da 001, com:
@@ -47,14 +52,22 @@ Como `vault.*` da 001, com:
 |---|---|
 | `GetStatus()` | **alterado**: `state` ganha `"migratable"` — existe `vault.svlt` da 001 e ainda não há `shellvault.db` |
 | `Unlock(password)` | **alterado**: no estado `migratable`, desbloqueia e migra (R5); falha da migração → `VAULT_MIGRATION_FAILED` e estado volta a `migratable` |
-| `GetSettings()` / `UpdateSettings(patch)` 🔒 | **alterado**: `VaultSettings` inclui `connectTimeoutSeconds` (5–120), `keepaliveSeconds`, `legacyDefault` e `term` (`xterm-256color` \| `xterm` \| `vt100` \| `linux`) |
+| `GetSettings()` / `UpdateSettings(patch)` 🔒 | **alterado**: `VaultSettings` inclui `connectTimeoutSeconds` (5–120), `keepaliveSeconds`, `legacyDefault`, `term` (`xterm-256color` \| `xterm` \| `vt100` \| `linux`) e `environments: {id,name,color}[]`; o patch de ambientes substitui a lista inteira e gera ids vazios |
 
 Evento `vault:state`: `VaultStatus` a cada mudança de estado (equivale ao `onStateChanged` da 001).
 
 ## HostService 🔒
 
 Como `hosts.*`/`groups.*` da 001. **Alterado**: `HostInput`/`HostView` ganham
-`authMethod: "agent"`, `legacyAlgorithms: boolean` e `profileId: string | null`.
+`authMethod: "agent"`, `legacyAlgorithms: boolean`, `profileId: string | null`,
+`detectedOs: OsId | null` e `osIcon: OsId | "auto"`. `detectedOs` é somente saída: valores
+enviados em `Create`/`Update` são ignorados; `osIcon` é validado pela lista fechada do modelo.
+Desde a 009, `HostInput`/`HostView` também incluem `environmentId: string | null`,
+`tags: string[]` e `notes: string`; no `Update`, chaves omitidas preservam o valor atual.
+Desde a 010, incluem também `favorite: boolean` (chave omitida em `Update` preserva o valor atual).
+
+Evento `hosts:changed`: `{ hostId: string, detectedOs: OsId | null }`, emitido quando a detecção
+de sistema de uma conexão SSH altera o host persistido.
 
 ## CredentialService 🔒
 
@@ -66,6 +79,7 @@ Igual à 001 (`List`, `CreatePassword`, `ImportKey`, `PickKeyFile`, `GenerateEd2
 | Método | Entrada | Saída | Notas |
 |---|---|---|---|
 | `OpenSsh(hostId)` 🔒 | — | `{ sessionId }` | **alterado**: sem tamanho; a sessão espera o primeiro `Resize` válido para pedir o PTY remoto (FR-113) |
+| `OpenQuick(target)` 🔒 **novo** | `{ address, port, username }` | `{ sessionId }` | host não salvo; agente antes do prompt de senha; reconexão pede autenticação novamente |
 | `OpenLocal(shell)` | `"powershell" \| "cmd"` | `{ sessionId }` | **alterado**: idem |
 | `Write(sessionId, data)` | string | `void` | |
 | `Resize(sessionId, cols, rows)` | ints 1–1000 | `void` | ignorado se igual ao último enviado |
@@ -118,12 +132,57 @@ Como `app.*` da 001, com:
 | Método / evento | Mudança |
 |---|---|
 | `GetAppearance()` / `app:appearance` | igual |
-| `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups` e `shortcuts: Record<string, string>`; no patch, `shortcuts` substitui o mapa inteiro (`""` desativa a ação) |
+| `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups`, `shortcuts: Record<string, string>`, `hostDensity: "comfortable" | "compact"`, `promptTitle: boolean` e `recents` local; no patch, `shortcuts` substitui o mapa inteiro (`""` desativa a ação) |
+| `RecordRecent(entry)` **novo** | host `{ kind, hostId }` ou quick `{ kind, address, port, username }` | `RecentEntry[]` | valida, deduplica e mantém 20; entrada sem senha/segredo; não sincroniza |
 | `app:close-requested` / `ConfirmClose(bool)` | igual à 001 (FR-028) |
 | `WindowMinimise()`, `WindowToggleMaximise()`, `WindowClose()` **novo** | botões da barra de título própria (FR-133); `WindowClose` passa pela confirmação de FR-028 |
-| `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (FR-145) |
+| `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (⌘-clique no macOS) (FR-145) |
+
+**Plataformas (004).** A mesma ponte vale no Windows, no Linux e no macOS. A interface lê o
+sistema pelo `Environment()` do runtime do Wails (não é método ligado). `WindowMinimise`,
+`WindowToggleMaximise` e `WindowClose` só são chamados no Windows, onde a barra de título é
+própria; no Linux e no macOS a moldura é nativa e o fechamento passa pelo mesmo `OnBeforeClose`.
+`defaultShell` aceita os ids do Windows (`powershell`, `pwsh`, `cmd`, `gitbash`, `wsl:<distro>`) e,
+no Unix, o nome do shell de `/etc/shells` (`bash`, `zsh`, `fish`…).
+
+## ImportService e ExportService 🔒 (003)
+
+Definidos em [`specs/003-host-import-export/contracts/bridge.md`](../../003-host-import-export/contracts/bridge.md).
+Como os demais, escolhem arquivos só por diálogo nativo aberto pelo Go e nunca devolvem chave
+privada, passphrase ou senha. A prévia e o último lote importado ficam só em memória e são
+descartados quando o cofre bloqueia.
+
+Desde a 010, o formato próprio OpenHost é versão 2 e inclui `tags`, `notes`, `favorite` e
+`environment: {name,color} | null`; a importação estrita continua aceitando a versão 1.
+
+## UpdateService (007)
+
+Definido em [`specs/007-in-app-update/contracts/bridge-updater.md`](../../007-in-app-update/contracts/bridge-updater.md).
+Sem 🔒: funciona com o cofre bloqueado e não lê nada dele. `Info`, `Check(manual)`, `Download`,
+`Cancel`, `Remind`, `Skip(version)`, `Prefs`/`SetPrefs`, `RestartNow`, `ApplyOnQuit`, `LastResult`,
+`OpenDownloadFolder`. Evento `updates:state`: `{ state, version?, progress?: { received, total },
+reason? }`. Nenhum argumento vira URL ou caminho: o Go só baixa os assets da release escolhida e
+só grava e abre `updates/<versão>` na pasta de dados. A verificação automática roda depois de
+`OnDomReady`, a cada 6 h, e nunca em build de desenvolvimento.
 
 ## TestService (somente build com tag `e2e`)
 
 Não existe no binário de release. `Maximise()`, `Restore()`, `SetSize(w, h)`, `Goroutines()`,
-`SessionCount()`, `ServerSizeOf(sessionId)`. Usado pelos testes E2E (research R18).
+`SessionCount()`, `ServerSizeOf(sessionId)`, `SetUpdateSource(url, pubkeyB64)` e
+`SetInstallKind(kind)` (007). A origem de releases e o formato de instalação também podem vir de
+`SHELLVAULT_E2E_UPDATE_URL`, `SHELLVAULT_E2E_UPDATE_PUBKEY` e `SHELLVAULT_E2E_INSTALL_KIND`, lidos
+ao iniciar. Usado pelos testes E2E (research R18).
+
+## Smoke (somente build com tag `smoke`, 004)
+
+Não existe no binário de release (`scripts/check-release.mjs` recusa `smokesvc`). Ligado em
+`window.go.smokesvc.Smoke`.
+
+| Método | Entrada | Saída | Efeito |
+|---|---|---|---|
+| `Ready()` | — | `void` | responde e encerra o processo com código 0 |
+
+O frontend chama `Ready()` só quando `import.meta.env.VITE_SMOKE` está definido, depois de a tela
+de criar o cofre aparecer e de criar cofre, host e chave pela ponte normal
+(`frontend/src/app/smoke.ts`). Usado por `scripts/smoke.mjs` no CI dos três sistemas
+(specs/004-linux-macos, R11).

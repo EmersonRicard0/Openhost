@@ -15,9 +15,11 @@ import { Button } from '../../ui/Button';
 import { ChevronIcon, FolderIcon, FolderOpenIcon, PlusIcon, WarningIcon } from '../../ui/icons';
 import { toastError } from '../../ui/Toast';
 import { ForwardRulesPanel } from '../forwarding/ForwardRulesPanel';
+import { ExportDialog } from '../importexport/ExportDialog';
 import { openSftp } from '../sftp/openSftp';
 import { connectHost } from './connect';
 import { GroupNameDialog, MoveDialog } from './GroupDialogs';
+import { setFavorite } from '../home/favorite';
 import { buildIndex, filterHosts } from './search';
 import { buildRows, groupPaths, rowIndent, type TreeRow } from './tree';
 import s from './hosts.module.css';
@@ -57,7 +59,9 @@ type Pending =
   | { kind: 'moveGroup'; group: Group }
   | { kind: 'removeHost'; host: HostView }
   | { kind: 'moveHost'; host: HostView }
-  | { kind: 'forwards'; host: HostView };
+  | { kind: 'forwards'; host: HostView }
+  | { kind: 'exportHost'; host: HostView }
+  | { kind: 'exportGroup'; group: Group };
 
 const rowHeight = (row: TreeRow) => (row.kind === 'host' ? HOST_ROW : GROUP_ROW);
 const rowKey = (row: TreeRow) => (row.kind === 'host' ? row.host.id : `g:${row.group.id}`);
@@ -166,6 +170,10 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
         },
       },
       {
+        label: host.favorite ? t.home.unfavoriteMenu : t.home.favoriteMenu,
+        onSelect: () => void setFavorite(host, !host.favorite),
+      },
+      {
         label: t.hosts.duplicate,
         onSelect: () => void mutateHosts(window.shellvault.hosts.duplicate(host.id)),
       },
@@ -173,6 +181,12 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
         label: t.hosts.moveTo,
         onSelect: () => {
           setPending({ kind: 'moveHost', host });
+        },
+      },
+      {
+        label: t.importExport.exportAction,
+        onSelect: () => {
+          setPending({ kind: 'exportHost', host });
         },
       },
       {
@@ -203,6 +217,12 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
         label: t.hosts.moveTo,
         onSelect: () => {
           setPending({ kind: 'moveGroup', group });
+        },
+      },
+      {
+        label: t.importExport.exportAction,
+        onSelect: () => {
+          setPending({ kind: 'exportGroup', group });
         },
       },
       {
@@ -354,6 +374,15 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
               </span>
             )}
           </span>
+          {(host.tags?.length ?? 0) > 0 && (
+            <span className={s.tags}>
+              {host.tags?.map((tag) => (
+                <span key={tag} className={s.tag} data-tag="">
+                  {tag}
+                </span>
+              ))}
+            </span>
+          )}
           {/* Endereço diferencia hosts com o mesmo nome; na busca, o caminho do grupo. */}
           <span className={s.itemSub}>
             {path ? `${path} · ` : ''}
@@ -424,6 +453,10 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
         );
       case 'forwards':
         return <ForwardRulesPanel host={p.host} onClose={close} />;
+      case 'exportHost':
+        return <ExportDialog hostIds={[p.host.id]} onClose={close} />;
+      case 'exportGroup':
+        return <ExportDialog groupId={p.group.id} onClose={close} />;
       case 'removeHost':
         return (
           <ConfirmDialog

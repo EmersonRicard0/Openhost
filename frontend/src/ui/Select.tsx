@@ -19,6 +19,8 @@ export interface SelectProps<V extends string> {
   onChange: (value: V) => void;
   disabled?: boolean;
   hint?: string;
+  /** Rótulo só para leitor de tela (ex.: linha de uma lista que já diz o que é). */
+  hideLabel?: boolean;
 }
 
 export function Select<V extends string>({
@@ -28,6 +30,7 @@ export function Select<V extends string>({
   onChange,
   disabled,
   hint,
+  hideLabel = false,
 }: SelectProps<V>) {
   const id = useId();
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -118,7 +121,7 @@ export function Select<V extends string>({
 
   return (
     <div className={s.field}>
-      <span className={s.label} id={`${id}-label`}>
+      <span className={hideLabel ? 'visually-hidden' : s.label} id={`${id}-label`}>
         {label}
       </span>
       <button

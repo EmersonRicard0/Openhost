@@ -3,9 +3,11 @@ package vault
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -36,6 +38,7 @@ func sampleHost(id string) model.Host {
 	return model.Host{
 		ID: id, Label: "OLT-Rotulo-Unico", Address: "10.99.88.77", Port: 22,
 		Username: "usuario-unico-xyz", AuthMethod: model.AuthAsk,
+		Tags: []string{}, OSIcon: model.OSIconAuto,
 		CreatedAt: "2026-10-23T12:00:00.000Z", UpdatedAt: "2026-10-23T12:00:00.000Z",
 	}
 }
@@ -103,7 +106,7 @@ func TestUnlockLockAndReopen(t *testing.T) {
 		t.Fatal(err)
 	}
 	c, err := s2.Read()
-	if err != nil || len(c.Hosts) != 1 || c.Hosts[0] != sampleHost(hostA) {
+	if err != nil || len(c.Hosts) != 1 || !reflect.DeepEqual(c.Hosts[0], sampleHost(hostA)) {
 		t.Fatalf("conteúdo após reabrir: %+v, %v", c, err)
 	}
 	if c.Settings.KeepaliveSeconds != 30 || c.Settings.ConnectTimeoutSeconds != 15 ||
@@ -125,6 +128,81 @@ func TestReadReturnsCopy(t *testing.T) {
 	c2, _ := s.Read()
 	if c2.Hosts[0].Label != "OLT-Rotulo-Unico" {
 		t.Fatal("Read expôs o estado interno")
+	}
+}
+
+func TestHostMetadataSurvivesReopen(t *testing.T) {
+	dir := t.TempDir()
+	s := openTest(t, dir)
+	if err := s.Create(pw, pw); err != nil {
+		t.Fatal(err)
+	}
+	host := sampleHost(hostA)
+	host.EnvironmentID = model.Ptr("prod")
+	host.Tags = []string{"olt", "cliente-x"}
+	host.Notes = "VLAN 100"
+	if err := s.Mutate(func(c *model.Content) error { c.Hosts = append(c.Hosts, host); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	_ = s.Close()
+
+	s = openTest(t, dir)
+	if err := s.Unlock(pw); err != nil {
+		t.Fatal(err)
+	}
+	content, err := s.Read()
+	if err != nil || len(content.Hosts) != 1 || !reflect.DeepEqual(content.Hosts[0], host) {
+		t.Fatalf("host após reabrir = %+v, %v", content.Hosts, err)
+	}
+}
+
+func TestOlderVaultGetsDefaultEnvironmentsAndEmptyListStaysEmpty(t *testing.T) {
+	dir := t.TempDir()
+	s := openTest(t, dir)
+	if err := s.Create(pw, pw); err != nil {
+		t.Fatal(err)
+	}
+	oldSettings := struct {
+		AutoLockMinutes       *int   `json:"autoLockMinutes"`
+		ConnectTimeoutSeconds int    `json:"connectTimeoutSeconds"`
+		KeepaliveSeconds      int    `json:"keepaliveSeconds"`
+		LegacyDefault         bool   `json:"legacyDefault"`
+		Term                  string `json:"term"`
+	}{model.Ptr(15), 15, 30, false, model.DefaultTerm}
+	plain, err := json.Marshal(oldSettings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sealed, err := Seal(s.dek, plain, ad("vault_settings", settingsID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(`UPDATE vault_settings SET sealed = ? WHERE id = ?`, sealed, settingsID); err != nil {
+		t.Fatal(err)
+	}
+	s.Lock()
+	if err := s.Unlock(pw); err != nil {
+		t.Fatal(err)
+	}
+	content, err := s.Read()
+	if err != nil || len(content.Settings.Environments) != 4 {
+		t.Fatalf("ambientes do cofre antigo = %+v, %v", content.Settings.Environments, err)
+	}
+
+	if err := s.Mutate(func(c *model.Content) error {
+		c.Settings.Environments = []model.Environment{}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	_ = s.Close()
+	s = openTest(t, dir)
+	if err := s.Unlock(pw); err != nil {
+		t.Fatal(err)
+	}
+	content, err = s.Read()
+	if err != nil || content.Settings.Environments == nil || len(content.Settings.Environments) != 0 {
+		t.Fatalf("lista vazia após reabrir = %+v, %v", content.Settings.Environments, err)
 	}
 }
 
@@ -300,6 +378,25 @@ func TestNewerSchemaIsUnsupported(t *testing.T) {
 	if st := s2.Status(); st.State != StateUnreadable || *st.Reason != ReasonUnsupportedVersion {
 		t.Fatalf("esquema novo demais: %+v", st)
 	}
+	// O que funciona com o cofre bloqueado responde erro em vez de derrubar o app (tela preta).
+	unreadable := func(name string, err error) {
+		t.Helper()
+		if apperr.CodeOf(err) != apperr.VaultUnreadable {
+			t.Errorf("%s com esquema novo demais = %v", name, err)
+		}
+	}
+	_, err := s2.GlobalProfile()
+	unreadable("GlobalProfile", err)
+	_, err = s2.TerminalProfiles()
+	unreadable("TerminalProfiles", err)
+	_, err = s2.ColorSchemes()
+	unreadable("ColorSchemes", err)
+	unreadable("SaveGlobalProfile", s2.SaveGlobalProfile(model.TerminalProfile{}))
+	unreadable("SaveColorScheme", s2.SaveColorScheme(model.ColorScheme{}))
+	unreadable("DeleteColorScheme", s2.DeleteColorScheme("x"))
+	unreadable("ApplyLegacyTerminalFont", s2.ApplyLegacyTerminalFont("Cascadia Mono", 14))
+	_, err = s2.Preference("x", new(string))
+	unreadable("Preference", err)
 }
 
 func TestNoopMutateAfterReloadWritesNothing(t *testing.T) {

@@ -5,8 +5,10 @@ import (
 	"net"
 	"regexp"
 	"strings"
+	"unicode"
 	"unicode/utf8"
 
+	"shellvault/internal/apperr"
 	"shellvault/internal/model"
 	"shellvault/internal/validate"
 )
@@ -20,15 +22,25 @@ var (
 // HostInput é o que a interface envia. profileId não vem daqui: o override de perfil é
 // gerenciado pelo ProfileService.
 type HostInput struct {
-	Label            string           `json:"label"`
-	Address          string           `json:"address"`
-	Port             int              `json:"port"`
-	Username         string           `json:"username"`
-	AuthMethod       model.AuthMethod `json:"authMethod"`
-	CredentialID     *string          `json:"credentialId"`
-	GroupID          *string          `json:"groupId"`
-	LegacyAlgorithms bool             `json:"legacyAlgorithms"`
-	legacySpecified  bool
+	Label                string           `json:"label"`
+	Address              string           `json:"address"`
+	Port                 int              `json:"port"`
+	Username             string           `json:"username"`
+	AuthMethod           model.AuthMethod `json:"authMethod"`
+	CredentialID         *string          `json:"credentialId"`
+	GroupID              *string          `json:"groupId"`
+	EnvironmentID        *string          `json:"environmentId"`
+	Tags                 []string         `json:"tags"`
+	Notes                string           `json:"notes"`
+	Favorite             bool             `json:"favorite"`
+	LegacyAlgorithms     bool             `json:"legacyAlgorithms"`
+	OSIcon               string           `json:"osIcon"`
+	legacySpecified      bool
+	osIconSpecified      bool
+	environmentSpecified bool
+	tagsSpecified        bool
+	notesSpecified       bool
+	favoriteSpecified    bool
 }
 
 func (in *HostInput) UnmarshalJSON(data []byte) error {
@@ -40,7 +52,12 @@ func (in *HostInput) UnmarshalJSON(data []byte) error {
 		AuthMethod       model.AuthMethod `json:"authMethod"`
 		CredentialID     *string          `json:"credentialId"`
 		GroupID          *string          `json:"groupId"`
+		EnvironmentID    *string          `json:"environmentId"`
+		Tags             []string         `json:"tags"`
+		Notes            string           `json:"notes"`
+		Favorite         *bool            `json:"favorite"`
 		LegacyAlgorithms *bool            `json:"legacyAlgorithms"`
+		OSIcon           *string          `json:"osIcon"`
 	}
 	var wire wireInput
 	if err := json.Unmarshal(data, &wire); err != nil {
@@ -49,10 +66,26 @@ func (in *HostInput) UnmarshalJSON(data []byte) error {
 	*in = HostInput{
 		Label: wire.Label, Address: wire.Address, Port: wire.Port, Username: wire.Username,
 		AuthMethod: wire.AuthMethod, CredentialID: wire.CredentialID, GroupID: wire.GroupID,
+		EnvironmentID: wire.EnvironmentID, Tags: wire.Tags, Notes: wire.Notes,
 	}
+	if wire.Favorite != nil {
+		in.Favorite = *wire.Favorite
+		in.favoriteSpecified = true
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	_, in.environmentSpecified = fields["environmentId"]
+	_, in.tagsSpecified = fields["tags"]
+	_, in.notesSpecified = fields["notes"]
 	if wire.LegacyAlgorithms != nil {
 		in.LegacyAlgorithms = *wire.LegacyAlgorithms
 		in.legacySpecified = true
+	}
+	if wire.OSIcon != nil {
+		in.OSIcon = *wire.OSIcon
+		in.osIconSpecified = true
 	}
 	return nil
 }
@@ -132,7 +165,64 @@ func validateHost(c *model.Content, in HostInput) (HostInput, error) {
 	if in.GroupID != nil && findGroup(c, *in.GroupID) == nil {
 		return in, invalid()
 	}
+	tags, err := NormalizeHostMetadata(in.Tags, in.Notes)
+	if err != nil {
+		return in, err
+	}
+	in.Tags = tags
+	if in.OSIcon == "" {
+		if in.osIconSpecified {
+			return in, invalid()
+		}
+		in.OSIcon = model.OSIconAuto
+	}
+	if !ValidOSIcon(in.OSIcon) {
+		return in, invalid()
+	}
 	return in, nil
+}
+
+// NormalizeHostMetadata valida tags e nota sem incluir o conteúdo delas nos erros.
+func NormalizeHostMetadata(tags []string, notes string) ([]string, error) {
+	if len(tags) > 20 {
+		return nil, invalidField("tags")
+	}
+	out := append([]string{}, tags...)
+	seenTags := make(map[string]struct{}, len(out))
+	for i, tag := range out {
+		tag = strings.TrimSpace(tag)
+		if count := utf8.RuneCountInString(tag); count < 1 || count > 32 || containsControl(tag) {
+			return nil, invalidField("tags")
+		}
+		key := strings.ToLower(tag)
+		if _, exists := seenTags[key]; exists {
+			return nil, invalidField("tags")
+		}
+		seenTags[key] = struct{}{}
+		out[i] = tag
+	}
+	if out == nil {
+		out = []string{}
+	}
+	if utf8.RuneCountInString(notes) > 2000 {
+		return nil, invalidField("notes")
+	}
+	return out, nil
+}
+
+func containsControl(value string) bool {
+	for _, r := range value {
+		if unicode.IsControl(r) {
+			return true
+		}
+	}
+	return false
+}
+
+func invalidField(field string) error {
+	return &apperr.Error{
+		Code: apperr.InvalidInput, Message: apperr.Messages[apperr.InvalidInput], Detail: "field: " + field,
+	}
 }
 
 func hostIndex(c *model.Content, id string) int {
@@ -155,7 +245,8 @@ func FindHost(c *model.Content, id string) (model.Host, error) {
 func fromInput(in HostInput) model.Host {
 	return model.Host{Label: in.Label, Address: in.Address, Port: in.Port, Username: in.Username,
 		AuthMethod: in.AuthMethod, CredentialID: in.CredentialID, GroupID: in.GroupID,
-		LegacyAlgorithms: in.LegacyAlgorithms}
+		EnvironmentID: in.EnvironmentID, Tags: append([]string{}, in.Tags...), Notes: in.Notes, Favorite: in.Favorite,
+		LegacyAlgorithms: in.LegacyAlgorithms, OSIcon: in.OSIcon}
 }
 
 func CreateHost(c *model.Content, in HostInput, now string) (model.Host, error) {
@@ -174,13 +265,28 @@ func UpdateHost(c *model.Content, id string, in HostInput, now string) (model.Ho
 	if i < 0 {
 		return model.Host{}, notFound()
 	}
+	cur := c.Hosts[i]
+	if !in.osIconSpecified && in.OSIcon == "" {
+		in.OSIcon = cur.OSIcon
+	}
+	if !in.favoriteSpecified && !in.Favorite {
+		in.Favorite = cur.Favorite
+	}
+	if !in.environmentSpecified && in.EnvironmentID == nil {
+		in.EnvironmentID = cur.EnvironmentID
+	}
+	if !in.tagsSpecified && in.Tags == nil {
+		in.Tags = append([]string{}, cur.Tags...)
+	}
+	if !in.notesSpecified && in.Notes == "" {
+		in.Notes = cur.Notes
+	}
 	v, err := validateHost(c, in)
 	if err != nil {
 		return model.Host{}, err
 	}
-	cur := c.Hosts[i]
 	h := fromInput(v)
-	h.ID, h.CreatedAt, h.UpdatedAt, h.ProfileID = id, cur.CreatedAt, now, cur.ProfileID
+	h.ID, h.CreatedAt, h.UpdatedAt, h.ProfileID, h.DetectedOS = id, cur.CreatedAt, now, cur.ProfileID, cur.DetectedOS
 	c.Hosts[i] = h
 	return h, nil
 }
@@ -248,6 +354,11 @@ func DuplicateHost(c *model.Content, id, now string) (model.Host, error) {
 		return model.Host{}, err
 	}
 	cp := src
+	if src.EnvironmentID != nil {
+		environmentID := *src.EnvironmentID
+		cp.EnvironmentID = &environmentID
+	}
+	cp.Tags = append([]string{}, src.Tags...)
 	runes := []rune(src.Label)
 	if max := 100 - utf8.RuneCountInString(copySuffix); len(runes) > max {
 		runes = runes[:max]
@@ -272,6 +383,9 @@ func DuplicateHost(c *model.Content, id, now string) (model.Host, error) {
 }
 
 func ToHostView(c *model.Content, h model.Host) HostView {
+	if h.Tags == nil {
+		h.Tags = []string{}
+	}
 	v := HostView{Host: h}
 	if h.CredentialID != nil {
 		if cr := findCredential(c, *h.CredentialID); cr != nil {

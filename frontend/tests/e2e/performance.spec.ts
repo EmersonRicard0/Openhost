@@ -1,12 +1,18 @@
 // SC-112 — troca de aba < 100 ms com 20 abas (uma com saída contínua) e busca em 1.000 hosts < 200 ms (T099).
+// SC-302 — prévia de importação com 1.000 hosts na tela ≤ 3 s e gravação ≤ 5 s (003, T046).
+import { mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { expect, test, type Page } from '@playwright/test';
-import { launchApp } from './helpers/launch';
+import { launchApp, testService } from './helpers/launch';
 import { createVault, hostItem, unlock, unlockForm } from './helpers/ui';
 
 const TABS = 20;
 const HOSTS = 1_000;
 const SWITCH_MS = 100;
 const SEARCH_MS = 200;
+const PREVIEW_MS = 3_000;
+const COMMIT_MS = 5_000;
 
 /** Clica na aba `index` e mede até o painel dela estar visível e o quadro seguinte pintado. */
 async function switchTime(page: Page, index: number): Promise<number> {
@@ -134,6 +140,66 @@ test('busca em 1.000 hosts abaixo de 200 ms', async () => {
       description: times.map((t) => t.toFixed(1)).join(', '),
     });
     expect(worst).toBeLessThan(SEARCH_MS);
+  } finally {
+    await app.close();
+  }
+});
+
+test('prévia de importação com 1.000 hosts em até 3 s e gravação em até 5 s', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'openhost-perf-'));
+  const sheet = join(dir, 'mil.csv');
+  const lines = ['nome;endereco;porta;usuario;grupo'];
+  for (let i = 0; i < HOSTS; i++) {
+    const n = String(i).padStart(4, '0');
+    lines.push(
+      `host-${n};10.${String(i >> 8)}.${String(i & 255)}.1;22;admin;Clientes/Regiao-${String(i % 40)}`,
+    );
+  }
+  writeFileSync(sheet, lines.join('\r\n'));
+
+  const app = await launchApp();
+  const { page } = app;
+  try {
+    await createVault(page);
+    await page.getByRole('button', { name: 'Importar e exportar' }).click();
+    await testService(page, 'SetDialogPath', sheet);
+    const table = page.getByRole('table');
+
+    // Do clique até a última linha existir na tabela: leitura, prévia na ponte e renderização.
+    let t0 = Date.now();
+    await page
+      .getByRole('listitem')
+      .filter({ has: page.getByRole('heading', { name: 'Planilha (CSV)' }) })
+      .getByRole('button', { name: 'Escolher arquivo…' })
+      .click();
+    await expect(table.getByRole('textbox', { name: 'Endereço: host-0999' })).toBeAttached({
+      timeout: 30_000,
+    });
+    const preview = Date.now() - t0;
+    await expect(table.getByRole('row')).toHaveCount(HOSTS + 1);
+
+    // Editar a última linha continua respondendo com 1.000 linhas na tela.
+    const last = table.getByRole('textbox', { name: 'Usuário: host-0999' });
+    await last.scrollIntoViewIfNeeded();
+    t0 = Date.now();
+    await last.fill('netops');
+    await expect(last).toHaveValue('netops');
+    const edit = Date.now() - t0;
+
+    t0 = Date.now();
+    await page.getByRole('button', { name: 'Importar 1.000 hosts' }).click();
+    await expect(page.getByText('1.000 hosts criados')).toBeVisible({ timeout: 30_000 });
+    const commit = Date.now() - t0;
+
+    console.log(
+      `[perf] ${test.info().title}: prévia ${String(preview)} ms, edição ${String(edit)} ms, gravação ${String(commit)} ms`,
+    );
+    test.info().annotations.push({
+      type: 'importação de 1.000 hosts (ms)',
+      description: `prévia ${String(preview)}, edição ${String(edit)}, gravação ${String(commit)}`,
+    });
+    expect(preview).toBeLessThan(PREVIEW_MS);
+    expect(commit).toBeLessThan(COMMIT_MS);
   } finally {
     await app.close();
   }
