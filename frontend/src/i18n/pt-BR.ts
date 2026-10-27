@@ -156,6 +156,12 @@ export const t = {
     bellOptions: { off: 'Desligado', sound: 'Som', visual: 'Piscar a tela' },
     boldBright: 'Negrito em cores claras',
     boldBrightHint: 'Texto em negrito usa a versão clara da cor, como nos terminais clássicos.',
+    hostDensity: 'Densidade da lista de hosts',
+    hostDensityOptions: { comfortable: 'Confortável', compact: 'Compacta' },
+    hostDensityHint: 'Compacta mostra uma linha por host, com nome e endereço lado a lado.',
+    promptTitle: 'Nome da aba pelo prompt',
+    promptTitleHint:
+      'Em sessões SSH, a aba mostra o nome do equipamento lido do prompt (por exemplo <BNG.CENTRO>). Abas renomeadas à mão não mudam.',
     autoReconnect: 'Reconectar automaticamente',
     autoReconnectHint:
       'Se a conexão SSH cair, tenta de novo após 1, 2, 4, 8, 16 e 30 s. Fica parado com o cofre bloqueado.',

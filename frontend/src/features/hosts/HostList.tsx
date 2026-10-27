@@ -27,6 +27,9 @@ const HOST_MIME = 'application/x-shellvault-host';
 const GROUP_MIME = 'application/x-shellvault-group';
 const VIRTUALIZE_AFTER = 200;
 const HOST_ROW = 44;
+/** Densidade compacta (specs/009, FR-914): uma linha por host. */
+const HOST_ROW_COMPACT = 28;
+const COMPACT_TAGS = 2;
 const GROUP_ROW = 32;
 const OVERSCAN_PX = 400;
 
@@ -62,18 +65,22 @@ type Pending =
   | { kind: 'exportHost'; host: HostView }
   | { kind: 'exportGroup'; group: Group };
 
-const rowHeight = (row: TreeRow) => (row.kind === 'host' ? HOST_ROW : GROUP_ROW);
+const rowHeight = (row: TreeRow, hostRow: number) => (row.kind === 'host' ? hostRow : GROUP_ROW);
 const rowKey = (row: TreeRow) => (row.kind === 'host' ? row.host.id : `g:${row.group.id}`);
 
 /** Janela de linhas visíveis quando a lista passa de VIRTUALIZE_AFTER itens. */
-function useVirtualWindow(rows: TreeRow[], listRef: RefObject<HTMLUListElement | null>) {
+function useVirtualWindow(
+  rows: TreeRow[],
+  listRef: RefObject<HTMLUListElement | null>,
+  hostRow: number,
+) {
   const enabled = rows.length > VIRTUALIZE_AFTER;
   const [view, setView] = useState({ top: 0, height: 800 });
   const offsets = useMemo(() => {
     const out = [0];
-    for (const row of rows) out.push((out[out.length - 1] ?? 0) + rowHeight(row));
+    for (const row of rows) out.push((out[out.length - 1] ?? 0) + rowHeight(row, hostRow));
     return out;
-  }, [rows]);
+  }, [rows, hostRow]);
 
   useLayoutEffect(() => {
     const el = listRef.current;
@@ -123,6 +130,8 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
   const { hosts, groups, loaded } = useHosts();
   const [selected, setSelected] = useState<string | null>(null);
   const collapsedIds = useUi((u) => u.settings?.collapsedGroups);
+  const density = useUi((u) => u.settings?.hostDensity ?? 'comfortable');
+  const compact = density === 'compact';
   const collapsed = useMemo<ReadonlySet<string>>(() => new Set(collapsedIds), [collapsedIds]);
   const [menu, setMenu] = useState<{ anchor: PopoverAnchor; items: MenuItem[] } | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -140,7 +149,7 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
         : buildRows(groups, hosts, collapsed),
     [searching, index, query, groups, hosts, collapsed],
   );
-  const win = useVirtualWindow(rows, listRef);
+  const win = useVirtualWindow(rows, listRef, compact ? HOST_ROW_COMPACT : HOST_ROW);
   // Linhas acima mudam de altura ao recolher grupos: a lista entra na chave.
   const indicator = useSlidingIndicator(listRef, `${selected ?? ''}|${rows.length}|${query}`, 'y');
 
@@ -317,6 +326,9 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
 
     const { host } = row;
     const path = searching && host.groupId ? paths.get(host.groupId) : undefined;
+    const tags = host.tags ?? [];
+    const shownTags = compact ? tags.slice(0, COMPACT_TAGS) : tags;
+    const hiddenTags = tags.length - shownTags.length;
     return (
       <li
         key={host.id}
@@ -354,7 +366,7 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
       >
         {/* Alinha com o ícone de grupo, que tem a seta antes. */}
         {!searching && <span className={s.chevronSpace} />}
-        <Avatar text={host.label} os={hostOs(host)} />
+        <Avatar text={host.label} os={hostOs(host)} size={compact ? 18 : 28} />
         <span className={s.itemText}>
           <span className={s.itemLabelRow}>
             <span className={s.itemLabel}>{host.label}</span>
@@ -368,16 +380,21 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
                 {t.hosts.legacyBadge}
               </span>
             )}
+            {tags.length > 0 && (
+              <span className={s.tags}>
+                {shownTags.map((tag) => (
+                  <span key={tag} className={s.tag} data-tag="">
+                    {tag}
+                  </span>
+                ))}
+                {hiddenTags > 0 && (
+                  <span className={s.tag} title={tags.slice(COMPACT_TAGS).join(', ')}>
+                    +{hiddenTags}
+                  </span>
+                )}
+              </span>
+            )}
           </span>
-          {(host.tags?.length ?? 0) > 0 && (
-            <span className={s.tags}>
-              {host.tags?.map((tag) => (
-                <span key={tag} className={s.tag} data-tag="">
-                  {tag}
-                </span>
-              ))}
-            </span>
-          )}
           {/* Endereço diferencia hosts com o mesmo nome; na busca, o caminho do grupo. */}
           <span className={s.itemSub}>
             {path ? `${path} · ` : ''}
@@ -488,6 +505,7 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
         ref={listRef}
         style={indicator ?? undefined}
         data-indicator={indicator ? '' : undefined}
+        data-density={density}
         className={`${s.list} ${dropTarget === 'root' ? s.dropRoot : ''}`}
         role={searching ? 'listbox' : 'tree'}
         aria-label={t.hosts.title}

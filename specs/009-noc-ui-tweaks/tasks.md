@@ -45,11 +45,11 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 **Independent Test**: quickstart, cenário 1.
 
-- [ ] T009 [US1] Seletor "Ambiente" (`combobox`, "Nenhum" + lista) em `frontend/src/features/hosts/HostForm.tsx`.
-- [ ] T010 [US1] `TabBar.tsx`: `data-environment`, barra de 3 px no topo, nome acessível com `, ambiente <nome>` e dica; `environmentId` sem ambiente correspondente → sem cor.
-- [ ] T011 [US1] `TerminalView.tsx`, `PaneHeader.tsx` e `terminal.module.css`: borda interna de 2 px sempre reservada (transparente sem ambiente), `data-environment` no contêiner; anel de foco do painel por fora da borda; nome do ambiente no cabeçalho do painel.
-- [ ] T012 [US1] Cor ligada ao host pelo store `hosts`, para que trocar o ambiente atualize as sessões abertas sem reconectar (FR-906).
-- [ ] T013 [US1] `frontend/src/features/settings/EnvironmentsEditor.tsx` em Configurações → Aparência: renomear, trocar cor (8 opções), adicionar, remover (máx. 12), salvando por `vault.updateSettings({environments})`.
+- [X] T009 [US1] Seletor "Ambiente" (`combobox`, "Nenhum" + lista) em `frontend/src/features/hosts/HostForm.tsx`.
+- [X] T010 [US1] `TabBar.tsx`: `data-environment`, barra de 3 px no topo, nome acessível com `, ambiente <nome>` e dica; `environmentId` sem ambiente correspondente → sem cor.
+- [X] T011 [US1] `TerminalView.tsx`, `PaneHeader.tsx` e `terminal.module.css`: borda interna de 2 px sempre reservada (transparente sem ambiente), `data-environment` no contêiner; anel de foco do painel por fora da borda; nome do ambiente no cabeçalho do painel.
+- [X] T012 [US1] Cor ligada ao host pelo store `hosts`, para que trocar o ambiente atualize as sessões abertas sem reconectar (FR-906).
+- [X] T013 [US1] `frontend/src/features/settings/EnvironmentsEditor.tsx` em Configurações → Aparência: renomear, trocar cor (8 opções), adicionar, remover (máx. 12), salvando por `vault.updateSettings({environments})`.
 
 ---
 
@@ -72,7 +72,7 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 **Independent Test**: quickstart, cenário 3.
 
 - [X] T017 [P] [US3] Barra vertical na cor de destaque no item selecionado (`data-selected`) em `frontend/src/features/sidebar/sidebar.module.css` e `frontend/src/features/hosts/HostList.tsx`.
-- [ ] T018 [US3] Densidade (`data-density`): item compacto de 28 px com ícone menor, rótulo e endereço na mesma linha e reticências; rádio "Densidade da lista" em Configurações → Aparência gravando `hostDensity`.
+- [X] T018 [US3] Densidade (`data-density`): item compacto de 28 px com ícone menor, rótulo e endereço na mesma linha e reticências; rádio "Densidade da lista" em Configurações → Aparência gravando `hostDensity`.
 
 ---
 
@@ -82,8 +82,8 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 **Independent Test**: quickstart, cenário 4.
 
-- [ ] T019 [US4] `frontend/src/features/hosts/TagInput.tsx` (Enter ou vírgula adiciona, Backspace no campo vazio remove a última, "Remover tag <nome>", recusa repetida, > 32 caracteres e a 21ª com mensagem) e área "Notas" com contador `n/2000` em `HostForm.tsx`; erros do Go por `field`.
-- [ ] T020 [US4] Tags no item da lista (`<span data-tag>`; no compacto, as que couberem e `+N`) em `HostList.tsx`.
+- [X] T019 [US4] `frontend/src/features/hosts/TagInput.tsx` (Enter ou vírgula adiciona, Backspace no campo vazio remove a última, "Remover tag <nome>", recusa repetida, > 32 caracteres e a 21ª com mensagem) e área "Notas" com contador `n/2000` em `HostForm.tsx`; erros do Go por `field`.
+- [X] T020 [US4] Tags no item da lista (`<span data-tag>`; no compacto, as que couberem e `+N`) em `HostList.tsx`.
 - [X] T021 [US4] Busca da lista por rótulo, endereço, tags e nota sem diferenciar maiúsculas nem acentos (normalização NFD), com teste em `frontend/src/stores/hosts.test.ts` (ou no módulo de filtro existente) e 500 hosts.
 
 ---
@@ -96,7 +96,7 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 - [X] T022 [P] [US5] Testes e depois `frontend/src/features/terminal/promptTitle.ts` (`extractPromptName`): `<BNG.PINDORETAMA>`, `[~BNG.PINDORETAMA]`, `[*OLT-01]`, `[OLT-01]`, `R1#`, `R1>`, `R1(config-if)#`, `user@srv:~$`, `root@srv:/etc#`, `[admin@MikroTik] >`; recusar linhas de saída comuns, controle e > 64 caracteres.
 - [X] T023 [US5] `Tab.promptTitle` e `manualTitle` em `frontend/src/stores/sessions.ts` (renomear à mão grava `manualTitle`), título exibido manual > prompt > rótulo, com teste em `sessions.test.ts`.
-- [ ] T024 [US5] `TerminalView.tsx`: ler a linha do cursor após escrita, no máximo 1×/s, só com o cursor no fim da linha, só em sessões SSH; dica da aba com `rótulo — usuário@endereço:porta`; checkbox "Nome da aba pelo prompt" em `TerminalSettings.tsx`.
+- [X] T024 [US5] `TerminalView.tsx`: ler a linha do cursor após escrita, no máximo 1×/s, só com o cursor no fim da linha, só em sessões SSH; dica da aba com `rótulo — usuário@endereço:porta`; checkbox "Nome da aba pelo prompt" em `TerminalSettings.tsx`.
 
 ---
 

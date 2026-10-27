@@ -456,3 +456,26 @@
   font-size: 10.5px;
   line-height: 15px;
 }
+
+/* Densidade compacta (specs/009, FR-914): 28 px, rótulo e endereço na mesma linha. */
+.list[data-density='compact'] .item {
+  height: 28px;
+  gap: 8px;
+  padding: 2px 8px;
+}
+
+.list[data-density='compact'] .itemText {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.list[data-density='compact'] .itemLabelRow {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.list[data-density='compact'] .itemSub {
+  flex: 1 1 0;
+  min-width: 0;
+}

@@ -13,6 +13,7 @@ import {
   type Side,
 } from '../features/terminal/layout';
 import { dropInteractions } from './interactions';
+import { useUi } from './ui';
 
 export interface Tab {
   id: string;
@@ -287,6 +288,11 @@ let subscribed = false;
 export function subscribeSessions(): void {
   if (subscribed) return;
   subscribed = true;
+  // "Nome da aba pelo prompt" (specs/009, FR-925): desligar volta as abas ao rótulo do host.
+  useUi.subscribe((ui, prev) => {
+    const on = ui.settings?.promptTitle !== false;
+    if (on !== (prev.settings?.promptTitle !== false)) useSessions.getState().setPromptTitles(on);
+  });
   window.shellvault.sessions.onState((e) => {
     useSessions
       .getState()
