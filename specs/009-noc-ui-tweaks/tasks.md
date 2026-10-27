@@ -34,7 +34,7 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 ## Phase 2: Foundational — Frontend (Claude)
 
-- [ ] T007 Tipos em `frontend/src/shared/model/types.ts` (`Host.environmentId/tags/notes`, `Environment`, `EnvironmentColor`, `VaultSettings.environments`, `Settings.hostDensity/promptTitle`) e chaves de texto em `frontend/src/i18n/pt-BR.ts`.
+- [X] T007 Tipos em `frontend/src/shared/model/types.ts` (`Host.environmentId/tags/notes`, `Environment`, `EnvironmentColor`, `VaultSettings.environments`, `Settings.hostDensity/promptTitle`) e chaves de texto em `frontend/src/i18n/pt-BR.ts`.
 - [X] T008 [P] `frontend/src/theme/environments.ts`: valor de cada id de cor por tema (escuro, claro, alto contraste) e teste em `environments.test.ts` conferindo contraste ≥ 3:1 com o fundo da barra de abas de cada tema.
 
 ---
@@ -84,7 +84,7 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 - [ ] T019 [US4] `frontend/src/features/hosts/TagInput.tsx` (Enter ou vírgula adiciona, Backspace no campo vazio remove a última, "Remover tag <nome>", recusa repetida, > 32 caracteres e a 21ª com mensagem) e área "Notas" com contador `n/2000` em `HostForm.tsx`; erros do Go por `field`.
 - [ ] T020 [US4] Tags no item da lista (`<span data-tag>`; no compacto, as que couberem e `+N`) em `HostList.tsx`.
-- [ ] T021 [US4] Busca da lista por rótulo, endereço, tags e nota sem diferenciar maiúsculas nem acentos (normalização NFD), com teste em `frontend/src/stores/hosts.test.ts` (ou no módulo de filtro existente) e 500 hosts.
+- [X] T021 [US4] Busca da lista por rótulo, endereço, tags e nota sem diferenciar maiúsculas nem acentos (normalização NFD), com teste em `frontend/src/stores/hosts.test.ts` (ou no módulo de filtro existente) e 500 hosts.
 
 ---
 

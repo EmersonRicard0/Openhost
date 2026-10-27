@@ -82,8 +82,8 @@
 - **Decision**: aba com barra de 3 px no topo na cor do ambiente; terminal e painel dividido com
   borda interna de 2 px. O foco do painel continua o anel na cor de destaque, por fora da borda do
   ambiente. O nome do ambiente entra no `aria-label` da aba, na dica e no `PaneHeader`.
-- **Rationale**: a borda interna não muda o tamanho em células do terminal de forma diferente entre
-  hosts com e sem ambiente (o espaço é reservado sempre, transparente sem ambiente).
+- **Rationale**: a borda é desenhada por cima do quadro do terminal (sobre o espaçamento do
+  perfil), sem ocupar layout; o tamanho em células é o mesmo com e sem ambiente.
 - Contraste: cada id de cor tem valor por tema, conferido em teste contra o fundo da barra de abas
   (≥ 3:1).
 
