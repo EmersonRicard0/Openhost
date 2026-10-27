@@ -386,3 +386,21 @@ func writeJSON(w http.ResponseWriter, status int, value any) {
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(value)
 }
+
+// File é uma cópia de um arquivo guardado, para os testes conferirem nome e bytes.
+type File struct {
+	Name string `json:"name"`
+	Data []byte `json:"data"`
+}
+
+// Files devolve os arquivos guardados, ordenados por nome.
+func (s *Server) Files() []File {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make([]File, 0, len(s.files))
+	for _, file := range s.files {
+		out = append(out, File{Name: file.Name, Data: append([]byte(nil), file.Data...)})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
+	return out
+}
