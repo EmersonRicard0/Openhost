@@ -42,3 +42,6 @@ skills-lock.json
 specs/*/coordination.md
 docs/reference/
 frontend/package.json.md5
+
+# Chave privada de assinatura das atualizações (specs/007): nunca versionar
+update-signing.key
