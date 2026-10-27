@@ -64,6 +64,7 @@ Como `hosts.*`/`groups.*` da 001. **Alterado**: `HostInput`/`HostView` ganham
 enviados em `Create`/`Update` são ignorados; `osIcon` é validado pela lista fechada do modelo.
 Desde a 009, `HostInput`/`HostView` também incluem `environmentId: string | null`,
 `tags: string[]` e `notes: string`; no `Update`, chaves omitidas preservam o valor atual.
+Desde a 010, incluem também `favorite: boolean` (chave omitida em `Update` preserva o valor atual).
 
 Evento `hosts:changed`: `{ hostId: string, detectedOs: OsId | null }`, emitido quando a detecção
 de sistema de uma conexão SSH altera o host persistido.
@@ -78,6 +79,7 @@ Igual à 001 (`List`, `CreatePassword`, `ImportKey`, `PickKeyFile`, `GenerateEd2
 | Método | Entrada | Saída | Notas |
 |---|---|---|---|
 | `OpenSsh(hostId)` 🔒 | — | `{ sessionId }` | **alterado**: sem tamanho; a sessão espera o primeiro `Resize` válido para pedir o PTY remoto (FR-113) |
+| `OpenQuick(target)` 🔒 **novo** | `{ address, port, username }` | `{ sessionId }` | host não salvo; agente antes do prompt de senha; reconexão pede autenticação novamente |
 | `OpenLocal(shell)` | `"powershell" \| "cmd"` | `{ sessionId }` | **alterado**: idem |
 | `Write(sessionId, data)` | string | `void` | |
 | `Resize(sessionId, cols, rows)` | ints 1–1000 | `void` | ignorado se igual ao último enviado |
@@ -130,7 +132,8 @@ Como `app.*` da 001, com:
 | Método / evento | Mudança |
 |---|---|
 | `GetAppearance()` / `app:appearance` | igual |
-| `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups`, `shortcuts: Record<string, string>`, `hostDensity: "comfortable" | "compact"` e `promptTitle: boolean`; no patch, `shortcuts` substitui o mapa inteiro (`""` desativa a ação) |
+| `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups`, `shortcuts: Record<string, string>`, `hostDensity: "comfortable" | "compact"`, `promptTitle: boolean` e `recents` local; no patch, `shortcuts` substitui o mapa inteiro (`""` desativa a ação) |
+| `RecordRecent(entry)` **novo** | host `{ kind, hostId }` ou quick `{ kind, address, port, username }` | `RecentEntry[]` | valida, deduplica e mantém 20; entrada sem senha/segredo; não sincroniza |
 | `app:close-requested` / `ConfirmClose(bool)` | igual à 001 (FR-028) |
 | `WindowMinimise()`, `WindowToggleMaximise()`, `WindowClose()` **novo** | botões da barra de título própria (FR-133); `WindowClose` passa pela confirmação de FR-028 |
 | `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (⌘-clique no macOS) (FR-145) |
@@ -149,7 +152,7 @@ Como os demais, escolhem arquivos só por diálogo nativo aberto pelo Go e nunca
 privada, passphrase ou senha. A prévia e o último lote importado ficam só em memória e são
 descartados quando o cofre bloqueia.
 
-Desde a 009, o formato próprio OpenHost é versão 2 e inclui `tags`, `notes` e
+Desde a 010, o formato próprio OpenHost é versão 2 e inclui `tags`, `notes`, `favorite` e
 `environment: {name,color} | null`; a importação estrita continua aceitando a versão 1.
 
 ## UpdateService (007)

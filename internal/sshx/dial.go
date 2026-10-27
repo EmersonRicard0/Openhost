@@ -48,7 +48,8 @@ type Options struct {
 	Term             string
 	KnownHosts       KnownHosts
 	// Agent abre a conexão com o ssh-agent; nil usa o do sistema.
-	Agent AgentOpener
+	Agent      AgentOpener
+	AgentFirst bool
 }
 
 // Client é a conexão autenticada; Close também para o keepalive.

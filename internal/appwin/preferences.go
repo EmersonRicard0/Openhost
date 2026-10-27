@@ -67,6 +67,16 @@ type Preferences struct {
 	HostDensity        string            `json:"hostDensity"`
 	PromptTitle        bool              `json:"promptTitle"`
 	Updates            UpdatePrefs       `json:"updates"`
+	Recents            []RecentEntry     `json:"recents"`
+}
+
+type RecentEntry struct {
+	Kind     string `json:"kind"`
+	HostID   string `json:"hostId,omitempty"`
+	Address  string `json:"address,omitempty"`
+	Port     int    `json:"port,omitempty"`
+	Username string `json:"username,omitempty"`
+	At       string `json:"at"`
 }
 
 func DefaultPreferences() Preferences {
@@ -89,6 +99,7 @@ func DefaultPreferences() Preferences {
 		HostDensity:        "comfortable",
 		PromptTitle:        true,
 		Updates:            UpdatePrefs{Auto: true},
+		Recents:            []RecentEntry{},
 	}
 }
 
@@ -189,6 +200,12 @@ func normalizedPreferences(preferences Preferences) Preferences {
 	}
 	if preferences.CollapsedGroups == nil {
 		preferences.CollapsedGroups = []string{}
+	}
+	if preferences.Recents == nil {
+		preferences.Recents = []RecentEntry{}
+	}
+	if len(preferences.Recents) > 20 {
+		preferences.Recents = preferences.Recents[:20]
 	}
 	if preferences.Shortcuts == nil || ValidateShortcuts(preferences.Shortcuts) != nil {
 		preferences.Shortcuts = map[string]string{}

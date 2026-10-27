@@ -90,6 +90,22 @@ func TestHostDensityAndPromptTitleDefaults(t *testing.T) {
 	}
 }
 
+func TestRecentEntryJSONAndDefaults(t *testing.T) {
+	preferences := DefaultPreferences()
+	if preferences.Recents == nil || len(preferences.Recents) != 0 {
+		t.Fatalf("recents padrão = %#v", preferences.Recents)
+	}
+	raw, err := json.Marshal(RecentEntry{Kind: "quick", Address: "router.example", Port: 2222, Username: "ops", At: "2026-10-28T12:00:00Z"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{`"kind":"quick"`, `"address":"router.example"`, `"port":2222`, `"username":"ops"`, `"at":"2026-10-28T12:00:00Z"`} {
+		if !strings.Contains(string(raw), field) {
+			t.Fatalf("campo %s ausente: %s", field, raw)
+		}
+	}
+}
+
 func TestUpdatePreferencesDefaultsAndValidation(t *testing.T) {
 	preferences := DefaultPreferences()
 	if !preferences.Updates.Auto || preferences.Updates.Prerelease {

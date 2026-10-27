@@ -2,13 +2,19 @@ package bridge
 
 import (
 	"context"
+	"encoding/json"
 	"log"
 	"net/url"
+	"strings"
+	"time"
+	"unicode"
+	"unicode/utf8"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/appwin"
+	"shellvault/internal/domain"
 	"shellvault/internal/localpty"
 	"shellvault/internal/validate"
 )
@@ -23,6 +29,7 @@ type AppService struct {
 	closeGuard  *appwin.CloseGuard
 	context     func() context.Context
 	localShells func() []localpty.LocalShell
+	now         func() time.Time
 
 	minimise       func(context.Context)
 	toggleMaximise func(context.Context)
@@ -42,6 +49,7 @@ func newAppService(
 		closeGuard:  closeGuard,
 		context:     contextFn,
 		localShells: localpty.ListShells,
+		now:         time.Now,
 		minimise:    wruntime.WindowMinimise,
 		toggleMaximise: func(ctx context.Context) {
 			wruntime.WindowToggleMaximise(ctx)
@@ -49,6 +57,85 @@ func newAppService(
 		quit:    wruntime.Quit,
 		openURL: wruntime.BrowserOpenURL,
 	}
+}
+
+type RecentEntryInput struct {
+	Kind     string `json:"kind"`
+	HostID   string `json:"hostId"`
+	Address  string `json:"address"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+}
+
+func (entry *RecentEntryInput) UnmarshalJSON(data []byte) error {
+	type wire RecentEntryInput
+	var decoded wire
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	for key := range fields {
+		if key != "kind" && key != "hostId" && key != "address" && key != "port" && key != "username" {
+			return apperr.New(apperr.InvalidInput)
+		}
+	}
+	*entry = RecentEntryInput(decoded)
+	return nil
+}
+
+func (s *AppService) RecordRecent(entry RecentEntryInput) ([]appwin.RecentEntry, error) {
+	var recent appwin.RecentEntry
+	switch entry.Kind {
+	case "host":
+		if validate.UUID(entry.HostID) != nil || entry.Address != "" || entry.Port != 0 || entry.Username != "" {
+			return nil, apperr.New(apperr.InvalidInput)
+		}
+		recent = appwin.RecentEntry{Kind: "host", HostID: entry.HostID}
+	case "quick":
+		if !validQuickTarget(entry.Address, entry.Port, entry.Username) {
+			return nil, apperr.New(apperr.InvalidInput)
+		}
+		recent = appwin.RecentEntry{Kind: "quick", Address: strings.ToLower(entry.Address), Port: entry.Port, Username: entry.Username}
+	default:
+		return nil, apperr.New(apperr.InvalidInput)
+	}
+	recent.At = s.now().Format(time.RFC3339)
+	preferences, err := s.preferences.Update(func(p *appwin.Preferences) error {
+		out := make([]appwin.RecentEntry, 0, 20)
+		for _, old := range p.Recents {
+			if recent.Kind == "host" && old.Kind == "host" && recent.HostID == old.HostID {
+				continue
+			}
+			if recent.Kind == "quick" && old.Kind == "quick" && strings.EqualFold(recent.Address, old.Address) && recent.Port == old.Port && recent.Username == old.Username {
+				continue
+			}
+			out = append(out, old)
+		}
+		p.Recents = append([]appwin.RecentEntry{recent}, out...)
+		if len(p.Recents) > 20 {
+			p.Recents = p.Recents[:20]
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, clean(err)
+	}
+	return preferences.Recents, nil
+}
+
+func validQuickTarget(address string, port int, username string) bool {
+	if !utf8.ValidString(address) || !utf8.ValidString(username) || address == "" || strings.TrimSpace(address) != address || strings.ContainsAny(address, "[]") || !domain.IsValidAddress(address) || port < 1 || port > 65535 || len([]rune(username)) < 1 || len([]rune(username)) > 64 {
+		return false
+	}
+	for _, r := range username {
+		if unicode.IsSpace(r) || unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *AppService) GetAppearance() (Appearance, error) {

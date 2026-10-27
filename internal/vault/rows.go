@@ -32,6 +32,7 @@ type hostPlain struct {
 	EnvironmentID    *string          `json:"environmentId"`
 	Tags             []string         `json:"tags"`
 	Notes            string           `json:"notes"`
+	Favorite         bool             `json:"favorite"`
 	LegacyAlgorithms bool             `json:"legacyAlgorithms"`
 	ProfileID        *string          `json:"profileId"`
 	DetectedOS       *string          `json:"detectedOs"`
@@ -129,7 +130,7 @@ func encodeContent(c *model.Content) (map[string]map[string]row, error) {
 		}
 		p := hostPlain{Label: h.Label, Address: h.Address, Port: h.Port, Username: h.Username,
 			AuthMethod: h.AuthMethod, CredentialID: h.CredentialID,
-			EnvironmentID: h.EnvironmentID, Tags: tags, Notes: h.Notes,
+			EnvironmentID: h.EnvironmentID, Tags: tags, Notes: h.Notes, Favorite: h.Favorite,
 			LegacyAlgorithms: h.LegacyAlgorithms, ProfileID: h.ProfileID,
 			DetectedOS: h.DetectedOS, OSIcon: osIcon}
 		if err := put("hosts", h.ID, []any{nullable(h.GroupID), 0, h.CreatedAt, h.UpdatedAt}, p); err != nil {
@@ -364,7 +365,7 @@ func decodeRow(c *model.Content, t, id string, cols []any, plain []byte) error {
 		c.Hosts = append(c.Hosts, model.Host{ID: id, GroupID: strPtr(cols[0]), CreatedAt: str(cols[2]),
 			UpdatedAt: str(cols[3]), Label: p.Label, Address: p.Address, Port: p.Port,
 			Username: p.Username, AuthMethod: p.AuthMethod, CredentialID: p.CredentialID,
-			EnvironmentID: p.EnvironmentID, Tags: append([]string{}, p.Tags...), Notes: p.Notes,
+			EnvironmentID: p.EnvironmentID, Tags: append([]string{}, p.Tags...), Notes: p.Notes, Favorite: p.Favorite,
 			LegacyAlgorithms: p.LegacyAlgorithms, ProfileID: p.ProfileID,
 			DetectedOS: p.DetectedOS, OSIcon: p.OSIcon})
 	case "known_hosts":

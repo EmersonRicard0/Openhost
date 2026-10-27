@@ -1,9 +1,12 @@
 package bridge
 
 import (
+	"errors"
+	"strings"
 	"testing"
 	"time"
 
+	"shellvault/internal/apperr"
 	"shellvault/internal/domain"
 	"shellvault/internal/model"
 	"shellvault/internal/sshx"
@@ -29,6 +32,76 @@ func TestShouldProbeOSRelease(t *testing.T) {
 				t.Fatalf("shouldProbeOSRelease() = %v, esperado %v", got, test.want)
 			}
 		})
+	}
+}
+
+func TestOpenQuickValidatesEachTargetField(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	cases := []struct {
+		name, field string
+		target      QuickTarget
+	}{
+		{"address", "address", QuickTarget{Address: "router.invalid!", Port: 22, Username: "ops"}},
+		{"bracketed IPv6", "address", QuickTarget{Address: "[2001:db8::1]", Port: 22, Username: "ops"}},
+		{"port low", "port", QuickTarget{Address: "router.example", Port: 0, Username: "ops"}},
+		{"port high", "port", QuickTarget{Address: "router.example", Port: 65536, Username: "ops"}},
+		{"username empty", "username", QuickTarget{Address: "router.example", Port: 22, Username: ""}},
+		{"username space", "username", QuickTarget{Address: "router.example", Port: 22, Username: "op s"}},
+		{"username control", "username", QuickTarget{Address: "router.example", Port: 22, Username: "ops\u0007"}},
+		{"username long", "username", QuickTarget{Address: "router.example", Port: 22, Username: strings.Repeat("u", 65)}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := services.sessionService.OpenQuick(tc.target)
+			var appErr *apperr.Error
+			if !errors.As(err, &appErr) || appErr.Code != apperr.InvalidInput || !strings.Contains(appErr.Detail, "field: "+tc.field) {
+				t.Fatalf("erro = %#v; esperado field %q", err, tc.field)
+			}
+		})
+	}
+	if services.sessions.Count() != 0 {
+		t.Fatal("alvo inválido criou sessão")
+	}
+}
+
+func TestOpenQuickUsesVaultOptionsWithoutSavingHostOrPassword(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := services.vaultService.UpdateSettings(VaultSettingsPatch{
+		"legacyDefault": true, "connectTimeoutSeconds": 42, "keepaliveSeconds": 50, "term": "linux",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	opts, err := services.sessionService.quickOptions(QuickTarget{Address: "2001:DB8::1", Port: 2222, Username: "ops"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if opts.Address != "2001:db8::1" || opts.Port != 2222 || opts.Username != "ops" ||
+		opts.Auth.Method != model.AuthAsk || opts.Auth.Password != "" || !opts.AgentFirst ||
+		!opts.LegacyAlgorithms || opts.ConnectTimeout != 42*time.Second || opts.Keepalive != 50*time.Second ||
+		opts.Term != "linux" || opts.KnownHosts == nil {
+		t.Fatalf("opções rápidas inesperadas: %+v", opts)
+	}
+
+	opened, err := services.sessionService.OpenQuick(QuickTarget{Address: "127.0.0.1", Port: 1, Username: "ops"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	session, err := services.sessions.Get(opened.SessionID)
+	if err != nil || session.HostID != nil {
+		t.Fatalf("sessão rápida associada a host: %+v, %v", session, err)
+	}
+	if err := services.sessionService.Close(opened.SessionID); err != nil {
+		t.Fatal(err)
+	}
+	content, err := services.store.Read()
+	if err != nil || len(content.Hosts) != 0 || len(content.Credentials) != 0 {
+		t.Fatalf("conexão rápida gravou host ou credencial: %+v, %v", content, err)
 	}
 }
 

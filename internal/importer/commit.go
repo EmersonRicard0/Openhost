@@ -264,6 +264,9 @@ func applyOpenHostFields(content *model.Content, host *model.Host, row PreviewRo
 	if notes, ok := row.Extra["notes"].(string); ok {
 		host.Notes = notes
 	}
+	if favorite, ok := row.Extra["favorite"].(bool); ok {
+		host.Favorite = favorite
+	}
 	if value, present := row.Extra["environment"]; present {
 		host.EnvironmentID = nil
 		if environment, ok := value.(*model.Environment); ok && environment != nil {

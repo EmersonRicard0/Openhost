@@ -16,9 +16,9 @@ contracts/ui.md, quickstart.md
 
 ## Phase 1: Foundational — Go (Codex)
 
-- [ ] T001 (Codex) `SessionService.OpenQuick(target)` em `internal/bridge/sessions.go`: valida `address` (nome, IPv4 ou IPv6 sem colchetes), `port` "1–65535" e `username` "1–64 caracteres, sem espaço nem controle" com `internal/validate`; monta `sshx.Options` em memória com `Auth{Method: AuthAsk}`, agente SSH antes da senha quando houver, `LegacyAlgorithms = VaultSettings.LegacyDefault`, tempos e `$TERM` do cofre e `storeKnownHosts`; abre com `hostID = nil`; reconexão pede a senha de novo. Testes: alvo inválido por campo, nada gravado no cofre além da chave aceita, senha ausente de retornos, eventos e logs. Atualizar `specs/002-wails-migration/contracts/bridge.md`.
-- [ ] T002 (Codex) `favorite bool` em `model.Host`, `HostInput` (omitido no `Update` mantém), `HostView`, `Duplicate` e exportação/importação OpenHost v2. Testes.
-- [ ] T003 (Codex) `Recents []RecentEntry` em `internal/appwin/preferences.go` (fora de `SyncPreferences`); `AppService.RecordRecent(entry)` em `internal/bridge/app.go`: valida (`kind` `host` com UUID, ou `quick` com as regras do T001), remove a igual anterior (mesmo `hostId`, ou endereço normalizado + porta + usuário), põe no topo com `at` = agora (RFC 3339), corta em 20 e devolve a lista; `getUiSettings` devolve `recents`. Testes. Regerar `frontend/wailsjs`.
+- [X] T001 (Codex) `SessionService.OpenQuick(target)` em `internal/bridge/sessions.go`: valida `address` (nome, IPv4 ou IPv6 sem colchetes), `port` "1–65535" e `username` "1–64 caracteres, sem espaço nem controle" com `internal/validate`; monta `sshx.Options` em memória com `Auth{Method: AuthAsk}`, agente SSH antes da senha quando houver, `LegacyAlgorithms = VaultSettings.LegacyDefault`, tempos e `$TERM` do cofre e `storeKnownHosts`; abre com `hostID = nil`; reconexão pede a senha de novo. Testes: alvo inválido por campo, nada gravado no cofre além da chave aceita, senha ausente de retornos, eventos e logs. Atualizar `specs/002-wails-migration/contracts/bridge.md`.
+- [X] T002 (Codex) `favorite bool` em `model.Host`, `HostInput` (omitido no `Update` mantém), `HostView`, `Duplicate` e exportação/importação OpenHost v2. Testes.
+- [X] T003 (Codex) `Recents []RecentEntry` em `internal/appwin/preferences.go` (fora de `SyncPreferences`); `AppService.RecordRecent(entry)` em `internal/bridge/app.go`: valida (`kind` `host` com UUID, ou `quick` com as regras do T001), remove a igual anterior (mesmo `hostId`, ou endereço normalizado + porta + usuário), põe no topo com `at` = agora (RFC 3339), corta em 20 e devolve a lista; `getUiSettings` devolve `recents`. Testes. Regerar `frontend/wailsjs`.
 
 ---
 
@@ -49,9 +49,9 @@ contracts/ui.md, quickstart.md
 ## Phase 6: Polish
 
 - [X] T014 Atalho `focusQuickConnect` (Ctrl+L / ⌘L) em `frontend/src/app/shortcuts.ts`, ativo só com a tela inicial.
-- [ ] T015 E2e `frontend/tests/e2e/home.spec.ts` com os cenários 1–5 do quickstart; incluir a conexão rápida no fluxo de `secrets-scan.spec.ts`.
-- [ ] T016 Revisão de segurança (plano): `OpenQuick`, `recordRecent`, ausência de senha em recentes, logs e eventos.
-- [ ] T017 Lint, typecheck, testes, `validation.md`.
+- [X] T015 E2e `frontend/tests/e2e/home.spec.ts` com os cenários 1–5 do quickstart; incluir a conexão rápida no fluxo de `secrets-scan.spec.ts`.
+- [X] T016 Revisão de segurança (plano): `OpenQuick`, `recordRecent`, ausência de senha em recentes, logs e eventos.
+- [X] T017 Lint, typecheck, testes, `validation.md`.
 
 ## Dependencies & Execution Order
 

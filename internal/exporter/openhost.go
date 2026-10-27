@@ -33,6 +33,7 @@ type OpenHostHost struct {
 	GroupID          *string                `json:"groupId"`
 	Tags             []string               `json:"tags"`
 	Notes            string                 `json:"notes"`
+	Favorite         bool                   `json:"favorite"`
 	Environment      *OpenHostEnvironment   `json:"environment"`
 	LegacyAlgorithms bool                   `json:"legacyAlgorithms"`
 	OSIcon           string                 `json:"osIcon"`
@@ -134,7 +135,7 @@ func MarshalOpenHost(content *model.Content, options OpenHostOptions) ([]byte, e
 		data.Hosts = append(data.Hosts, OpenHostHost{
 			ID: host.ID, Label: host.Label, Address: host.Address, Port: host.Port,
 			Username: host.Username, AuthMethod: host.AuthMethod, KeyID: keyID,
-			GroupID: clonePtr(host.GroupID), Tags: tags, Notes: host.Notes, Environment: environment,
+			GroupID: clonePtr(host.GroupID), Tags: tags, Notes: host.Notes, Favorite: host.Favorite, Environment: environment,
 			LegacyAlgorithms: host.LegacyAlgorithms,
 			OSIcon:           host.OSIcon, Profile: profile,
 		})

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"reflect"
 	"strings"
@@ -136,6 +137,51 @@ func TestAppServiceLocalShellsAndMissingDefaultFallback(t *testing.T) {
 	persisted, err := app.preferences.Get()
 	if err != nil || persisted.DefaultShell != defaultID {
 		t.Fatalf("fallback persistido = %+v, %v", persisted, err)
+	}
+}
+
+func TestRecordRecentValidatesDeduplicatesOrdersCapsAndPersistsLocally(t *testing.T) {
+	services := testServices(t)
+	app := services.appService
+	app.now = func() time.Time { return time.Date(2026, 10, 28, 12, 0, 0, 0, time.UTC) }
+	firstHostID := "11111111-2222-4333-8444-555555555555"
+	first, err := app.RecordRecent(RecentEntryInput{Kind: "host", HostID: firstHostID})
+	if err != nil || len(first) != 1 || first[0].HostID != firstHostID || first[0].At != "2026-10-28T12:00:00Z" {
+		t.Fatalf("recent host = %+v, %v", first, err)
+	}
+	app.now = func() time.Time { return time.Date(2026, 10, 28, 12, 1, 0, 0, time.UTC) }
+	second, err := app.RecordRecent(RecentEntryInput{Kind: "quick", Address: "ROUTER.example", Port: 2222, Username: "ops"})
+	if err != nil || len(second) != 2 || second[0].Kind != "quick" || second[0].Address != "router.example" {
+		t.Fatalf("recent quick = %+v, %v", second, err)
+	}
+	app.now = func() time.Time { return time.Date(2026, 10, 28, 12, 2, 0, 0, time.UTC) }
+	third, err := app.RecordRecent(RecentEntryInput{Kind: "quick", Address: "router.example", Port: 2222, Username: "ops"})
+	if err != nil || len(third) != 2 || third[0].At != "2026-10-28T12:02:00Z" || third[1].HostID != firstHostID {
+		t.Fatalf("recent deduplicado = %+v, %v", third, err)
+	}
+	if _, err := app.RecordRecent(RecentEntryInput{Kind: "quick", Address: "bad host", Port: 22, Username: "ops"}); apperr.CodeOf(err) != apperr.InvalidInput {
+		t.Fatalf("endereço inválido aceito: %v", err)
+	}
+	if _, err := app.RecordRecent(RecentEntryInput{Kind: "host", HostID: "não-uuid"}); apperr.CodeOf(err) != apperr.InvalidInput {
+		t.Fatalf("hostId inválido aceito: %v", err)
+	}
+	var secret RecentEntryInput
+	if err := json.Unmarshal([]byte(`{"kind":"quick","address":"router.example","port":22,"username":"ops","password":"secret"}`), &secret); apperr.CodeOf(err) != apperr.InvalidInput {
+		t.Fatalf("campo extra/segredo aceito: %v", err)
+	}
+	for i := 0; i < 22; i++ {
+		address := fmt.Sprintf("r%d.example", i)
+		if _, err := app.RecordRecent(RecentEntryInput{Kind: "quick", Address: address, Port: 22, Username: "ops"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := app.GetPreferences()
+	if err != nil || len(got.Recents) != 20 || got.Recents[0].Address != "r21.example" {
+		t.Fatalf("recents persistidos = %+v, %v", got.Recents, err)
+	}
+	raw, _ := json.Marshal(got.Recents)
+	if strings.Contains(string(raw), "secret") || strings.Contains(string(raw), "password") {
+		t.Fatalf("recents incluem segredo: %s", raw)
 	}
 }
 

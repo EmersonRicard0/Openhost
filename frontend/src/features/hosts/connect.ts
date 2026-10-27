@@ -42,14 +42,26 @@ export async function connectQuick(target: QuickTarget): Promise<void> {
 
 /** Recente só quando a sessão conecta de fato (spec, Assumptions). */
 function rememberWhenConnected(sessionId: string, entry: RecentEntryInput): void {
-  const stop = useSessions.subscribe((state) => {
+  let recorded = false;
+  let stop = () => {};
+  const record = () => {
+    if (recorded) return;
+    recorded = true;
+    stop();
+    void window.shellvault.app.recordRecent(entry).then((res) => {
+      const settings = useUi.getState().settings;
+      if (res.ok && settings) useUi.getState().setSettings({ ...settings, recents: res.value });
+    });
+  };
+  stop = useSessions.subscribe((state) => {
     const tab = state.tabs.find((t) => t.id === sessionId);
     if (tab?.state === 'connected') {
-      stop();
-      void window.shellvault.app.recordRecent(entry).then((res) => {
-        const settings = useUi.getState().settings;
-        if (res.ok && settings) useUi.getState().setSettings({ ...settings, recents: res.value });
-      });
+      record();
     } else if (!tab || tab.state === 'closed') stop();
   });
+  // A localhost session can connect before OpenQuick/OpenSsh resolves and the subscription is
+  // installed. Check the current snapshot too so that fast connects are still recorded.
+  const current = useSessions.getState().tabs.find((tab) => tab.id === sessionId);
+  if (current?.state === 'connected') record();
+  else if (!current || current.state === 'closed') stop();
 }

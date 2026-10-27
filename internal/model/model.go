@@ -30,6 +30,7 @@ type Host struct {
 	EnvironmentID    *string    `json:"environmentId"`
 	Tags             []string   `json:"tags"`
 	Notes            string     `json:"notes"`
+	Favorite         bool       `json:"favorite"`
 	LegacyAlgorithms bool       `json:"legacyAlgorithms"`
 	ProfileID        *string    `json:"profileId"`
 	DetectedOS       *string    `json:"detectedOs"`
