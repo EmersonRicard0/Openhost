@@ -27,12 +27,44 @@ type Host struct {
 	AuthMethod       AuthMethod `json:"authMethod"`
 	CredentialID     *string    `json:"credentialId"`
 	GroupID          *string    `json:"groupId"`
+	EnvironmentID    *string    `json:"environmentId"`
+	Tags             []string   `json:"tags"`
+	Notes            string     `json:"notes"`
 	LegacyAlgorithms bool       `json:"legacyAlgorithms"`
 	ProfileID        *string    `json:"profileId"`
 	DetectedOS       *string    `json:"detectedOs"`
 	OSIcon           string     `json:"osIcon"`
 	CreatedAt        string     `json:"createdAt"`
 	UpdatedAt        string     `json:"updatedAt"`
+}
+
+type EnvironmentColor string
+
+const (
+	EnvironmentRed    EnvironmentColor = "red"
+	EnvironmentOrange EnvironmentColor = "orange"
+	EnvironmentAmber  EnvironmentColor = "amber"
+	EnvironmentGreen  EnvironmentColor = "green"
+	EnvironmentTeal   EnvironmentColor = "teal"
+	EnvironmentBlue   EnvironmentColor = "blue"
+	EnvironmentSlate  EnvironmentColor = "slate"
+	EnvironmentPink   EnvironmentColor = "pink"
+)
+
+func ValidEnvironmentColor(color EnvironmentColor) bool {
+	switch color {
+	case EnvironmentRed, EnvironmentOrange, EnvironmentAmber, EnvironmentGreen,
+		EnvironmentTeal, EnvironmentBlue, EnvironmentSlate, EnvironmentPink:
+		return true
+	default:
+		return false
+	}
+}
+
+type Environment struct {
+	ID    string           `json:"id"`
+	Name  string           `json:"name"`
+	Color EnvironmentColor `json:"color"`
 }
 
 const OSIconAuto = "auto"
@@ -92,6 +124,8 @@ type VaultSettings struct {
 	LegacyDefault bool `json:"legacyDefault"`
 	// Valor de TERM enviado ao servidor no pedido de PTY.
 	Term string `json:"term"`
+	// Classificações visuais dos hosts; nil indica cofre antigo e recebe os padrões.
+	Environments []Environment `json:"environments"`
 }
 
 const DefaultTerm = "xterm-256color"
@@ -157,12 +191,24 @@ func DefaultVaultSettings() VaultSettings {
 	autoLock := 15
 	return VaultSettings{
 		AutoLockMinutes: &autoLock, ConnectTimeoutSeconds: 15, KeepaliveSeconds: 30,
-		LegacyDefault: false, Term: DefaultTerm,
+		LegacyDefault: false, Term: DefaultTerm, Environments: DefaultEnvironments(),
+	}
+}
+
+func DefaultEnvironments() []Environment {
+	return []Environment{
+		{ID: "prod", Name: "Produção", Color: EnvironmentRed},
+		{ID: "staging", Name: "Homologação", Color: EnvironmentAmber},
+		{ID: "lab", Name: "Laboratório", Color: EnvironmentGreen},
+		{ID: "customer", Name: "Cliente", Color: EnvironmentSlate},
 	}
 }
 
 func NormalizeVaultSettings(settings VaultSettings) VaultSettings {
 	defaults := DefaultVaultSettings()
+	if settings.Environments == nil {
+		settings.Environments = defaults.Environments
+	}
 	if settings.ConnectTimeoutSeconds < 5 || settings.ConnectTimeoutSeconds > 120 {
 		settings.ConnectTimeoutSeconds = defaults.ConnectTimeoutSeconds
 	}
@@ -207,6 +253,7 @@ func (c *Content) Clone() *Content {
 		ForwardRules: make([]ForwardRule, len(c.ForwardRules)),
 	}
 	out.Settings.AutoLockMinutes = clonePtr(c.Settings.AutoLockMinutes)
+	out.Settings.Environments = append([]Environment{}, c.Settings.Environments...)
 	for i, g := range c.Groups {
 		g.ParentID = clonePtr(g.ParentID)
 		out.Groups[i] = g
@@ -214,6 +261,8 @@ func (c *Content) Clone() *Content {
 	for i, h := range c.Hosts {
 		h.CredentialID = clonePtr(h.CredentialID)
 		h.GroupID = clonePtr(h.GroupID)
+		h.EnvironmentID = clonePtr(h.EnvironmentID)
+		h.Tags = append([]string{}, h.Tags...)
 		h.ProfileID = clonePtr(h.ProfileID)
 		h.DetectedOS = clonePtr(h.DetectedOS)
 		out.Hosts[i] = h

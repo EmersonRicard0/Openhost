@@ -23,6 +23,7 @@ type syncAuthorizer interface {
 	Connect(context.Context) (cloudsync.OAuthSession, error)
 	Cancel()
 	Client(context.Context, *oauth2.Token) *http.Client
+	Revoke(context.Context, string) error
 }
 
 type pendingSyncConnection struct {
@@ -79,13 +80,15 @@ func (s *SyncService) CancelConnect() error {
 }
 
 func (s *SyncService) Start(mode, cloudPassword string) (cloudsync.SyncInfo, error) {
-	if mode != "upload" || cloudPassword != "" {
+	if mode != "upload" && mode != "replace" && mode != "merge" {
 		return s.syncer.Info(), apperr.New(apperr.InvalidInput)
 	}
 	s.mu.Lock()
 	pending := s.pending
 	s.mu.Unlock()
-	if pending == nil || pending.cloudHasVault || pending.session.Token == nil || pending.session.Token.RefreshToken == "" {
+	if pending == nil || pending.session.Token == nil || pending.session.Token.RefreshToken == "" ||
+		(mode == "upload" && (pending.cloudHasVault || cloudPassword != "")) ||
+		(mode != "upload" && (!pending.cloudHasVault || cloudPassword == "")) {
 		return s.syncer.Info(), apperr.New(apperr.InvalidInput)
 	}
 	ctx := s.context()
@@ -93,13 +96,40 @@ func (s *SyncService) Start(mode, cloudPassword string) (cloudsync.SyncInfo, err
 		ctx = context.Background()
 	}
 	account := cloudsync.SyncAccount{Email: pending.session.Email, RefreshToken: pending.session.Token.RefreshToken}
-	if err := s.syncer.StartUpload(ctx, account, pending.drive); err != nil {
+	var err error
+	if mode == "upload" {
+		err = s.syncer.StartUpload(ctx, account, pending.drive)
+	} else {
+		err = s.syncer.StartFromCloud(ctx, mode, account, pending.drive, cloudPassword)
+	}
+	if err != nil {
 		return s.syncer.Info(), clean(err)
 	}
 	s.mu.Lock()
 	s.pending = nil
 	s.mu.Unlock()
 	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) OpenFromCloud(password string) error {
+	s.mu.Lock()
+	pending := s.pending
+	s.mu.Unlock()
+	if pending == nil || !pending.cloudHasVault || password == "" || pending.session.Token == nil || pending.session.Token.RefreshToken == "" {
+		return apperr.New(apperr.InvalidInput)
+	}
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	account := cloudsync.SyncAccount{Email: pending.session.Email, RefreshToken: pending.session.Token.RefreshToken}
+	if err := s.syncer.OpenFromCloud(ctx, account, pending.drive, password); err != nil {
+		return clean(err)
+	}
+	s.mu.Lock()
+	s.pending = nil
+	s.mu.Unlock()
+	return nil
 }
 
 func (s *SyncService) SyncNow() (cloudsync.SyncInfo, error) {
@@ -111,6 +141,67 @@ func (s *SyncService) SyncNow() (cloudsync.SyncInfo, error) {
 		return s.syncer.Info(), clean(err)
 	}
 	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) Conflicts() ([]cloudsync.ConflictView, error) {
+	conflicts, err := s.syncer.Conflicts()
+	return conflicts, clean(err)
+}
+
+func (s *SyncService) Resolve(key, keep string) (cloudsync.SyncInfo, error) {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := s.syncer.Resolve(ctx, key, keep); err != nil {
+		return s.syncer.Info(), clean(err)
+	}
+	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) ProvidePassword(password string) (cloudsync.SyncInfo, error) {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := s.syncer.ProvidePassword(ctx, password); err != nil {
+		return s.syncer.Info(), clean(err)
+	}
+	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) Versions() ([]cloudsync.CloudVersion, error) {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	versions, err := s.syncer.Versions(ctx)
+	return versions, clean(err)
+}
+
+func (s *SyncService) RestoreVersion(name string) (cloudsync.SyncInfo, error) {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := s.syncer.RestoreVersion(ctx, name); err != nil {
+		return s.syncer.Info(), clean(err)
+	}
+	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) Disconnect(deleteCloud bool) error {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := s.syncer.Disconnect(ctx, deleteCloud, s.oauth.Revoke); err != nil {
+		return clean(err)
+	}
+	s.mu.Lock()
+	s.pending = nil
+	s.mu.Unlock()
+	return nil
 }
 
 func (s *SyncService) SetDeviceName(name string) error { return clean(s.syncer.SetDeviceName(name)) }

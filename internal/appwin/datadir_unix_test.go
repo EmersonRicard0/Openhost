@@ -17,7 +17,7 @@ func TestDataDirClosesLooseExistingDirectory(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("SHELLVAULT_DATA_DIR", dir)
-	if _, err := DataDir(); err != nil {
+	if _, err := DataDir(false); err != nil {
 		t.Fatal(err)
 	}
 	info, err := os.Stat(dir)

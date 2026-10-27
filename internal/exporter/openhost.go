@@ -12,7 +12,7 @@ import (
 
 const (
 	Format  = "openhost-export"
-	Version = 1
+	Version = 2
 )
 
 type OpenHostKDF struct {
@@ -31,9 +31,17 @@ type OpenHostHost struct {
 	AuthMethod       model.AuthMethod       `json:"authMethod"`
 	KeyID            *string                `json:"keyId"`
 	GroupID          *string                `json:"groupId"`
+	Tags             []string               `json:"tags"`
+	Notes            string                 `json:"notes"`
+	Environment      *OpenHostEnvironment   `json:"environment"`
 	LegacyAlgorithms bool                   `json:"legacyAlgorithms"`
 	OSIcon           string                 `json:"osIcon"`
 	Profile          *model.TerminalProfile `json:"profile"`
+}
+
+type OpenHostEnvironment struct {
+	Name  string                 `json:"name"`
+	Color model.EnvironmentColor `json:"color"`
 }
 
 type OpenHostForwardRule struct {
@@ -95,6 +103,10 @@ func MarshalOpenHost(content *model.Content, options OpenHostOptions) ([]byte, e
 		credentials[credential.ID] = credential
 	}
 	usedKeys := map[string]bool{}
+	environments := make(map[string]model.Environment, len(content.Settings.Environments))
+	for _, environment := range content.Settings.Environments {
+		environments[environment.ID] = environment
+	}
 	for _, host := range content.Hosts {
 		var keyID *string
 		if options.IncludeKeys && host.CredentialID != nil {
@@ -109,11 +121,22 @@ func MarshalOpenHost(content *model.Content, options OpenHostOptions) ([]byte, e
 			copy.CursorColor = clonePtr(source.CursorColor)
 			profile = &copy
 		}
+		var environment *OpenHostEnvironment
+		if host.EnvironmentID != nil {
+			if source, ok := environments[*host.EnvironmentID]; ok {
+				environment = &OpenHostEnvironment{Name: source.Name, Color: source.Color}
+			}
+		}
+		tags := append([]string{}, host.Tags...)
+		if tags == nil {
+			tags = []string{}
+		}
 		data.Hosts = append(data.Hosts, OpenHostHost{
 			ID: host.ID, Label: host.Label, Address: host.Address, Port: host.Port,
 			Username: host.Username, AuthMethod: host.AuthMethod, KeyID: keyID,
-			GroupID: clonePtr(host.GroupID), LegacyAlgorithms: host.LegacyAlgorithms,
-			OSIcon: host.OSIcon, Profile: profile,
+			GroupID: clonePtr(host.GroupID), Tags: tags, Notes: host.Notes, Environment: environment,
+			LegacyAlgorithms: host.LegacyAlgorithms,
+			OSIcon:           host.OSIcon, Profile: profile,
 		})
 	}
 	for _, rule := range content.ForwardRules {

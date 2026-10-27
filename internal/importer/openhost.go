@@ -23,19 +23,26 @@ func LoadOpenHost(path string, password *string, content *model.Content) (*Impor
 	if err != nil {
 		return nil, err
 	}
-	var file exporter.OpenHostFile
-	if err := json.Unmarshal(raw, &file); err != nil || file.Format != exporter.Format {
+	var header struct {
+		Format  string `json:"format"`
+		Version int    `json:"version"`
+	}
+	if err := json.Unmarshal(raw, &header); err != nil || header.Format != exporter.Format {
 		return nil, apperr.New(apperr.ImportUnreadable)
 	}
-	if file.Version > exporter.Version {
+	if header.Version > exporter.Version {
 		return nil, apperr.New(apperr.ImportFormatNewer)
+	}
+	var file exporter.OpenHostFile
+	if err := decodeStrict(raw, &file); err != nil || file.Format != exporter.Format {
+		return nil, apperr.New(apperr.ImportUnreadable)
 	}
 	var data exporter.OpenHostData
 	if file.Encrypted {
 		if password == nil {
 			return nil, apperr.New(apperr.FilePasswordRequired)
 		}
-		if file.KDF == nil || file.KDF.Alg != "argon2id" || file.KDF.Time == 0 || file.KDF.Time > 3 || file.KDF.MemoryKiB < 8 || file.KDF.MemoryKiB > 256*1024 || file.Version != exporter.Version {
+		if file.Version < 1 || file.KDF == nil || file.KDF.Alg != "argon2id" || file.KDF.Time == 0 || file.KDF.Time > 3 || file.KDF.MemoryKiB < 8 || file.KDF.MemoryKiB > 256*1024 {
 			return nil, apperr.New(apperr.FilePasswordWrong)
 		}
 		salt, err := base64.StdEncoding.DecodeString(file.KDF.Salt)
@@ -54,11 +61,11 @@ func LoadOpenHost(path string, password *string, content *model.Content) (*Impor
 			return nil, apperr.New(apperr.FilePasswordWrong)
 		}
 		defer vault.Zero(plain)
-		if err := json.Unmarshal(plain, &data); err != nil {
+		if err := decodeStrict(plain, &data); err != nil {
 			return nil, apperr.New(apperr.ImportUnreadable)
 		}
 	} else {
-		if file.Version != exporter.Version || file.Data == nil || len(file.Payload) != 0 || file.KDF != nil {
+		if file.Version < 1 || file.Data == nil || len(file.Payload) != 0 || file.KDF != nil {
 			return nil, apperr.New(apperr.ImportUnreadable)
 		}
 		data = *file.Data
@@ -67,6 +74,18 @@ func LoadOpenHost(path string, password *string, content *model.Content) (*Impor
 		}
 	}
 	return previewOpenHost(filepath.Base(path), data, content)
+}
+
+func decodeStrict(data []byte, out any) error {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(out); err != nil {
+		return err
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return apperr.New(apperr.ImportUnreadable)
+	}
+	return nil
 }
 
 func readOpenHost(path string) ([]byte, error) {
@@ -146,6 +165,11 @@ func previewOpenHost(sourceLabel string, data exporter.OpenHostData, content *mo
 	}
 	hostIDs := map[string]bool{}
 	candidates := make([]CandidateRow, 0, len(data.Hosts))
+	availableEnvironments := append([]model.Environment{}, content.Settings.Environments...)
+	environmentsByName := make(map[string]model.Environment, len(availableEnvironments))
+	for _, environment := range availableEnvironments {
+		environmentsByName[strings.ToLower(environment.Name)] = environment
+	}
 	for _, host := range data.Hosts {
 		if host.ID == "" || hostIDs[host.ID] {
 			return nil, apperr.New(apperr.ImportUnreadable)
@@ -166,12 +190,40 @@ func previewOpenHost(sourceLabel string, data exporter.OpenHostData, content *mo
 			}
 			keyPath = "openhost-key:" + *host.KeyID
 		}
+		tags, metadataErr := domain.NormalizeHostMetadata(host.Tags, host.Notes)
+		if metadataErr != nil {
+			return nil, apperr.New(apperr.ImportUnreadable)
+		}
+		var environment *model.Environment
+		var warnings []Warning
+		if host.Environment != nil {
+			validated, validationErr := domain.ValidateEnvironments([]model.Environment{{Name: host.Environment.Name, Color: host.Environment.Color}})
+			if validationErr != nil {
+				return nil, apperr.New(apperr.ImportUnreadable)
+			}
+			key := strings.ToLower(validated[0].Name)
+			if existing, ok := environmentsByName[key]; ok {
+				copy := existing
+				environment = &copy
+			} else if len(availableEnvironments) < 12 {
+				created := validated[0]
+				created.ID = domain.NewID()
+				availableEnvironments = append(availableEnvironments, created)
+				environmentsByName[key] = created
+				environment = &created
+			} else {
+				warnings = append(warnings, Warning{Code: WarningEnvironmentLimit, Name: model.Ptr(validated[0].Name)})
+			}
+		}
 		extra := map[string]any{
 			"legacyAlgorithms": host.LegacyAlgorithms,
 			"osIcon":           host.OSIcon,
 			"authMethod":       string(host.AuthMethod),
 			"forwardRules":     append([]exporter.OpenHostForwardRule(nil), rules[host.ID]...),
 			"profile":          nil,
+			"tags":             tags,
+			"notes":            host.Notes,
+			"environment":      environment,
 		}
 		if host.Profile != nil {
 			profile := *host.Profile
@@ -179,7 +231,7 @@ func previewOpenHost(sourceLabel string, data exporter.OpenHostData, content *mo
 			profile.IsGlobal = false
 			extra["profile"] = profile
 		}
-		candidates = append(candidates, CandidateRow{Label: host.Label, Address: host.Address, Port: host.Port, Username: host.Username, GroupPath: path, KeyPath: keyPath, Origin: sourceLabel, Extra: extra})
+		candidates = append(candidates, CandidateRow{Label: host.Label, Address: host.Address, Port: host.Port, Username: host.Username, GroupPath: path, KeyPath: keyPath, Origin: sourceLabel, Warnings: warnings, Extra: extra})
 	}
 	for hostID := range rules {
 		if !hostIDs[hostID] {

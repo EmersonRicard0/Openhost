@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -13,6 +14,7 @@ import (
 	"shellvault/internal/domain"
 	"shellvault/internal/localpty"
 	"shellvault/internal/model"
+	"shellvault/internal/validate"
 	"shellvault/internal/vault"
 )
 
@@ -264,6 +266,61 @@ func TestConnectionSettingsTermAndLegacyDefault(t *testing.T) {
 
 	_, err = services.vaultService.UpdateSettings(VaultSettingsPatch{"term": "screen"})
 	wantBridgeCode(t, err, apperr.InvalidInput)
+}
+
+func TestVaultSettingsEnvironments(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	settings, err := services.vaultService.UpdateSettings(VaultSettingsPatch{
+		"environments": []any{
+			map[string]any{"id": "", "name": "  Produção especial  ", "color": "orange"},
+			map[string]any{"id": "lab", "name": "Laboratório", "color": "green"},
+		},
+	})
+	if err != nil || len(settings.Environments) != 2 ||
+		validate.UUID(settings.Environments[0].ID) != nil || settings.Environments[0].Name != "Produção especial" ||
+		settings.Environments[1].ID != "lab" {
+		t.Fatalf("ambientes atualizados = %+v, %v", settings.Environments, err)
+	}
+	persisted, err := services.vaultService.GetSettings()
+	if err != nil || !reflect.DeepEqual(persisted.Environments, settings.Environments) {
+		t.Fatalf("ambientes persistidos = %+v, %v", persisted.Environments, err)
+	}
+
+	_, err = services.vaultService.UpdateSettings(VaultSettingsPatch{
+		"environments": []any{map[string]any{"id": "x", "name": "Inválido", "color": "purple"}},
+	})
+	var appErr *apperr.Error
+	if !errors.As(err, &appErr) || appErr.Code != apperr.InvalidInput ||
+		!strings.Contains(appErr.Detail, "environments") {
+		t.Fatalf("erro de ambientes = %#v", err)
+	}
+	after, _ := services.vaultService.GetSettings()
+	if !reflect.DeepEqual(after.Environments, settings.Environments) {
+		t.Fatalf("erro alterou ambientes: %+v", after.Environments)
+	}
+}
+
+func TestHostDensityAndPromptTitlePreferences(t *testing.T) {
+	services := testServices(t)
+	updated, err := services.appService.UpdatePreferences(PreferencesPatch{
+		"hostDensity": "compact",
+		"promptTitle": false,
+	})
+	if err != nil || updated.HostDensity != "compact" || updated.PromptTitle {
+		t.Fatalf("preferências atualizadas = %+v, %v", updated, err)
+	}
+	for _, patch := range []PreferencesPatch{
+		{"hostDensity": "dense"},
+		{"hostDensity": true},
+		{"promptTitle": "sim"},
+	} {
+		if _, err := services.appService.UpdatePreferences(patch); apperr.CodeOf(err) != apperr.InvalidInput {
+			t.Errorf("valor inválido aceito: %v, erro %v", patch, err)
+		}
+	}
 }
 
 func TestDetectedOSIsPersistedAndEmittedOnce(t *testing.T) {
