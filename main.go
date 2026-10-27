@@ -43,7 +43,7 @@ func main() {
 			fmt.Fprintln(os.Stderr, "OpenHost não pôde aplicar a atualização: manifesto ausente")
 			os.Exit(1)
 		}
-		dataDir, err := appwin.DataDir()
+		dataDir, err := appwin.DataDir(updater.BuildVersion != "")
 		if err == nil {
 			err = updater.RunApplyUpdate(dataDir, os.Args[2])
 		}
@@ -61,7 +61,7 @@ func main() {
 }
 
 func run() error {
-	dataDir, err := appwin.DataDir()
+	dataDir, err := appwin.DataDir(updater.BuildVersion != "")
 	if err != nil {
 		return err
 	}
