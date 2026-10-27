@@ -158,6 +158,9 @@ func scanScheme(scanner interface{ Scan(...any) error }) (model.ColorScheme, err
 func (s *Store) TerminalProfiles() ([]model.TerminalProfile, error) {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return nil, apperr.New(apperr.VaultUnreadable)
+	}
 	rows, err := s.db.Query(`SELECT id, name, is_global, data FROM terminal_profiles ORDER BY is_global DESC, name, id`)
 	if err != nil {
 		return nil, err
@@ -177,12 +180,18 @@ func (s *Store) TerminalProfiles() ([]model.TerminalProfile, error) {
 func (s *Store) GlobalProfile() (model.TerminalProfile, error) {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return model.TerminalProfile{}, apperr.New(apperr.VaultUnreadable)
+	}
 	return scanProfile(s.db.QueryRow(`SELECT id, name, is_global, data FROM terminal_profiles WHERE is_global = 1`))
 }
 
 func (s *Store) SaveGlobalProfile(p model.TerminalProfile) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return apperr.New(apperr.VaultUnreadable)
+	}
 	var id string
 	if err := s.db.QueryRow(`SELECT id FROM terminal_profiles WHERE is_global = 1`).Scan(&id); err != nil {
 		return err
@@ -266,6 +275,9 @@ func (s *Store) SetHostProfile(hostID string, p *model.TerminalProfile) error {
 func (s *Store) ColorSchemes() ([]model.ColorScheme, error) {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return nil, apperr.New(apperr.VaultUnreadable)
+	}
 	rows, err := s.db.Query(`SELECT id, name, origin, data FROM color_schemes ORDER BY name, id`)
 	if err != nil {
 		return nil, err
@@ -285,6 +297,9 @@ func (s *Store) ColorSchemes() ([]model.ColorScheme, error) {
 func (s *Store) SaveColorScheme(item model.ColorScheme) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return apperr.New(apperr.VaultUnreadable)
+	}
 	var existingID string
 	err := s.db.QueryRow(`SELECT id FROM color_schemes WHERE name = ?`, item.Name).Scan(&existingID)
 	if err == nil && existingID != item.ID {
@@ -303,6 +318,9 @@ func (s *Store) SaveColorScheme(item model.ColorScheme) error {
 func (s *Store) DeleteColorScheme(id string) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return apperr.New(apperr.VaultUnreadable)
+	}
 	rows, err := s.db.Query(`SELECT id, name, is_global, data FROM terminal_profiles`)
 	if err != nil {
 		return err
@@ -337,6 +355,9 @@ func (s *Store) DeleteColorScheme(id string) error {
 func (s *Store) ApplyLegacyTerminalFont(family string, size int) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return apperr.New(apperr.VaultUnreadable)
+	}
 	p, err := scanProfile(s.db.QueryRow(`SELECT id, name, is_global, data FROM terminal_profiles WHERE is_global = 1`))
 	if err != nil {
 		return err
