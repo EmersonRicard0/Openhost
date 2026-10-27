@@ -34,6 +34,7 @@ import {
   PlusIcon,
   RenameIcon,
   SettingsIcon,
+  StarIcon,
 } from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { toastError } from '../../ui/Toast';
@@ -89,6 +90,15 @@ function tabMenu(
   const items: MenuItem[] = [
     { label: t.terminal.renameTab, icon: <RenameIcon />, onSelect: startRename },
   ];
+  const quick = tab.quick;
+  if (quick)
+    items.push({
+      label: t.home.saveAsHost,
+      icon: <StarIcon />,
+      onSelect: () => {
+        useWorkspace.getState().setHostDraft(quick);
+      },
+    });
   if (tab.kind !== 'sftp' && isLive(tab.state))
     for (const [combo, label] of platform === 'darwin' ? SEND_KEYS_MAC : SEND_KEYS)
       items.push({

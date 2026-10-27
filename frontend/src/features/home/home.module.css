@@ -1,0 +1,229 @@
+/* Tela inicial (specs/010). */
+.home {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 22px;
+  width: min(760px, 100%);
+  height: 100%;
+  margin: 0 auto;
+  padding: 48px 24px 24px;
+  overflow-y: auto;
+}
+
+.quick {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.quickBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 46px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--input-background);
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    box-shadow var(--motion-fast) var(--ease-standard);
+}
+
+.quickBox:focus-within {
+  border-color: var(--focus);
+  box-shadow: var(--ring-focus);
+}
+
+.quickIcon {
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.quickInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 15px;
+  outline: none;
+}
+
+.quickInput::placeholder {
+  color: var(--text-secondary);
+}
+
+.quickHint,
+.emptyHint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.quickError {
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.suggestions {
+  position: absolute;
+  top: 50px;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+  list-style: none;
+}
+
+.suggestion {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.suggestion[aria-selected='true'] {
+  background: var(--selected);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.match {
+  background: transparent;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.blockTitle {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  overflow: hidden;
+  transition: border-color var(--motion-fast) var(--ease-standard);
+}
+
+.card:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+/* Cor do ambiente (specs/009) na borda esquerda do card. */
+.card[data-environment] {
+  box-shadow: inset 3px 0 0 var(--environment);
+}
+
+.cardMain {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cardMain:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  border-radius: 10px;
+}
+
+.cardText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.cardLabel,
+.cardSub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardLabel {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.cardSub {
+  color: var(--text-secondary);
+  font-size: 11.5px;
+}
+
+.star {
+  display: inline-flex;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  margin-right: 6px;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--ease-standard);
+}
+
+.card:hover .star,
+.star:focus-visible,
+.starOn {
+  opacity: 1;
+}
+
+.star:hover {
+  background: var(--hover);
+}
+
+.starOn {
+  color: var(--accent);
+}
+
+.starOn svg {
+  fill: currentColor;
+}
+
+.local {
+  align-self: flex-start;
+}

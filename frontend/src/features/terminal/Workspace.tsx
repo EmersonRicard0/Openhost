@@ -1,20 +1,20 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { installShortcuts } from '../../app/shortcuts';
-import { currentKeymap, useShortcutLabel } from '../../app/useShortcuts';
+import { currentKeymap } from '../../app/useShortcuts';
 import { t } from '../../i18n/pt-BR';
 import { closeTab, groupOf, isLive, useSessions, type Tab } from '../../stores/sessions';
 import { useShells } from '../../stores/shells';
-import { useUi } from '../../stores/ui';
 import { useWorkspace } from '../../stores/workspace';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Button } from '../../ui/Button';
-import { DisconnectedIcon, ErrorIcon, ExitedIcon, RefreshIcon, TerminalIcon } from '../../ui/icons';
+import { DisconnectedIcon, ErrorIcon, ExitedIcon, RefreshIcon } from '../../ui/icons';
 import { ShellIcon } from '../../ui/ShellIcon';
 import { ConflictDialog } from '../sftp/ConflictDialog';
+import { HomeScreen } from '../home/HomeScreen';
 import { SettingsPage } from '../settings/SettingsPage';
 import { SftpView } from '../sftp/SftpView';
 import { MAX_ATTEMPTS, stopAutoReconnect, useAutoReconnect } from './autoReconnect';
-import { runShortcut } from './commands';
+import { runShortcut, shortcutActive } from './commands';
 import { useDrag } from './dragState';
 import { Divider } from './Divider';
 import { DropLayer } from './DropLayer';
@@ -166,9 +166,7 @@ export function Workspace() {
   const activeTab = tabs.find((tb) => tb.id === activeId);
   const settings = useWorkspace((w) => w.view === 'settings');
   const dragging = useDrag((d) => d.dragging);
-  const newTabShortcut = useShortcutLabel('newTab');
   const shells = useShells((s) => s.shells);
-  const defaultShell = useUi((u) => u.settings?.defaultShell);
   const newLocal = useMemo(
     () =>
       shells.map((shell) => ({
@@ -180,7 +178,7 @@ export function Workspace() {
   );
 
   // Atalhos de FR-140/FR-173, capturados antes do xterm para não virarem caracteres de controle.
-  useEffect(() => installShortcuts(runShortcut, currentKeymap), []);
+  useEffect(() => installShortcuts(runShortcut, currentKeymap, shortcutActive), []);
 
   return (
     <>
@@ -189,25 +187,7 @@ export function Workspace() {
         {/* Sob a página de configurações as abas ficam escondidas, não desmontadas:
             sessões e tamanho do xterm seguem intactos (FR-168). */}
         <div className={app.workspaceLayer} inert={settings}>
-          {tabs.length === 0 && (
-            <div className={app.empty}>
-              <span className={app.emptyIcon}>
-                <TerminalIcon width={28} height={28} />
-              </span>
-              <p className={app.emptyTitle}>{t.terminal.emptyTitle}</p>
-              <p className={app.emptyHint}>{t.terminal.emptyHint(newTabShortcut)}</p>
-              {defaultShell && (
-                <Button
-                  variant="primary"
-                  className={app.emptyAction}
-                  onClick={() => void openLocal(defaultShell)}
-                >
-                  <TerminalIcon />
-                  {t.terminal.emptyAction}
-                </Button>
-              )}
-            </div>
-          )}
+          {tabs.length === 0 && <HomeScreen />}
           {tabs.map((tab) => {
             if (tab.kind === 'sftp')
               return <SftpView key={tab.id} tab={tab} active={tab.id === activeId} />;

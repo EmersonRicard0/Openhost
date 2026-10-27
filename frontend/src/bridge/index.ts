@@ -169,6 +169,7 @@ function createApi(): ShellVaultApi {
     sessions: {
       // O tamanho só vai ao servidor no primeiro Resize válido (FR-113).
       openSsh: (hostId) => call(S, 'OpenSsh', hostId),
+      openQuick: (target) => call(S, 'OpenQuick', target),
       openLocal: (shell) => call(S, 'OpenLocal', shell),
       write: (sessionId, data) => call(S, 'Write', sessionId, data),
       resize: (sessionId, size) => call(S, 'Resize', sessionId, size.cols, size.rows),
@@ -257,6 +258,7 @@ function createApi(): ShellVaultApi {
       },
       getAppearance: () => call(A, 'GetAppearance'),
       getUiSettings: () => call(A, 'GetPreferences'),
+      recordRecent: (entry) => call(A, 'RecordRecent', entry),
       listLocalShells: () => call(A, 'ListLocalShells'),
       updateUiSettings: (patch) => call(A, 'UpdatePreferences', patch),
       confirmClose: (confirmed) => call(A, 'ConfirmClose', confirmed),

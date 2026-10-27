@@ -1,9 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildKeymap,
+  CONTEXTUAL_ACTIONS,
   comboLabel,
   comboOf,
   conflictOf,
+  installShortcuts,
   matchShortcut,
   stealsFromTerminal,
   type KeyLike,
@@ -167,5 +169,56 @@ describe('abrir as configurações', () => {
       'openSettings',
     );
     expect(comboLabel('Meta+Comma', 'darwin')).toBe('⌘,');
+  });
+});
+
+describe('conexão rápida (specs/010, FR-1015)', () => {
+  it('Ctrl+L no Windows e no Linux; ⌘L no macOS', () => {
+    expect(matchShortcut(key('KeyL'))).toBe('focusQuickConnect');
+    const mac = buildKeymap({}, 'darwin');
+    expect(matchShortcut(key('KeyL', { ctrlKey: false, metaKey: true }), mac)).toBe(
+      'focusQuickConnect',
+    );
+  });
+
+  it('fora do contexto a tecla segue para o terminal, sem preventDefault', () => {
+    let handler: ((e: KeyboardEvent) => void) | null = null;
+    vi.stubGlobal('Element', function Element() {});
+    vi.stubGlobal('window', {
+      addEventListener: (_: string, fn: (e: KeyboardEvent) => void) => {
+        handler = fn;
+      },
+      removeEventListener: () => {
+        handler = null;
+      },
+    });
+    const ran: string[] = [];
+    let home = false;
+    const uninstall = installShortcuts(
+      (action) => ran.push(action),
+      () => buildKeymap(),
+      (action) => !CONTEXTUAL_ACTIONS.has(action) || home,
+    );
+    const press = () => {
+      let prevented = false;
+      const e = {
+        ...key('KeyL'),
+        repeat: false,
+        target: null,
+        preventDefault: () => {
+          prevented = true;
+        },
+        stopPropagation: () => undefined,
+      };
+      handler?.(e as unknown as KeyboardEvent);
+      return prevented;
+    };
+    expect(press()).toBe(false);
+    expect(ran).toEqual([]);
+    home = true;
+    expect(press()).toBe(true);
+    expect(ran).toEqual(['focusQuickConnect']);
+    uninstall();
+    vi.unstubAllGlobals();
   });
 });

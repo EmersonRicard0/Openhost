@@ -71,6 +71,8 @@ export interface Host {
   tags?: string[];
   /** Até 2.000 caracteres. */
   notes?: string;
+  /** Favorito na tela inicial (specs/010). */
+  favorite?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -212,9 +214,28 @@ export interface Settings {
   hostDensity?: HostDensity;
   /** Nome da aba pelo prompt do equipamento (specs/009); ausente vale `true`. */
   promptTitle?: boolean;
+  /** Recentes desta máquina, mais recente primeiro (specs/010); ausente até o Go gravar. */
+  recents?: RecentEntry[];
 }
 
 export type HostDensity = 'comfortable' | 'compact';
+
+/** Alvo de conexão rápida (specs/010); o Go exige o usuário. */
+export interface QuickTarget {
+  address: string;
+  port: number;
+  username: string;
+}
+
+/** Recente local (specs/010, não sincroniza): host salvo ou alvo rápido. */
+/** Entrada enviada ao Go; a data é dele. */
+export type RecentEntryInput =
+  | { kind: 'host'; hostId: string }
+  | { kind: 'quick'; address: string; port: number; username: string };
+
+export type RecentEntry =
+  | { kind: 'host'; hostId: string; at: string }
+  | { kind: 'quick'; address: string; port: number; username: string; at: string };
 
 export type BellMode = 'off' | 'sound' | 'visual';
 

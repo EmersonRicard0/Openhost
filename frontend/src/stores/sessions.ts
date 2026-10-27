@@ -1,6 +1,6 @@
 // Abas abertas (FR-012). O estado real de cada sessão vive no processo principal.
 import { create } from 'zustand';
-import type { LocalShell, SessionKind, SessionState } from '@shared/model/types';
+import type { LocalShell, QuickTarget, SessionKind, SessionState } from '@shared/model/types';
 import { forget } from '../features/terminal/dataBus';
 import {
   insert,
@@ -31,6 +31,8 @@ export interface Tab {
   manualTitle: boolean;
   /** Nome lido do prompt do equipamento (FR-922). */
   promptTitle: string | null;
+  /** Alvo da conexão rápida, sem host salvo (specs/010). */
+  quick?: QuickTarget | null;
 }
 
 /** Até 4 sessões de terminal na mesma aba (specs/006). Só em memória. */

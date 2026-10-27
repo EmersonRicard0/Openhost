@@ -1,5 +1,6 @@
 // Ações do espaço de trabalho usadas pelos atalhos (FR-140) e pela paleta (FR-141).
-import type { ShortcutAction } from '../../app/shortcuts';
+import { CONTEXTUAL_ACTIONS, type ShortcutAction } from '../../app/shortcuts';
+import { QUICK_INPUT_ID } from '../home/QuickConnectBar';
 import {
   closeTab,
   groupOf,
@@ -126,6 +127,17 @@ function dialogOpen(): boolean {
   return document.querySelector('[role="dialog"][aria-modal="true"]:not([data-palette])') !== null;
 }
 
+/** A tela inicial está à frente: nenhuma aba aberta e fora das configurações (specs/010). */
+function homeVisible(): boolean {
+  return useSessions.getState().tabs.length === 0 && useWorkspace.getState().view !== 'settings';
+}
+
+/** Ações de CONTEXTUAL_ACTIONS valem só no seu contexto; fora dele a tecla vai para o terminal. */
+export function shortcutActive(action: ShortcutAction): boolean {
+  if (!CONTEXTUAL_ACTIONS.has(action)) return true;
+  return homeVisible();
+}
+
 export function runShortcut(action: ShortcutAction, repeat: boolean): void {
   const workspace = useWorkspace.getState();
   if (action === 'palette') {
@@ -168,6 +180,9 @@ export function runShortcut(action: ShortcutAction, repeat: boolean): void {
       break;
     case 'zoomOut':
       zoom(-1);
+      break;
+    case 'focusQuickConnect':
+      document.getElementById(QUICK_INPUT_ID)?.focus();
       break;
     case 'zoomReset':
       zoom(null);

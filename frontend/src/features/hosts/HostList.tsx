@@ -19,6 +19,7 @@ import { ExportDialog } from '../importexport/ExportDialog';
 import { openSftp } from '../sftp/openSftp';
 import { connectHost } from './connect';
 import { GroupNameDialog, MoveDialog } from './GroupDialogs';
+import { setFavorite } from '../home/favorite';
 import { buildIndex, filterHosts } from './search';
 import { buildRows, groupPaths, rowIndent, type TreeRow } from './tree';
 import s from './hosts.module.css';
@@ -167,6 +168,10 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
         onSelect: () => {
           onEdit(host);
         },
+      },
+      {
+        label: host.favorite ? t.home.unfavoriteMenu : t.home.favoriteMenu,
+        onSelect: () => void setFavorite(host, !host.favorite),
       },
       {
         label: t.hosts.duplicate,

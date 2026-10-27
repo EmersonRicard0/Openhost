@@ -24,31 +24,31 @@ contracts/ui.md, quickstart.md
 
 ## Phase 2: Foundational — Frontend (Claude)
 
-- [ ] T004 [P] Testes e depois `frontend/src/features/home/quickTarget.ts` (`parseTarget`): válidos `host`, `user@host`, `host:2222`, `user@host:2222`, `10.0.0.1`, `user@10.0.0.1:22`, `2001:db8::1`, `[2001:db8::1]:2222`, `user@[2001:db8::1]`, `ssh user@host`, `ssh -p 2222 user@host`, `ssh -l user -p 2222 host`; inválidos `''`, `host:0`, `host:70000`, `us er@host`, `ssh -i chave host`, `user@`. Resultado `{address, port, username | null}` ou `{error}`.
-- [ ] T005 [P] Testes e depois `frontend/src/features/home/recents.ts` (`visibleRecents(recents, hosts)`): resolve `hostId`, descarta excluídos e favoritos, mantém a ordem, corta em 8.
-- [ ] T006 Tipos (`QuickTarget`, `RecentEntry`, `Host.favorite`, `Settings.recents`) em `frontend/src/shared/model/types.ts`; textos em `frontend/src/i18n/pt-BR.ts`; `Tab.quick` em `frontend/src/stores/sessions.ts`.
+- [X] T004 [P] Testes e depois `frontend/src/features/home/quickTarget.ts` (`parseTarget`): válidos `host`, `user@host`, `host:2222`, `user@host:2222`, `10.0.0.1`, `user@10.0.0.1:22`, `2001:db8::1`, `[2001:db8::1]:2222`, `user@[2001:db8::1]`, `ssh user@host`, `ssh -p 2222 user@host`, `ssh -l user -p 2222 host`; inválidos `''`, `host:0`, `host:70000`, `us er@host`, `ssh -i chave host`, `user@`. Resultado `{address, port, username | null}` ou `{error}`.
+- [X] T005 [P] Testes e depois `frontend/src/features/home/recents.ts` (`visibleRecents(recents, hosts)`): resolve `hostId`, descarta excluídos e favoritos, mantém a ordem, corta em 8.
+- [X] T006 Tipos (`QuickTarget`, `RecentEntry`, `Host.favorite`, `Settings.recents`) em `frontend/src/shared/model/types.ts`; textos em `frontend/src/i18n/pt-BR.ts`; `Tab.quick` em `frontend/src/stores/sessions.ts`.
 
 ---
 
 ## Phase 3: User Story 1 - Conexão rápida (Priority: P1) 🎯 MVP
 
-- [ ] T007 [US1] `QuickConnectBar.tsx`: `combobox` "Conectar a um host", erro em `role="alert"`, Enter → `parseTarget`; host salvo igual (endereço normalizado, porta, usuário) → `connectHost`; sem usuário → diálogo "Usuário para <alvo>"; senão `connectQuick`.
-- [ ] T008 [US1] `connectQuick(target)` em `frontend/src/features/hosts/connect.ts` (`sessions.openQuick`, aba `user@host`, `quick` no `Tab`).
-- [ ] T009 [US1] "Salvar como host" no menu da aba (`TabBar.tsx`) para `tab.quick`, abrindo `HostForm` com endereço, porta e usuário preenchidos (sem senha).
+- [X] T007 [US1] `QuickConnectBar.tsx`: `combobox` "Conectar a um host", erro em `role="alert"`, Enter → `parseTarget`; host salvo igual (endereço normalizado, porta, usuário) → `connectHost`; sem usuário → diálogo "Usuário para <alvo>"; senão `connectQuick`.
+- [X] T008 [US1] `connectQuick(target)` em `frontend/src/features/hosts/connect.ts` (`sessions.openQuick`, aba `user@host`, `quick` no `Tab`).
+- [X] T009 [US1] "Salvar como host" no menu da aba (`TabBar.tsx`) para `tab.quick`, abrindo `HostForm` com endereço, porta e usuário preenchidos (sem senha).
 
 ## Phase 4: User Story 2 - Recentes e favoritos (Priority: P1)
 
-- [ ] T010 [US2] `HomeScreen.tsx` no lugar do bloco vazio de `Workspace.tsx`: barra, "Favoritos" (alfabético), "Recentes" (`visibleRecents`), botão de terminal local e dica quando vazio.
-- [ ] T011 [US2] `HostCard.tsx`: rótulo, `usuário@endereço[:porta]`, ícone, cor do ambiente (009), clique/Enter conecta, estrela "Favoritar"/"Desfavoritar".
-- [ ] T012 [US2] Registrar recente quando a sessão chega a `connected` (`recordRecent`, host ou quick), e "Favoritar"/"Desfavoritar" no menu do host em `HostList.tsx`.
+- [X] T010 [US2] `HomeScreen.tsx` no lugar do bloco vazio de `Workspace.tsx`: barra, "Favoritos" (alfabético), "Recentes" (`visibleRecents`), botão de terminal local e dica quando vazio.
+- [X] T011 [US2] `HostCard.tsx`: rótulo, `usuário@endereço[:porta]`, ícone, cor do ambiente (009), clique/Enter conecta, estrela "Favoritar"/"Desfavoritar".
+- [X] T012 [US2] Registrar recente quando a sessão chega a `connected` (`recordRecent`, host ou quick), e "Favoritar"/"Desfavoritar" no menu do host em `HostList.tsx`.
 
 ## Phase 5: User Story 3 - Sugestões (Priority: P2)
 
-- [ ] T013 [US3] `listbox` "Hosts sugeridos" na barra com `filterHosts` (até 6), setas, Enter abre o sugerido, Esc fecha; trecho que bateu destacado.
+- [X] T013 [US3] `listbox` "Hosts sugeridos" na barra com `filterHosts` (até 6), setas, Enter abre o sugerido, Esc fecha; trecho que bateu destacado.
 
 ## Phase 6: Polish
 
-- [ ] T014 Atalho `focusQuickConnect` (Ctrl+L / ⌘L) em `frontend/src/app/shortcuts.ts`, ativo só com a tela inicial.
+- [X] T014 Atalho `focusQuickConnect` (Ctrl+L / ⌘L) em `frontend/src/app/shortcuts.ts`, ativo só com a tela inicial.
 - [ ] T015 E2e `frontend/tests/e2e/home.spec.ts` com os cenários 1–5 do quickstart; incluir a conexão rápida no fluxo de `secrets-scan.spec.ts`.
 - [ ] T016 Revisão de segurança (plano): `OpenQuick`, `recordRecent`, ausência de senha em recentes, logs e eventos.
 - [ ] T017 Lint, typecheck, testes, `validation.md`.

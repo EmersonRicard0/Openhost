@@ -41,6 +41,9 @@ import type {
   SessionDataEvent,
   SessionClosedEvent,
   SessionStateEvent,
+  QuickTarget,
+  RecentEntry,
+  RecentEntryInput,
   Settings,
   TerminalProfile,
   TermSize,
@@ -108,6 +111,8 @@ export interface ShellVaultApi {
   };
   sessions: {
     openSsh: (hostId: string) => R<{ sessionId: string }>;
+    /** Sessão SSH sem host salvo (specs/010); a senha vem pelo prompt, nunca por aqui. */
+    openQuick: (target: QuickTarget) => R<{ sessionId: string }>;
     openLocal: (shell: LocalShell) => R<{ sessionId: string }>;
     write: (sessionId: string, data: string) => R<void>;
     resize: (sessionId: string, size: TermSize) => R<void>;
@@ -191,6 +196,8 @@ export interface ShellVaultApi {
     getPlatform: () => R<Platform>;
     getAppearance: () => R<Appearance>;
     getUiSettings: () => R<Settings>;
+    /** Registra um recente local e devolve a lista nova (specs/010). */
+    recordRecent: (entry: RecentEntryInput) => R<RecentEntry[]>;
     /** Shells instalados, em ordem estável (FR-176). */
     listLocalShells: () => R<LocalShellInfo[]>;
     updateUiSettings: (patch: Patch<Omit<Settings, 'window'>>) => R<Settings>;
@@ -286,6 +293,7 @@ export const API_SHAPE = {
   sessions: {
     invoke: [
       'openSsh',
+      'openQuick',
       'openLocal',
       'write',
       'resize',
@@ -356,6 +364,7 @@ export const API_SHAPE = {
       'getPlatform',
       'getAppearance',
       'getUiSettings',
+      'recordRecent',
       'listLocalShells',
       'updateUiSettings',
       'confirmClose',
