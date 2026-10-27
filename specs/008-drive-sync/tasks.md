@@ -81,8 +81,8 @@ real com o Drive falso e duas pastas de dados.
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T027 Atualizar `specs/002-wails-migration/contracts/bridge.md` com o `SyncService` e o evento.
-- [ ] T028 Revisão de segurança final (contrato §Segurança): `grep` de que token, senha e DEK não chegam ao frontend nem a logs; listener só em 127.0.0.1; nenhum argumento do frontend vira URL/caminho.
+- [X] T027 Atualizar `specs/002-wails-migration/contracts/bridge.md` com o `SyncService` e o evento.
+- [X] T028 Revisão de segurança final (contrato §Segurança): `grep` de que token, senha e DEK não chegam ao frontend nem a logs; listener só em 127.0.0.1; nenhum argumento do frontend vira URL/caminho.
 - [ ] T029 Rodar quickstart §1–§2 e registrar em `specs/008-drive-sync/validation.md`; §3 depende do cliente OAuth do dono do projeto.
 - [ ] T030 CI verde nos três sistemas.
 

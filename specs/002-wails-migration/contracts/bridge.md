@@ -44,6 +44,9 @@ Os da 001 mais **novos**: `NO_COMMON_ALGORITHM` (FR-122), `AGENT_UNAVAILABLE` (F
 Da 003 (importar e exportar): `IMPORT_TOO_LARGE`, `IMPORT_UNREADABLE`, `IMPORT_FORMAT_NEWER`,
 `FILE_PASSWORD_REQUIRED`, `FILE_PASSWORD_WRONG`, `PREVIEW_EXPIRED`, `UNDO_UNAVAILABLE`.
 
+Da 008 (sincronização): `SYNC_UNAVAILABLE`, `SYNC_CANCELLED`, `SYNC_AUTH`, `SYNC_QUOTA`,
+`SYNC_FORMAT`, `CLOUD_EMPTY`, `CLOUD_CORRUPT`.
+
 ## VaultService
 
 Como `vault.*` da 001, com:
@@ -156,6 +159,21 @@ Sem 🔒: funciona com o cofre bloqueado e não lê nada dele. `Info`, `Check(ma
 reason? }`. Nenhum argumento vira URL ou caminho: o Go só baixa os assets da release escolhida e
 só grava e abre `updates/<versão>` na pasta de dados. A verificação automática roda depois de
 `OnDomReady`, a cada 6 h, e nunca em build de desenvolvimento.
+
+## SyncService (008)
+
+Definido em [`specs/008-drive-sync/contracts/bridge-sync.md`](../../008-drive-sync/contracts/bridge-sync.md).
+`Info`, `Connect`, `CancelConnect`, `Start(mode, cloudPassword)`, `OpenFromCloud(password)`,
+`SyncNow`, `Conflicts`, `Resolve(key, keep)`, `Versions`, `RestoreVersion(name)`,
+`ProvidePassword(password)`, `SetDeviceName(name)`, `Disconnect(deleteCloud)`. Evento
+`sync:state` com `SyncInfo` (`state`, `available`, `email`, `deviceName`, `lastSync`, `pending`,
+`conflicts`, `reason`) a cada mudança; quando `lastSync` muda, a interface relê o cofre, porque
+mudanças de outro computador já foram aplicadas localmente. Senha mestra, DEK e refresh token
+nunca cruzam a ponte; conflitos chegam com senha, passphrase e chave privada como `"••••"`.
+`Resolve` e `RestoreVersion` só aceitam chaves e nomes da última listagem; nenhum argumento vira
+URL ou caminho. Funciona só com o cofre aberto, exceto `Info`, `Connect`, `CancelConnect` e
+`OpenFromCloud` (primeira tela, sem cofre). Sem client id no build, `Info` traz
+`available: false` e `Connect` devolve `SYNC_UNAVAILABLE`. Em e2e, `SHELLVAULT_E2E_CLOUD_URL` aponta para o Drive falso.
 
 ## TestService (somente build com tag `e2e`)
 
