@@ -65,7 +65,7 @@ real com o Drive falso e duas pastas de dados.
 
 **Independent Test**: quickstart §2 cenários 6–7.
 
-- [ ] T021 [US3] **Go** Conflitos no `syncer` (guardados em `sync_state`, demais itens seguem), `Conflicts()` com segredos mascarados, `Resolve(key, keep)`; troca de senha com sync ligado gera época nova e regrava o chaveiro; outro computador vê `epoch` maior ⇒ `needsPassword` ⇒ `ProvidePassword` (adota DEK nova com `Rekey`); testes com dois syncers no mesmo fake.
+- [X] T021 [US3] **Go** Conflitos no `syncer` (guardados em `sync_state`, demais itens seguem), `Conflicts()` com segredos mascarados, `Resolve(key, keep)`; troca de senha com sync ligado gera época nova e regrava o chaveiro; outro computador vê `epoch` maior ⇒ `needsPassword` ⇒ `ProvidePassword` (adota DEK nova com `Rekey`); testes com dois syncers no mesmo fake.
 - [X] T022 [US3] Frontend: `frontend/src/features/sync/ConflictDialog.tsx` (lista de conflitos, as duas versões lado a lado por campo, segredos mascarados, "Manter esta"; exclusão mostrada como "Excluído neste/no outro computador") e `NewPasswordDialog.tsx` para `needsPassword`; aviso não bloqueante quando surge conflito.
 - [ ] T023 [US3] E2e: cenários 6 e 7.
 
@@ -73,7 +73,7 @@ real com o Drive falso e duas pastas de dados.
 
 ## Phase 6: User Story 4 - Histórico e desconectar (P3)
 
-- [ ] T024 [US4] **Go** `retention.go` (30 versões/30 dias) + `Versions()`, `RestoreVersion(name)` (nome da última listagem; vira snapshot novo), `Disconnect(deleteCloud)` (revoga, apaga `sync_state`, opcionalmente apaga a nuvem), detecção de nuvem removida (`error{removed}`) e de token revogado (`error{auth}`); testes.
+- [X] T024 [US4] **Go** `retention.go` (30 versões/30 dias) + `Versions()`, `RestoreVersion(name)` (nome da última listagem; vira snapshot novo), `Disconnect(deleteCloud)` (revoga, apaga `sync_state`, opcionalmente apaga a nuvem), detecção de nuvem removida (`error{removed}`) e de token revogado (`error{auth}`); testes.
 - [X] T025 [US4] Frontend: `HistoryDialog.tsx` (data, computador, quantidade de itens, "Restaurar" com confirmação) e `DisconnectDialog.tsx` ("Manter cópia no Drive"/"Apagar do Drive"); estados de erro com "Conectar de novo".
 - [ ] T026 [US4] E2e: cenários 8–10.
 

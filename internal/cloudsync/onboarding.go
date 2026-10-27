@@ -43,6 +43,7 @@ func (s *Syncer) OpenFromCloud(ctx context.Context, account SyncAccount, drive *
 	if err != nil {
 		return err
 	}
+	defer vault.Zero(stateJSON)
 	preferences, err := s.preferences.Get()
 	if err != nil {
 		return err
@@ -112,6 +113,7 @@ func (s *Syncer) StartFromCloud(ctx context.Context, mode string, account SyncAc
 	if err != nil {
 		return err
 	}
+	defer vault.Zero(stateJSON)
 	preferences, err := s.preferences.Get()
 	if err != nil {
 		return err
@@ -205,14 +207,16 @@ func (s *Syncer) cloudState(account SyncAccount, cloud *openedCloudVault, items 
 		account.ConnectedAt = s.nowString()
 	}
 	return persistentSyncState{Account: account, DeviceID: deviceID, DeviceName: deviceName,
-		Epoch: cloud.keyring.Epoch, Lamport: cloud.header.Lamport, Base: base, Items: itemStates(items),
+		Epoch: cloud.keyring.Epoch, EpochKeys: cloneEpochKeys(cloud.keys), Lamport: cloud.header.Lamport, Base: base, Items: itemStates(items),
 		Conflicts: []Conflict{}, Dirty: dirty, LastSync: s.nowString()}
 }
 
 func (s *Syncer) attachCloud(state persistentSyncState, drive *Drive) {
 	s.mu.Lock()
+	oldKeys := s.state.EpochKeys
 	s.state, s.drive, s.loaded = state, drive, true
 	s.mu.Unlock()
+	zeroKeys(oldKeys)
 	phase := SyncStateSynced
 	if len(state.Conflicts) != 0 {
 		phase = SyncStateConflict

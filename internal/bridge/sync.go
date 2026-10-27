@@ -23,6 +23,7 @@ type syncAuthorizer interface {
 	Connect(context.Context) (cloudsync.OAuthSession, error)
 	Cancel()
 	Client(context.Context, *oauth2.Token) *http.Client
+	Revoke(context.Context, string) error
 }
 
 type pendingSyncConnection struct {
@@ -140,6 +141,67 @@ func (s *SyncService) SyncNow() (cloudsync.SyncInfo, error) {
 		return s.syncer.Info(), clean(err)
 	}
 	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) Conflicts() ([]cloudsync.ConflictView, error) {
+	conflicts, err := s.syncer.Conflicts()
+	return conflicts, clean(err)
+}
+
+func (s *SyncService) Resolve(key, keep string) (cloudsync.SyncInfo, error) {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := s.syncer.Resolve(ctx, key, keep); err != nil {
+		return s.syncer.Info(), clean(err)
+	}
+	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) ProvidePassword(password string) (cloudsync.SyncInfo, error) {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := s.syncer.ProvidePassword(ctx, password); err != nil {
+		return s.syncer.Info(), clean(err)
+	}
+	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) Versions() ([]cloudsync.CloudVersion, error) {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	versions, err := s.syncer.Versions(ctx)
+	return versions, clean(err)
+}
+
+func (s *SyncService) RestoreVersion(name string) (cloudsync.SyncInfo, error) {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := s.syncer.RestoreVersion(ctx, name); err != nil {
+		return s.syncer.Info(), clean(err)
+	}
+	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) Disconnect(deleteCloud bool) error {
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if err := s.syncer.Disconnect(ctx, deleteCloud, s.oauth.Revoke); err != nil {
+		return clean(err)
+	}
+	s.mu.Lock()
+	s.pending = nil
+	s.mu.Unlock()
+	return nil
 }
 
 func (s *SyncService) SetDeviceName(name string) error { return clean(s.syncer.SetDeviceName(name)) }

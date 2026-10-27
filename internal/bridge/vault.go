@@ -16,12 +16,13 @@ const erasePhrase = "APAGAR"
 type VaultSettingsPatch map[string]any
 
 type VaultService struct {
-	store    *vault.Store
-	autoLock *vault.AutoLock
+	store          *vault.Store
+	autoLock       *vault.AutoLock
+	changePassword func(string, string, string) error
 }
 
 func newVaultService(store *vault.Store, autoLock *vault.AutoLock) *VaultService {
-	return &VaultService{store: store, autoLock: autoLock}
+	return &VaultService{store: store, autoLock: autoLock, changePassword: store.ChangePassword}
 }
 
 func (s *VaultService) GetStatus() (vault.Status, error) {
@@ -45,7 +46,7 @@ func (s *VaultService) Lock() error {
 }
 
 func (s *VaultService) ChangePassword(current, next, confirmation string) error {
-	return clean(s.store.ChangePassword(current, next, confirmation))
+	return clean(s.changePassword(current, next, confirmation))
 }
 
 func (s *VaultService) Erase(confirmPhrase string) error {

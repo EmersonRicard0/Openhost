@@ -23,6 +23,7 @@ type fakeSyncOAuth struct {
 	session   cloudsync.OAuthSession
 	client    *http.Client
 	cancelled bool
+	revoked   string
 }
 
 func (f *fakeSyncOAuth) Connect(context.Context) (cloudsync.OAuthSession, error) {
@@ -30,6 +31,7 @@ func (f *fakeSyncOAuth) Connect(context.Context) (cloudsync.OAuthSession, error)
 }
 func (f *fakeSyncOAuth) Cancel()                                            { f.cancelled = true }
 func (f *fakeSyncOAuth) Client(context.Context, *oauth2.Token) *http.Client { return f.client }
+func (f *fakeSyncOAuth) Revoke(_ context.Context, token string) error       { f.revoked = token; return nil }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
@@ -77,6 +79,15 @@ func TestSyncServiceContractAndSafeEvent(t *testing.T) {
 	if _, err := service.SyncNow(); err != nil {
 		t.Fatal(err)
 	}
+	if conflicts, err := service.Conflicts(); err != nil || len(conflicts) != 0 {
+		t.Fatalf("Conflicts=%+v %v", conflicts, err)
+	}
+	if _, err := service.Resolve("host:ausente", "local"); apperr.CodeOf(err) != apperr.NotFound {
+		t.Fatalf("Resolve ausente=%v", err)
+	}
+	if _, err := service.ProvidePassword("senha-segura-123"); apperr.CodeOf(err) != apperr.InvalidInput {
+		t.Fatalf("ProvidePassword fora do estado=%v", err)
+	}
 	got, _ := service.Info()
 	if got.DeviceName == nil || *got.DeviceName != "Notebook principal" {
 		t.Fatalf("Info=%+v", got)
@@ -90,6 +101,16 @@ func TestSyncServiceContractAndSafeEvent(t *testing.T) {
 		if !strings.Contains(string(payload), field) {
 			t.Fatalf("evento sem %s: %s", field, payload)
 		}
+	}
+	versions, err := service.Versions()
+	if err != nil || len(versions) != 1 {
+		t.Fatalf("Versions=%+v %v", versions, err)
+	}
+	if _, err := service.RestoreVersion("snap-000000000999-1111111111111111.ohs"); apperr.CodeOf(err) != apperr.NotFound {
+		t.Fatalf("RestoreVersion fora da lista=%v", err)
+	}
+	if err := service.Disconnect(false); err != nil || auth.revoked != "refresh-super-secreto" {
+		t.Fatalf("Disconnect=%v revoked=%q", err, auth.revoked)
 	}
 }
 
@@ -172,6 +193,63 @@ func TestSyncServiceOpenFromCloudAndReplace(t *testing.T) {
 	replaced, err := replaceStore.Read()
 	if err != nil || len(replaced.Hosts) != 1 || replaced.Hosts[0].Address != "cloud.example.test" {
 		t.Fatalf("cofre substituído=%+v %v", replaced, err)
+	}
+}
+
+func TestVaultServicePasswordChangeRotatesSynchronizedVault(t *testing.T) {
+	fake := drivefake.New()
+	defer fake.Close()
+	client := fakeDriveClient(t, fake)
+	services, err := newServices(t.TempDir(), vault.TestKDF)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer services.Shutdown(context.Background())
+	if err := services.vaultService.Create("senha-segura-123", "senha-segura-123"); err != nil {
+		t.Fatal(err)
+	}
+	auth := &fakeSyncOAuth{client: client, session: cloudsync.OAuthSession{Email: "usuario@example.com",
+		Token: &oauth2.Token{AccessToken: "access", RefreshToken: "refresh", Expiry: time.Now().Add(time.Hour)}}}
+	services.syncService.mu.Lock()
+	services.syncService.oauth = auth
+	services.syncService.mu.Unlock()
+	if _, err := services.syncService.Connect(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := services.syncService.Start("upload", ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := services.vaultService.ChangePassword("senha-segura-123", "senha-segura-nova-456", "senha-segura-nova-456"); err != nil {
+		t.Fatal(err)
+	}
+	drive := cloudsync.NewDrive(client)
+	files, err := drive.List(context.Background(), cloudsync.KeyringFiles, 2)
+	if err != nil || len(files) != 1 {
+		t.Fatalf("keyring=%+v %v", files, err)
+	}
+	raw, err := drive.Get(context.Background(), files[0].ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := cloudsync.OpenKeyring("senha-segura-123", raw); apperr.CodeOf(err) != apperr.VaultBadPassword {
+		t.Fatalf("keyring aceitou senha antiga: %v", err)
+	}
+	keys, ring, err := cloudsync.OpenKeyring("senha-segura-nova-456", raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, key := range keys {
+		vault.Zero(key)
+	}
+	if ring.Epoch != 2 {
+		t.Fatalf("época=%d", ring.Epoch)
+	}
+	services.store.Lock()
+	if err := services.store.Unlock("senha-segura-123"); apperr.CodeOf(err) != apperr.VaultBadPassword {
+		t.Fatalf("cofre aceitou senha antiga: %v", err)
+	}
+	if err := services.store.Unlock("senha-segura-nova-456"); err != nil {
+		t.Fatal(err)
 	}
 }
 
