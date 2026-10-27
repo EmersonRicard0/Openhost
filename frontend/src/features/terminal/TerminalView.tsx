@@ -14,6 +14,8 @@ import { fontSizeOf, useWorkspace } from '../../stores/workspace';
 import { ringBell } from './bell';
 import { attach } from './dataBus';
 import { opensLink, terminalKeyAction } from './keys';
+import { environmentColor } from '../../theme/environments';
+import { useHostEnvironment } from '../hosts/environment';
 import { needsConfirm } from './paste';
 import { watchPrompt } from './promptTitle';
 import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from './profile';
@@ -61,6 +63,8 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
   const unlocked = useVault((v) => v.status?.state === 'unlocked');
   const zoom = useWorkspace((w) => w.zoom);
   const searching = useWorkspace((w) => w.searchFor === tab.id);
+  const environment = useHostEnvironment(tab.hostId);
+  const dark = useUi((u) => u.dark);
   useEffect(() => {
     visibleRef.current = visible;
     focusedRef.current = focused;
@@ -314,6 +318,7 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       role={pane ? 'group' : 'tabpanel'}
       aria-label={accessibleTitle(tab)}
       data-session-id={tab.id}
+      data-environment={environment?.color}
       data-pane={pane ? '' : undefined}
       data-focused={pane && focused ? '' : undefined}
       onPointerDownCapture={(e) => {
@@ -329,7 +334,11 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
           sem descontar o padding e cortaria a última linha. */}
       <div
         className={`${s.frame} solid`}
+        data-environment={environment?.color}
         style={{
+          ['--environment' as string]: environment
+            ? environmentColor(environment.color, dark)
+            : undefined,
           padding: profile.padding,
           background,
           backdropFilter:

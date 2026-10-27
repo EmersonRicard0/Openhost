@@ -18,7 +18,10 @@ import {
   type StripItem,
   type Tab,
 } from '../../stores/sessions';
+import { useHosts } from '../../stores/hosts';
 import { useUi } from '../../stores/ui';
+import { environmentColor } from '../../theme/environments';
+import { useHostEnvironment } from '../hosts/environment';
 import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
 import { useSlidingIndicator } from '../../ui/motion';
@@ -157,19 +160,42 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
   const [dropTarget, setDropTarget] = useState(false);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
   const platform = useUi((u) => u.platform);
+  const dark = useUi((u) => u.dark);
+  const environment = useHostEnvironment(tab.hostId);
+  const host = useHosts((h) => (tab.hostId ? h.hosts.find((x) => x.id === tab.hostId) : undefined));
+  // Dica: estado e, para hosts, rótulo e destino (FR-926) e ambiente (FR-905).
+  const tooltip = [
+    stateLabel(tab),
+    host && `${host.label} — ${host.username}@${host.address}:${String(host.port)}`,
+    environment && t.hosts.environmentOf(environment.name),
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const name =
+    item.kind === 'group'
+      ? t.terminal.group.label(tab.title, members.length - 1)
+      : tab.title === tab.baseTitle
+        ? tab.title
+        : accessibleTitle(tab);
 
   return (
     <div
       role="tab"
       aria-selected={active}
       tabIndex={active ? 0 : -1}
-      title={stateLabel(tab)}
+      title={tooltip}
       aria-label={
-        item.kind === 'group'
-          ? t.terminal.group.label(tab.title, members.length - 1)
-          : tab.title === tab.baseTitle
+        environment
+          ? `${name}, ${t.hosts.environmentOf(environment.name)}`
+          : name === tab.title
             ? undefined
-            : accessibleTitle(tab)
+            : name
+      }
+      data-environment={environment?.color}
+      style={
+        environment
+          ? { ['--environment' as string]: environmentColor(environment.color, dark) }
+          : undefined
       }
       data-group={item.kind === 'group' ? '' : undefined}
       className={`${s.tab} ${active ? s.tabActive : ''} ${dropTarget ? s.dropBefore : ''} no-drag`}

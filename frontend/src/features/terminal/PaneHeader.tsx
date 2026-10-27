@@ -1,5 +1,8 @@
 import { t } from '../../i18n/pt-BR';
 import { useSessions, type Tab } from '../../stores/sessions';
+import { useUi } from '../../stores/ui';
+import { environmentColor } from '../../theme/environments';
+import { useHostEnvironment } from '../hosts/environment';
 import { Button } from '../../ui/Button';
 import { CloseIcon, DetachIcon } from '../../ui/icons';
 import { closeSession } from './commands';
@@ -12,6 +15,8 @@ import s from './terminal.module.css';
  * painel para outro lugar do grupo ou, solto na barra de abas, o separa (FR-612, FR-615).
  */
 export function PaneHeader({ tab }: { tab: Tab }) {
+  const environment = useHostEnvironment(tab.hostId);
+  const dark = useUi((u) => u.dark);
   return (
     <div
       className={s.paneHeader}
@@ -29,6 +34,14 @@ export function PaneHeader({ tab }: { tab: Tab }) {
     >
       <StateIcon state={tab.state} />
       <span className={s.paneTitle}>{tab.title}</span>
+      {environment && (
+        <span
+          className={s.environmentLabel}
+          style={{ ['--environment' as string]: environmentColor(environment.color, dark) }}
+        >
+          {environment.name}
+        </span>
+      )}
       <Button
         variant="ghost"
         iconOnly

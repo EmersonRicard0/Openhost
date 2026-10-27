@@ -369,6 +369,15 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
               </span>
             )}
           </span>
+          {(host.tags?.length ?? 0) > 0 && (
+            <span className={s.tags}>
+              {host.tags?.map((tag) => (
+                <span key={tag} className={s.tag} data-tag="">
+                  {tag}
+                </span>
+              ))}
+            </span>
+          )}
           {/* Endereço diferencia hosts com o mesmo nome; na busca, o caminho do grupo. */}
           <span className={s.itemSub}>
             {path ? `${path} · ` : ''}

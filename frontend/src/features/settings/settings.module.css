@@ -344,3 +344,47 @@
   border-radius: 50%;
   box-shadow: var(--inset-swatch);
 }
+
+/* Ambientes de host (specs/009). */
+.environmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.environmentRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  align-items: start;
+  gap: 8px;
+}
+
+.environmentName {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.environmentInput {
+  height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--input-background);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.environmentInput:focus-visible {
+  border-color: var(--focus);
+  box-shadow: var(--ring-focus);
+}
+
+.environmentInput[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.environmentError {
+  font-size: 12px;
+  color: var(--danger);
+}

@@ -43,6 +43,7 @@ import { EraseVaultDialog } from '../vault/EraseVaultDialog';
 import { ImportExportPage } from '../importexport/ImportExportPage';
 import { SyncSection } from '../sync/SyncSettings';
 import { ShortcutsEditor } from './ShortcutsEditor';
+import { EnvironmentsEditor } from './EnvironmentsEditor';
 import { Group } from './Group';
 import { GlobalTerminalSettings } from './TerminalSettings';
 import s from './settings.module.css';
@@ -239,6 +240,17 @@ function AppearanceSection({ settings }: { settings: Settings }) {
           onChange={(e) => void saveUi({ glassEnabled: e.target.checked })}
         />
       )}
+    </Group>
+  );
+}
+
+/** Ambientes ficam no cofre: só aparecem desbloqueado. */
+function EnvironmentsGroup() {
+  const { unlocked } = useVaultSettings();
+  if (!unlocked) return null;
+  return (
+    <Group title={t.environments.title}>
+      <EnvironmentsEditor />
     </Group>
   );
 }
@@ -653,7 +665,12 @@ export function SettingsPage() {
         >
           <h2 className={s.sectionTitle}>{t.settings.sections[section]}</h2>
           {settings && section === 'general' && <GeneralSection settings={settings} />}
-          {settings && section === 'appearance' && <AppearanceSection settings={settings} />}
+          {settings && section === 'appearance' && (
+            <>
+              <AppearanceSection settings={settings} />
+              <EnvironmentsGroup />
+            </>
+          )}
           {section === 'terminal' && (
             <>
               {settings && <TerminalBehavior settings={settings} />}
