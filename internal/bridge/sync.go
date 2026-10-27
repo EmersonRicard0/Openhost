@@ -79,13 +79,15 @@ func (s *SyncService) CancelConnect() error {
 }
 
 func (s *SyncService) Start(mode, cloudPassword string) (cloudsync.SyncInfo, error) {
-	if mode != "upload" || cloudPassword != "" {
+	if mode != "upload" && mode != "replace" && mode != "merge" {
 		return s.syncer.Info(), apperr.New(apperr.InvalidInput)
 	}
 	s.mu.Lock()
 	pending := s.pending
 	s.mu.Unlock()
-	if pending == nil || pending.cloudHasVault || pending.session.Token == nil || pending.session.Token.RefreshToken == "" {
+	if pending == nil || pending.session.Token == nil || pending.session.Token.RefreshToken == "" ||
+		(mode == "upload" && (pending.cloudHasVault || cloudPassword != "")) ||
+		(mode != "upload" && (!pending.cloudHasVault || cloudPassword == "")) {
 		return s.syncer.Info(), apperr.New(apperr.InvalidInput)
 	}
 	ctx := s.context()
@@ -93,13 +95,40 @@ func (s *SyncService) Start(mode, cloudPassword string) (cloudsync.SyncInfo, err
 		ctx = context.Background()
 	}
 	account := cloudsync.SyncAccount{Email: pending.session.Email, RefreshToken: pending.session.Token.RefreshToken}
-	if err := s.syncer.StartUpload(ctx, account, pending.drive); err != nil {
+	var err error
+	if mode == "upload" {
+		err = s.syncer.StartUpload(ctx, account, pending.drive)
+	} else {
+		err = s.syncer.StartFromCloud(ctx, mode, account, pending.drive, cloudPassword)
+	}
+	if err != nil {
 		return s.syncer.Info(), clean(err)
 	}
 	s.mu.Lock()
 	s.pending = nil
 	s.mu.Unlock()
 	return s.syncer.Info(), nil
+}
+
+func (s *SyncService) OpenFromCloud(password string) error {
+	s.mu.Lock()
+	pending := s.pending
+	s.mu.Unlock()
+	if pending == nil || !pending.cloudHasVault || password == "" || pending.session.Token == nil || pending.session.Token.RefreshToken == "" {
+		return apperr.New(apperr.InvalidInput)
+	}
+	ctx := s.context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	account := cloudsync.SyncAccount{Email: pending.session.Email, RefreshToken: pending.session.Token.RefreshToken}
+	if err := s.syncer.OpenFromCloud(ctx, account, pending.drive, password); err != nil {
+		return clean(err)
+	}
+	s.mu.Lock()
+	s.pending = nil
+	s.mu.Unlock()
+	return nil
 }
 
 func (s *SyncService) SyncNow() (cloudsync.SyncInfo, error) {

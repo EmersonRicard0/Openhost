@@ -55,7 +55,7 @@ real com o Drive falso e duas pastas de dados.
 
 **Independent Test**: quickstart §2 cenários 4–5.
 
-- [ ] T018 [US2] **Go** `internal/cloudsync/onboarding.go` + testes: `OpenFromCloud(password)` (senha errada ⇒ `VAULT_BAD_PASSWORD` sem gravar; sem nuvem ⇒ `CLOUD_EMPTY`), `Start("replace")` (backup `vault-backup-<data>.db`), `Start("merge")` (recifra com DEK da nuvem via `Rekey`, deduplicação por conteúdo-chave, R6); métodos no `SyncService`.
+- [X] T018 [US2] **Go** `internal/cloudsync/onboarding.go` + testes: `OpenFromCloud(password)` (senha errada ⇒ `VAULT_BAD_PASSWORD` sem gravar; sem nuvem ⇒ `CLOUD_EMPTY`), `Start("replace")` (backup `vault-backup-<data>.db`), `Start("merge")` (recifra com DEK da nuvem via `Rekey`, deduplicação por conteúdo-chave, R6); métodos no `SyncService`.
 - [X] T019 [US2] Frontend: "Usar meu cofre do Google Drive" em `frontend/src/features/vault/CreateVaultScreen.tsx` (conectar → senha da nuvem → abre; `CLOUD_EMPTY` oferece criar cofre novo já ligado); `frontend/src/features/sync/StartChoiceDialog.tsx` ao conectar com cofre local e nuvem com cofre: "Juntar os dois", "Usar o do Drive (o local vira backup)", "Cancelar", com senha da nuvem.
 - [ ] T020 [US2] E2e: cenários 4 e 5 com duas pastas de dados.
 
