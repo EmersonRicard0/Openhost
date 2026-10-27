@@ -45,6 +45,7 @@ type Services struct {
 	appService        *AppService
 	importService     *ImportService
 	exportService     *ExportService
+	updateService     *UpdateService
 	closeGuard        *appwin.CloseGuard
 }
 
@@ -96,6 +97,12 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.appService = newAppService(preferences, appearance, s.closeGuard, s.Context)
 	s.importService = newImportService(store, s.Context)
 	s.exportService = newExportService(store, s.Context)
+	s.updateService = newUpdateService(dataDir, preferences, s.Context, s.emit)
+	s.updateService.quit = func() {
+		if ctx := s.Context(); ctx != nil {
+			wruntime.Quit(ctx)
+		}
+	}
 	store.OnStatus(func(status vault.Status) {
 		if status.State != vault.StateUnlocked {
 			s.importService.coordinator.Clear()
@@ -121,7 +128,7 @@ func (s *Services) connectForward(hostID string) (forwarding.Client, error) {
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
 func (s *Services) Bound() []any {
-	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService, s.exportService}
+	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService, s.exportService, s.updateService}
 }
 
 // Context é o contexto do Wails, disponível depois de Startup.
@@ -144,15 +151,22 @@ func (s *Services) Startup(ctx context.Context) {
 	s.appService.appearance.Start(ctx)
 }
 
+// DomReady inicia tarefas de rede somente depois que a janela está pronta.
+func (s *Services) DomReady(ctx context.Context) {
+	s.updateService.start(ctx)
+}
+
 // BeforeClose devolve true para impedir o fechamento (confirmação de FR-028, T038).
 func (s *Services) BeforeClose(ctx context.Context) bool {
 	return s.closeGuard.Intercept()
 }
 
 func (s *Services) Shutdown(ctx context.Context) {
+	s.updateService.stop()
 	s.forwards.CloseAll()
 	s.sessions.CloseAll()
 	_ = s.store.Close()
+	s.updateService.launchPendingOnShutdown()
 }
 
 // SessionStats é o que os testes E2E leem do gerenciador de sessões.

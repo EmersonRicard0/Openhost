@@ -63,8 +63,11 @@ func (s *AppService) GetPreferences() (appwin.Preferences, error) {
 	defaultShell := localpty.DefaultShellID()
 	if preferences.DefaultShell != defaultShell && !shellAvailable(s.localShells(), preferences.DefaultShell) {
 		log.Printf("bridge: shell padrão %q indisponível; usando %q", preferences.DefaultShell, defaultShell)
-		preferences.DefaultShell = defaultShell
-		if err := s.preferences.Save(preferences); err != nil {
+		preferences, err = s.preferences.Update(func(current *appwin.Preferences) error {
+			current.DefaultShell = defaultShell
+			return nil
+		})
+		if err != nil {
 			return appwin.Preferences{}, clean(err)
 		}
 	}
@@ -80,116 +83,115 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 	if patch == nil {
 		return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
 	}
-	preferences, err := s.preferences.Get()
-	if err != nil {
-		return appwin.Preferences{}, clean(err)
-	}
-	for key, raw := range patch {
-		switch key {
-		case "theme":
-			value, ok := raw.(string)
-			if !ok || validate.OneOf(value, "system", "light", "dark") != nil {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.Theme = value
-		case "terminalFontFamily":
-			value, ok := raw.(string)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			value, err = validate.Text(value, 1, 200)
-			if err != nil {
-				return appwin.Preferences{}, clean(err)
-			}
-			preferences.TerminalFontFamily = value
-		case "terminalFontSize":
-			value, ok := bridgeInt(raw)
-			if !ok || validate.Int(value, 8, 32) != nil {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.TerminalFontSize = value
-		case "glassEnabled":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.GlassEnabled = value
-		case "sidebarCollapsed":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.SidebarCollapsed = value
-		case "accent":
-			value, ok := raw.(string)
-			if !ok || !appwin.ValidAccent(value) {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.Accent = value
-		case "defaultShell":
-			value, ok := raw.(string)
-			if !ok || !localpty.ValidShellID(value) || !shellAvailable(s.localShells(), value) {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.DefaultShell = value
-		case "collapsedGroups":
-			groups, ok := bridgeStrings(raw)
-			if !ok || len(groups) > 5000 {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			seen := make(map[string]bool, len(groups))
-			preferences.CollapsedGroups = preferences.CollapsedGroups[:0]
-			for _, id := range groups {
-				if validate.UUID(id) != nil || seen[id] {
-					return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
+	preferences, err := s.preferences.Update(func(preferences *appwin.Preferences) error {
+		for key, raw := range patch {
+			switch key {
+			case "theme":
+				value, ok := raw.(string)
+				if !ok || validate.OneOf(value, "system", "light", "dark") != nil {
+					return apperr.New(apperr.InvalidInput)
 				}
-				seen[id] = true
-				preferences.CollapsedGroups = append(preferences.CollapsedGroups, id)
+				preferences.Theme = value
+			case "terminalFontFamily":
+				value, ok := raw.(string)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				value, validationErr := validate.Text(value, 1, 200)
+				if validationErr != nil {
+					return clean(validationErr)
+				}
+				preferences.TerminalFontFamily = value
+			case "terminalFontSize":
+				value, ok := bridgeInt(raw)
+				if !ok || validate.Int(value, 8, 32) != nil {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.TerminalFontSize = value
+			case "glassEnabled":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.GlassEnabled = value
+			case "sidebarCollapsed":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.SidebarCollapsed = value
+			case "accent":
+				value, ok := raw.(string)
+				if !ok || !appwin.ValidAccent(value) {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.Accent = value
+			case "defaultShell":
+				value, ok := raw.(string)
+				if !ok || !localpty.ValidShellID(value) || !shellAvailable(s.localShells(), value) {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.DefaultShell = value
+			case "collapsedGroups":
+				groups, ok := bridgeStrings(raw)
+				if !ok || len(groups) > 5000 {
+					return apperr.New(apperr.InvalidInput)
+				}
+				seen := make(map[string]bool, len(groups))
+				preferences.CollapsedGroups = preferences.CollapsedGroups[:0]
+				for _, id := range groups {
+					if validate.UUID(id) != nil || seen[id] {
+						return apperr.New(apperr.InvalidInput)
+					}
+					seen[id] = true
+					preferences.CollapsedGroups = append(preferences.CollapsedGroups, id)
+				}
+			case "shortcuts":
+				shortcuts, ok := bridgeStringMap(raw)
+				if !ok {
+					return invalidPreference("shortcuts precisa ser um objeto de texto para texto")
+				}
+				if err := appwin.ValidateShortcuts(shortcuts); err != nil {
+					return invalidPreference(err.Error())
+				}
+				preferences.Shortcuts = shortcuts
+			case "copyOnSelect":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.CopyOnSelect = value
+			case "rightClickPaste":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.RightClickPaste = value
+			case "bell":
+				value, ok := raw.(string)
+				if !ok || validate.OneOf(value, "off", "sound", "visual") != nil {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.Bell = value
+			case "boldBright":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.BoldBright = value
+			case "autoReconnect":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.AutoReconnect = value
+			default:
+				return apperr.New(apperr.InvalidInput)
 			}
-		case "shortcuts":
-			shortcuts, ok := bridgeStringMap(raw)
-			if !ok {
-				return appwin.Preferences{}, invalidPreference("shortcuts precisa ser um objeto de texto para texto")
-			}
-			if err := appwin.ValidateShortcuts(shortcuts); err != nil {
-				return appwin.Preferences{}, invalidPreference(err.Error())
-			}
-			preferences.Shortcuts = shortcuts
-		case "copyOnSelect":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.CopyOnSelect = value
-		case "rightClickPaste":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.RightClickPaste = value
-		case "bell":
-			value, ok := raw.(string)
-			if !ok || validate.OneOf(value, "off", "sound", "visual") != nil {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.Bell = value
-		case "boldBright":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.BoldBright = value
-		case "autoReconnect":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.AutoReconnect = value
-		default:
-			return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
 		}
-	}
-	if err := s.preferences.Save(preferences); err != nil {
+		return nil
+	})
+	if err != nil {
 		return appwin.Preferences{}, clean(err)
 	}
 	s.appearance.EmitCurrent()

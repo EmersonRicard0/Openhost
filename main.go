@@ -20,6 +20,7 @@ import (
 
 	"shellvault/internal/appwin"
 	"shellvault/internal/bridge"
+	"shellvault/internal/updater"
 )
 
 //go:embed all:frontend/dist
@@ -37,6 +38,21 @@ var (
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "--apply-update" {
+		if len(os.Args) != 3 {
+			fmt.Fprintln(os.Stderr, "OpenHost não pôde aplicar a atualização: manifesto ausente")
+			os.Exit(1)
+		}
+		dataDir, err := appwin.DataDir()
+		if err == nil {
+			err = updater.RunApplyUpdate(dataDir, os.Args[2])
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "OpenHost não pôde aplicar a atualização:", err)
+			os.Exit(1)
+		}
+		return
+	}
 	if err := run(); err != nil {
 		// Sem arquivo de log (FR-030): o erro vai só para stderr, sem dados do usuário.
 		fmt.Fprintln(os.Stderr, "OpenHost não pôde iniciar:", err)
@@ -94,6 +110,7 @@ func run() error {
 			appCtx.Store(&ctx)
 			services.Startup(ctx)
 		},
+		OnDomReady:    services.DomReady,
 		OnBeforeClose: services.BeforeClose,
 		OnShutdown:    services.Shutdown,
 		Bind:          bind,

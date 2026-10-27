@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"sync"
+	"time"
 	"unicode/utf8"
 
 	"shellvault/internal/localpty"
@@ -15,10 +17,13 @@ const preferencesKey = "preferences"
 
 var accentID = regexp.MustCompile(`^[a-z][a-z0-9-]{0,31}$`)
 
+var updateVersion = regexp.MustCompile(`^(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$`)
+
 var shortcutActions = map[string]struct{}{
 	"newTab": {}, "newPowerShell": {}, "closeTab": {}, "nextTab": {}, "prevTab": {},
 	"search": {}, "palette": {}, "zoomIn": {}, "zoomOut": {}, "zoomReset": {},
-	"toggleSidebar": {},
+	"toggleSidebar": {}, "openSettings": {},
+	"focusLeft": {}, "focusRight": {}, "focusUp": {}, "focusDown": {},
 }
 
 var (
@@ -32,6 +37,15 @@ type WindowBounds struct {
 	X         *int `json:"x"`
 	Y         *int `json:"y"`
 	Maximized bool `json:"maximized"`
+}
+
+type UpdatePrefs struct {
+	Auto        bool   `json:"auto"`
+	Prerelease  bool   `json:"prerelease"`
+	Skipped     string `json:"skipped"`
+	RemindAfter string `json:"remindAfter"`
+	LastCheck   string `json:"lastCheck"`
+	ETag        string `json:"etag"`
 }
 
 type Preferences struct {
@@ -50,6 +64,7 @@ type Preferences struct {
 	Bell               string            `json:"bell"`
 	BoldBright         bool              `json:"boldBright"`
 	AutoReconnect      bool              `json:"autoReconnect"`
+	Updates            UpdatePrefs       `json:"updates"`
 }
 
 func DefaultPreferences() Preferences {
@@ -69,10 +84,12 @@ func DefaultPreferences() Preferences {
 		Bell:               "visual",
 		BoldBright:         true,
 		AutoReconnect:      false,
+		Updates:            UpdatePrefs{Auto: true},
 	}
 }
 
 type PreferenceStore struct {
+	mu    sync.Mutex
 	store *vault.Store
 }
 
@@ -81,6 +98,12 @@ func NewPreferenceStore(store *vault.Store) *PreferenceStore {
 }
 
 func (s *PreferenceStore) Get() (Preferences, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.get()
+}
+
+func (s *PreferenceStore) get() (Preferences, error) {
 	preferences := DefaultPreferences()
 	if ok, err := s.store.Preference(preferencesKey, &preferences); err != nil {
 		return Preferences{}, err
@@ -111,7 +134,28 @@ func (s *PreferenceStore) Get() (Preferences, error) {
 }
 
 func (s *PreferenceStore) Save(preferences Preferences) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
 	return s.store.SetPreference(preferencesKey, normalizedPreferences(preferences))
+}
+
+// Update aplica uma alteração de leitura-modificação-gravação sob o mesmo lock, para
+// que subsistemas independentes não sobrescrevam campos de preferência uns dos outros.
+func (s *PreferenceStore) Update(change func(*Preferences) error) (Preferences, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	preferences, err := s.get()
+	if err != nil {
+		return Preferences{}, err
+	}
+	if err := change(&preferences); err != nil {
+		return Preferences{}, err
+	}
+	preferences = normalizedPreferences(preferences)
+	if err := s.store.SetPreference(preferencesKey, preferences); err != nil {
+		return Preferences{}, err
+	}
+	return preferences, nil
 }
 
 func normalizedPreferences(preferences Preferences) Preferences {
@@ -150,7 +194,35 @@ func normalizedPreferences(preferences Preferences) Preferences {
 	default:
 		preferences.Bell = defaults.Bell
 	}
+	preferences.Updates = normalizedUpdatePrefs(preferences.Updates)
 	return preferences
+}
+
+func normalizedUpdatePrefs(preferences UpdatePrefs) UpdatePrefs {
+	preferences.Skipped = strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(preferences.Skipped), "v"))
+	if preferences.Skipped != "" && !updateVersion.MatchString(preferences.Skipped) {
+		preferences.Skipped = ""
+	}
+	preferences.RemindAfter = validUpdateTime(preferences.RemindAfter)
+	preferences.LastCheck = validUpdateTime(preferences.LastCheck)
+	preferences.ETag = strings.TrimSpace(preferences.ETag)
+	if !utf8.ValidString(preferences.ETag) || utf8.RuneCountInString(preferences.ETag) > 1024 || strings.IndexFunc(preferences.ETag, func(r rune) bool {
+		return r < 0x20 || r == 0x7f
+	}) >= 0 {
+		preferences.ETag = ""
+	}
+	return preferences
+}
+
+func validUpdateTime(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	if _, err := time.Parse(time.RFC3339Nano, value); err != nil {
+		return ""
+	}
+	return value
 }
 
 func ValidAccent(value string) bool { return value == "system" || accentID.MatchString(value) }
