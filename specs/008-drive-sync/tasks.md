@@ -47,7 +47,7 @@ real com o Drive falso e duas pastas de dados.
 - [X] T014 [P] [US1] Frontend: tipos `SyncInfo`, `ConflictView`, `CloudVersion` em `frontend/src/shared/model/types.ts`; `window.shellvault.sync` em `frontend/src/shared/ipc/api.ts` (+ `API_SHAPE`, `EVENT_NAMES`) e `frontend/src/bridge/index.ts`; store `frontend/src/stores/sync.ts` (+ teste) assinando `sync:state`.
 - [X] T015 [US1] `frontend/src/features/sync/SyncSettings.tsx` em Configurações → Sincronização: indisponível (build sem client id), "Conectar Google Drive" (espera do navegador com cancelar), conta (e-mail), estado, última sincronização, "Sincronizar agora", nome do computador; i18n `t.sync` em `frontend/src/i18n/pt-BR.ts`.
 - [X] T016 [US1] Indicador na barra de status (`frontend/src/app/StatusBar.tsx`): sincronizado/sincronizando/pendente/erro/conflito, com rótulo acessível, que abre a seção Sincronização (FR-819).
-- [ ] T017 [US1] E2e `frontend/tests/e2e/sync.spec.ts`: cenários 1–3 do quickstart com o Drive falso.
+- [X] T017 [US1] E2e `frontend/tests/e2e/sync.spec.ts`: cenários 1–3 do quickstart com o Drive falso.
 
 ---
 

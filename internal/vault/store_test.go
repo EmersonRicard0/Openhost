@@ -301,6 +301,25 @@ func TestNewerSchemaIsUnsupported(t *testing.T) {
 	if st := s2.Status(); st.State != StateUnreadable || *st.Reason != ReasonUnsupportedVersion {
 		t.Fatalf("esquema novo demais: %+v", st)
 	}
+	// O que funciona com o cofre bloqueado responde erro em vez de derrubar o app (tela preta).
+	unreadable := func(name string, err error) {
+		t.Helper()
+		if apperr.CodeOf(err) != apperr.VaultUnreadable {
+			t.Errorf("%s com esquema novo demais = %v", name, err)
+		}
+	}
+	_, err := s2.GlobalProfile()
+	unreadable("GlobalProfile", err)
+	_, err = s2.TerminalProfiles()
+	unreadable("TerminalProfiles", err)
+	_, err = s2.ColorSchemes()
+	unreadable("ColorSchemes", err)
+	unreadable("SaveGlobalProfile", s2.SaveGlobalProfile(model.TerminalProfile{}))
+	unreadable("SaveColorScheme", s2.SaveColorScheme(model.ColorScheme{}))
+	unreadable("DeleteColorScheme", s2.DeleteColorScheme("x"))
+	unreadable("ApplyLegacyTerminalFont", s2.ApplyLegacyTerminalFont("Cascadia Mono", 14))
+	_, err = s2.Preference("x", new(string))
+	unreadable("Preference", err)
 }
 
 func TestNoopMutateAfterReloadWritesNothing(t *testing.T) {

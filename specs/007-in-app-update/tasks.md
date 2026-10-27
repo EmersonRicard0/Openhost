@@ -76,7 +76,7 @@ real com servidor de releases local.
 - [X] T022 Atualizar `specs/002-wails-migration/contracts/bridge.md` com o `UpdateService` e o evento.
 - [X] T023 Revisão de segurança final (contrato §Segurança): conferir com `grep` que nenhum caminho/URL vem do frontend e que só o pacote verificado é executado.
 - [X] T024 Rodar quickstart §1–§2 e registrar em `specs/007-in-app-update/validation.md`; §3 depende de duas rcs reais assinadas (pendência do dono do projeto: segredo `UPDATE_SIGNING_KEY`).
-- [ ] T025 CI verde nos três sistemas.
+- [x] T025 CI verde nos três sistemas (PR #3, run 40548653412).
 
 ---
 
