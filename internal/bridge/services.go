@@ -117,6 +117,13 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	}, func(info cloudsync.SyncInfo) { s.emit(EventSyncState, info) })
 	syncService = newSyncService(s.Context, openBrowser, oauth, syncer, cloudsync.NewDrive)
 	s.syncService = syncService
+	s.vaultService.changePassword = func(current, next, confirmation string) error {
+		ctx := s.Context()
+		if ctx == nil {
+			ctx = context.Background()
+		}
+		return syncer.ChangePassword(ctx, current, next, confirmation)
+	}
 	s.syncService.configureForTest()
 	store.OnStatus(func(status vault.Status) {
 		if status.State != vault.StateUnlocked {

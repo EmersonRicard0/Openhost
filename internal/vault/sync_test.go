@@ -175,3 +175,59 @@ func TestRekeyIsAtomicAndResealsEverySecret(t *testing.T) {
 		t.Fatalf("sync_state após Rekey = %q, %v", state, err)
 	}
 }
+
+func TestValidatePasswordChangeAndRekeySynchronized(t *testing.T) {
+	store := openTest(t, t.TempDir())
+	if err := store.Create(pw, pw); err != nil {
+		t.Fatal(err)
+	}
+	addHosts(t, store, hostA)
+	if err := store.SetSyncState([]byte(`{"epoch":1}`)); err != nil {
+		t.Fatal(err)
+	}
+	wantCode(t, store.ValidatePasswordChange("senha-errada", "nova-senha-2", "nova-senha-2"), apperr.VaultBadPassword)
+	wantCode(t, store.ValidatePasswordChange(pw, "curta", "curta"), apperr.WeakPassword)
+	if err := store.ValidatePasswordChange(pw, "nova-senha-2", "nova-senha-2"); err != nil {
+		t.Fatal(err)
+	}
+	before := sealedOf(t, store.db, hostA)
+	newDEK := RandomKey()
+	defer Zero(newDEK)
+	if err := store.RekeySynchronized("nova-senha-2", newDEK, []byte(`{"epoch":2}`)); err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Equal(before, sealedOf(t, store.db, hostA)) {
+		t.Fatal("RekeySynchronized não recifrou o conteúdo")
+	}
+	state, err := store.SyncState()
+	if err != nil || string(state) != `{"epoch":2}` {
+		t.Fatalf("estado substituído=%s %v", state, err)
+	}
+	store.Lock()
+	wantCode(t, store.Unlock(pw), apperr.VaultBadPassword)
+	if err := store.Unlock("nova-senha-2"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestClearSyncStateKeepsVaultContent(t *testing.T) {
+	store := openTest(t, t.TempDir())
+	if err := store.Create(pw, pw); err != nil {
+		t.Fatal(err)
+	}
+	addHosts(t, store, hostA)
+	if err := store.SetSyncState([]byte(`{"connected":true}`)); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.ClearSyncState(); err != nil {
+		t.Fatal(err)
+	}
+	state, err := store.SyncState()
+	if err != nil || state != nil {
+		t.Fatalf("estado=%q %v", state, err)
+	}
+	content, err := store.Read()
+	if err != nil || len(content.Hosts) != 1 {
+		t.Fatalf("conteúdo=%+v %v", content, err)
+	}
+}

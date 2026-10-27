@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -64,16 +65,18 @@ type syncItemState struct {
 }
 
 type persistentSyncState struct {
-	Account    SyncAccount              `json:"account"`
-	DeviceID   string                   `json:"deviceId"`
-	DeviceName string                   `json:"deviceName"`
-	Epoch      int                      `json:"epoch"`
-	Lamport    uint64                   `json:"lamport"`
-	Base       string                   `json:"base"`
-	Items      map[string]syncItemState `json:"items"`
-	Conflicts  []Conflict               `json:"conflicts"`
-	Dirty      bool                     `json:"dirty"`
-	LastSync   string                   `json:"lastSync,omitempty"`
+	Account     SyncAccount              `json:"account"`
+	DeviceID    string                   `json:"deviceId"`
+	DeviceName  string                   `json:"deviceName"`
+	Epoch       int                      `json:"epoch"`
+	EpochKeys   map[int][]byte           `json:"epochKeys,omitempty"`
+	Lamport     uint64                   `json:"lamport"`
+	Base        string                   `json:"base"`
+	Items       map[string]syncItemState `json:"items"`
+	Conflicts   []Conflict               `json:"conflicts"`
+	Dirty       bool                     `json:"dirty"`
+	ForceUpload bool                     `json:"forceUpload,omitempty"`
+	LastSync    string                   `json:"lastSync,omitempty"`
 }
 
 type DriveFactory func(context.Context, string) *Drive
@@ -105,17 +108,18 @@ type Syncer struct {
 	emit         func(SyncInfo)
 	options      syncerOptions
 
-	mu           sync.Mutex
-	info         SyncInfo
-	state        persistentSyncState
-	drive        *Drive
-	loaded       bool
-	activeCancel context.CancelFunc
-	opMu         sync.Mutex
-	change       chan struct{}
-	status       chan vault.Status
-	stop         chan struct{}
-	done         chan struct{}
+	mu             sync.Mutex
+	info           SyncInfo
+	state          persistentSyncState
+	drive          *Drive
+	loaded         bool
+	listedVersions map[string]DriveFile
+	activeCancel   context.CancelFunc
+	opMu           sync.Mutex
+	change         chan struct{}
+	status         chan vault.Status
+	stop           chan struct{}
+	done           chan struct{}
 }
 
 func NewSyncer(store *vault.Store, preferences *appwin.PreferenceStore, driveFactory DriveFactory, emit func(SyncInfo)) *Syncer {
@@ -145,6 +149,10 @@ func newSyncer(store *vault.Store, preferences *appwin.PreferenceStore, factory 
 	store.OnStatus(func(status vault.Status) {
 		if status.State != vault.StateUnlocked {
 			s.cancelActive()
+			s.mu.Lock()
+			zeroKeys(s.state.EpochKeys)
+			s.state.EpochKeys = nil
+			s.mu.Unlock()
 		}
 		select {
 		case s.status <- status:
@@ -166,6 +174,10 @@ func (s *Syncer) Close() {
 		s.cancelActive()
 		close(s.stop)
 		<-s.done
+		s.mu.Lock()
+		zeroKeys(s.state.EpochKeys)
+		s.state.EpochKeys = nil
+		s.mu.Unlock()
 	}
 }
 
@@ -215,7 +227,8 @@ func (s *Syncer) StartUpload(ctx context.Context, account SyncAccount, drive *Dr
 		account.ConnectedAt = s.nowString()
 	}
 	state := persistentSyncState{Account: account, DeviceID: deviceID, DeviceName: deviceName, Epoch: 1,
-		Items: map[string]syncItemState{}, Conflicts: []Conflict{}, Dirty: true}
+		EpochKeys: map[int][]byte{1: append([]byte(nil), material.DEK...)},
+		Items:     map[string]syncItemState{}, Conflicts: []Conflict{}, Dirty: true}
 	if err := s.saveState(state); err != nil {
 		_ = drive.Delete(ctx, created.ID)
 		return err
@@ -344,13 +357,14 @@ func (s *Syncer) resume(ctx context.Context) error {
 		return apperr.New(apperr.VaultUnreadable)
 	}
 	s.mu.Lock()
-	if !s.loaded || s.state.Account.RefreshToken != state.Account.RefreshToken {
-		s.state, s.loaded = state, true
-		if s.driveFactory != nil {
-			s.drive = s.driveFactory(ctx, state.Account.RefreshToken)
-		}
+	refreshDrive := !s.loaded || s.state.Account.RefreshToken != state.Account.RefreshToken
+	oldKeys := s.state.EpochKeys
+	s.state, s.loaded = state, true
+	if refreshDrive && s.driveFactory != nil {
+		s.drive = s.driveFactory(ctx, state.Account.RefreshToken)
 	}
 	s.mu.Unlock()
+	zeroKeys(oldKeys)
 	phase, pending := SyncStateSynced, 0
 	if state.Dirty {
 		phase, pending = SyncStatePending, 1
@@ -392,7 +406,13 @@ func (s *Syncer) sync(ctx context.Context) error {
 		s.failed(err)
 		return err
 	}
-	needUpload := changed || state.Base == ""
+	needUpload := changed || state.ForceUpload || state.Base == ""
+	uploaded := false
+	if len(remoteFiles) == 0 && state.Base != "" {
+		reason := SyncFailureRemoved
+		s.updateInfo(SyncStateError, 0, &reason)
+		return nil
+	}
 	if len(remoteFiles) != 0 && remoteFiles[0].Name != state.Base {
 		bytes, err := drive.Get(ctx, remoteFiles[0].ID)
 		if err != nil {
@@ -404,10 +424,17 @@ func (s *Syncer) sync(ctx context.Context) error {
 			s.failed(err)
 			return err
 		}
-		header, remote, openErr := OpenSnapshot(bytes, map[int][]byte{state.Epoch: material.DEK})
+		keys := cloneEpochKeys(state.EpochKeys)
+		keys[state.Epoch] = append([]byte(nil), material.DEK...)
+		header, remote, openErr := OpenSnapshot(bytes, keys)
+		zeroKeys(keys)
 		vault.Zero(material.DEK)
 		vault.Zero(material.KEK)
 		if openErr != nil {
+			if errors.Is(openErr, ErrMissingEpoch) && header.Epoch > state.Epoch {
+				s.updateInfo(SyncStateNeedsPassword, 0, nil)
+				return nil
+			}
 			s.failed(openErr)
 			return openErr
 		}
@@ -424,7 +451,8 @@ func (s *Syncer) sync(ctx context.Context) error {
 			return err
 		}
 		needUpload = needUpload || !sameVersions(merged.Items, remote.Items)
-		local, state.Base, state.Conflicts = merged.Items, remoteFiles[0].Name, merged.Conflicts
+		local, state.Base = merged.Items, remoteFiles[0].Name
+		state.Conflicts = reconcileConflicts(state.Conflicts, merged.Conflicts, merged.Items)
 	}
 	state.Items = itemStates(local)
 	if needUpload {
@@ -451,8 +479,9 @@ func (s *Syncer) sync(ctx context.Context) error {
 			return err
 		}
 		state.Base = name
+		uploaded = true
 	}
-	state.Dirty, state.LastSync = false, s.nowString()
+	state.Dirty, state.ForceUpload, state.LastSync = false, false, s.nowString()
 	if err := s.saveState(state); err != nil {
 		s.failed(err)
 		return err
@@ -460,6 +489,12 @@ func (s *Syncer) sync(ctx context.Context) error {
 	s.mu.Lock()
 	s.state = state
 	s.mu.Unlock()
+	if uploaded {
+		if err := s.pruneSnapshots(ctx, drive); err != nil {
+			s.failed(err)
+			return err
+		}
+	}
 	if len(state.Conflicts) != 0 {
 		s.updateInfo(SyncStateConflict, pending, nil)
 	} else {
@@ -606,11 +641,20 @@ func (s *Syncer) saveState(state persistentSyncState) error {
 	if err != nil {
 		return err
 	}
+	defer vault.Zero(raw)
 	return s.store.SetSyncState(raw)
 }
 func (s *Syncer) nowString() string { return s.options.Now().UTC().Format(time.RFC3339Nano) }
 func validPersistentState(state persistentSyncState) bool {
-	return validOAuthEmail(state.Account.Email) && state.Account.RefreshToken != "" && deviceIDPattern.MatchString(state.DeviceID) && validDeviceName(state.DeviceName) && state.Epoch >= 1 && state.Items != nil && state.Conflicts != nil
+	if !validOAuthEmail(state.Account.Email) || state.Account.RefreshToken == "" || !deviceIDPattern.MatchString(state.DeviceID) || !validDeviceName(state.DeviceName) || state.Epoch < 1 || state.Items == nil || state.Conflicts == nil {
+		return false
+	}
+	for epoch, key := range state.EpochKeys {
+		if epoch < 1 || epoch > state.Epoch || len(key) != vault.KeySize {
+			return false
+		}
+	}
+	return true
 }
 func newDeviceID() (string, error) {
 	var raw [8]byte
@@ -621,6 +665,13 @@ func cloneVector(value VersionVector) VersionVector {
 	result := make(VersionVector, len(value))
 	for key, n := range value {
 		result[key] = n
+	}
+	return result
+}
+func cloneEpochKeys(value map[int][]byte) map[int][]byte {
+	result := make(map[int][]byte, len(value))
+	for epoch, key := range value {
+		result[epoch] = append([]byte(nil), key...)
 	}
 	return result
 }

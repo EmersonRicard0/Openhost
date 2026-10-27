@@ -77,9 +77,49 @@ func (s *Store) SetSyncState(value []byte) error {
 	return err
 }
 
+// ClearSyncState desliga a sincronização sem alterar nenhum conteúdo do cofre.
+func (s *Store) ClearSyncState() error {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	if s.status.State != StateUnlocked {
+		return apperr.New(apperr.VaultLocked)
+	}
+	_, err := s.db.Exec(`DELETE FROM sync_state WHERE id = ?`, syncStateID)
+	return err
+}
+
+// ValidatePasswordChange confere a senha atual e as regras da nova senha sem alterar o cofre.
+// O sincronizador usa esta etapa antes de publicar um chaveiro de época nova.
+func (s *Store) ValidatePasswordChange(current, next, confirmation string) error {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	if s.status.State != StateUnlocked || s.meta == nil {
+		return apperr.New(apperr.VaultLocked)
+	}
+	check, err := unwrap(current, s.meta)
+	if err != nil {
+		return err
+	}
+	Zero(check)
+	return validateNewPassword(next, confirmation)
+}
+
 // Rekey embrulha a nova DEK com password e recifra, numa única transação, todas as linhas
 // secretas e sync_state. A memória só muda depois do commit.
 func (s *Store) Rekey(password string, newDEK []byte) error {
+	return s.rekey(password, newDEK, nil, false)
+}
+
+// RekeySynchronized recifra o cofre e substitui o estado de sincronização na mesma transação.
+// É usado ao rotacionar/adotar uma época para que DEK e epoch nunca fiquem divergentes no disco.
+func (s *Store) RekeySynchronized(password string, newDEK, syncState []byte) error {
+	if len(syncState) == 0 || len(syncState) > syncStateMaxSize {
+		return apperr.New(apperr.InvalidInput)
+	}
+	return s.rekey(password, newDEK, syncState, true)
+}
+
+func (s *Store) rekey(password string, newDEK, replacementState []byte, replaceState bool) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
 	if s.status.State != StateUnlocked {
@@ -102,9 +142,14 @@ func (s *Store) Rekey(password string, newDEK []byte) error {
 			Zero(newKEK)
 		}
 	}()
-	state, err := s.syncStateLocked()
-	if err != nil {
-		return err
+	var state []byte
+	if replaceState {
+		state = append([]byte(nil), replacementState...)
+	} else {
+		state, err = s.syncStateLocked()
+		if err != nil {
+			return err
+		}
 	}
 	defer Zero(state)
 	rows, err := encodeContent(s.content)
@@ -151,7 +196,8 @@ func (s *Store) Rekey(password string, newDEK []byte) error {
 		if err != nil {
 			return fail(err)
 		}
-		if _, err := tx.Exec(`UPDATE sync_state SET sealed = ? WHERE id = ?`, sealed, syncStateID); err != nil {
+		if _, err := tx.Exec(`INSERT INTO sync_state (id, sealed) VALUES (?, ?)
+			ON CONFLICT(id) DO UPDATE SET sealed = excluded.sealed`, syncStateID, sealed); err != nil {
 			return fail(err)
 		}
 	}

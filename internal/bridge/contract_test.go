@@ -30,7 +30,8 @@ var contract = map[string][]string{
 	"ExportService": {"Count", "Export"},
 	"UpdateService": {"Info", "Check", "Download", "Cancel", "Remind", "Skip", "Prefs",
 		"SetPrefs", "RestartNow", "ApplyOnQuit", "LastResult", "OpenDownloadFolder"},
-	"SyncService": {"Info", "Connect", "CancelConnect", "Start", "SyncNow", "SetDeviceName"},
+	"SyncService": {"Info", "Connect", "CancelConnect", "Start", "OpenFromCloud", "SyncNow",
+		"Conflicts", "Resolve", "ProvidePassword", "Versions", "RestoreVersion", "SetDeviceName", "Disconnect"},
 }
 
 func TestBoundServicesMatchContract(t *testing.T) {
