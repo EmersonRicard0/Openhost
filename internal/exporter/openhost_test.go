@@ -29,8 +29,10 @@ func openHostFixture(t *testing.T) (*model.Content, map[string]*model.TerminalPr
 	}
 	keyHostID, passwordHostID := domain.NewID(), domain.NewID()
 	detected := "linux"
+	content.Settings.Environments = append(content.Settings.Environments,
+		model.Environment{ID: "noc", Name: "Operação", Color: model.EnvironmentBlue})
 	content.Hosts = []model.Host{
-		{ID: keyHostID, Label: "OLT Norte", Address: "olt.example", Port: 2222, Username: "ops", AuthMethod: model.AuthKey, CredentialID: model.Ptr(key.ID), GroupID: model.Ptr(childID), LegacyAlgorithms: true, OSIcon: "huawei", DetectedOS: &detected},
+		{ID: keyHostID, Label: "OLT Norte", Address: "olt.example", Port: 2222, Username: "ops", AuthMethod: model.AuthKey, CredentialID: model.Ptr(key.ID), GroupID: model.Ptr(childID), EnvironmentID: model.Ptr("noc"), Tags: []string{"olt", "cliente-x"}, Notes: "VLAN 100", LegacyAlgorithms: true, OSIcon: "huawei", DetectedOS: &detected},
 		{ID: passwordHostID, Label: "Servidor", Address: "srv.example", Port: 22, Username: "root", AuthMethod: model.AuthPassword, CredentialID: model.Ptr(password.ID), GroupID: model.Ptr(rootID), OSIcon: model.OSIconAuto},
 	}
 	content.ForwardRules = []model.ForwardRule{{ID: domain.NewID(), HostID: keyHostID, Label: model.Ptr("Banco"), BindAddress: "127.0.0.1", BindPort: 15432, DestHost: "db.internal", DestPort: 5432}}
@@ -64,6 +66,11 @@ func TestMarshalOpenHostWithoutKeysHasPlainDataAndNoSecrets(t *testing.T) {
 	}
 	if !bytes.Contains(file.Data, []byte(`"legacyAlgorithms":true`)) || !bytes.Contains(file.Data, []byte(`"profile":`)) || !bytes.Contains(file.Data, []byte(`"forwardRules":`)) {
 		t.Fatalf("dados incompletos: %s", file.Data)
+	}
+	if !bytes.Contains(file.Data, []byte(`"tags":["olt","cliente-x"]`)) ||
+		!bytes.Contains(file.Data, []byte(`"notes":"VLAN 100"`)) ||
+		!bytes.Contains(file.Data, []byte(`"environment":{"name":"Operação","color":"blue"}`)) {
+		t.Fatalf("metadados do host ausentes: %s", file.Data)
 	}
 }
 

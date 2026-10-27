@@ -191,7 +191,7 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 						if credentialID != nil || importsAuth {
 							updated.CredentialID = credentialID
 						}
-						applyOpenHostFields(&updated, row, credentialID != nil)
+						applyOpenHostFields(content, &updated, row, credentialID != nil)
 						if updated.CredentialID == nil {
 							result.AskPassword++
 						}
@@ -221,7 +221,7 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 				result.AskPassword++
 			}
 			host := model.Host{ID: domain.NewID(), Label: label, Address: domain.NormalizeAddress(row.Address), Port: row.Port, Username: row.Username, AuthMethod: auth, CredentialID: credentialID, GroupID: groupID, OSIcon: model.OSIconAuto, CreatedAt: now, UpdatedAt: now}
-			applyOpenHostFields(&host, row, credentialID != nil)
+			applyOpenHostFields(content, &host, row, credentialID != nil)
 			if err := collectProfileChange(&host, row, &profileChanges); err != nil {
 				return profileChanges, err
 			}
@@ -248,7 +248,7 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 	return result, nil
 }
 
-func applyOpenHostFields(host *model.Host, row PreviewRow, hasKey bool) {
+func applyOpenHostFields(content *model.Content, host *model.Host, row PreviewRow, hasKey bool) {
 	if row.Extra == nil {
 		return
 	}
@@ -257,6 +257,31 @@ func applyOpenHostFields(host *model.Host, row PreviewRow, hasKey bool) {
 	}
 	if value, ok := row.Extra["osIcon"].(string); ok && domain.ValidOSIcon(value) {
 		host.OSIcon = value
+	}
+	if tags, ok := row.Extra["tags"].([]string); ok {
+		host.Tags = append([]string{}, tags...)
+	}
+	if notes, ok := row.Extra["notes"].(string); ok {
+		host.Notes = notes
+	}
+	if value, present := row.Extra["environment"]; present {
+		host.EnvironmentID = nil
+		if environment, ok := value.(*model.Environment); ok && environment != nil {
+			for _, existing := range content.Settings.Environments {
+				if strings.EqualFold(existing.Name, environment.Name) {
+					host.EnvironmentID = model.Ptr(existing.ID)
+					break
+				}
+			}
+			if host.EnvironmentID == nil && len(content.Settings.Environments) < 12 {
+				created := *environment
+				if created.ID == "" {
+					created.ID = domain.NewID()
+				}
+				content.Settings.Environments = append(content.Settings.Environments, created)
+				host.EnvironmentID = model.Ptr(created.ID)
+			}
+		}
 	}
 	if hasKey {
 		host.AuthMethod = model.AuthKey

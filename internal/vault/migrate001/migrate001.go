@@ -152,6 +152,9 @@ func convert(lc *legacyContent) *model.Content {
 		h.ProfileID = nil
 		h.DetectedOS = nil
 		h.OSIcon = model.OSIconAuto
+		if h.Tags == nil {
+			h.Tags = []string{}
+		}
 		c.Hosts = append(c.Hosts, h)
 	}
 	c.Credentials = append(c.Credentials, lc.Credentials...)

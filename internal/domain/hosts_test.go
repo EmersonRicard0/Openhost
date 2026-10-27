@@ -2,10 +2,12 @@ package domain
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 	"unicode/utf8"
 
+	"shellvault/internal/apperr"
 	"shellvault/internal/model"
 	"shellvault/internal/validate"
 )
@@ -272,5 +274,102 @@ func TestDuplicateLabelLimit(t *testing.T) {
 	cp, _ := DuplicateHost(c, h.ID, t1)
 	if utf8.RuneCountInString(cp.Label) > 100 || !strings.HasSuffix(cp.Label, " (cópia)") {
 		t.Fatalf("rótulo: %q", cp.Label)
+	}
+}
+
+func TestHostMetadataRoundTripAndValidation(t *testing.T) {
+	environmentID := "prod"
+	in := baseInput()
+	in.EnvironmentID = &environmentID
+	in.Tags = []string{"  OLT  ", "Cliente-X"}
+	in.Notes = "VLAN 100\nJanela às 2h"
+	host, err := CreateHost(testContent(), in, t0)
+	mustOK(t, err)
+	if host.EnvironmentID == nil || *host.EnvironmentID != environmentID ||
+		len(host.Tags) != 2 || host.Tags[0] != "OLT" || host.Tags[1] != "Cliente-X" ||
+		host.Notes != in.Notes {
+		t.Fatalf("metadados do host: %+v", host)
+	}
+
+	cases := []struct {
+		name  string
+		field string
+		patch func(*HostInput)
+	}{
+		{name: "21 tags", field: "tags", patch: func(in *HostInput) { in.Tags = make([]string, 21) }},
+		{name: "tag vazia", field: "tags", patch: func(in *HostInput) { in.Tags = []string{"  "} }},
+		{name: "tag longa", field: "tags", patch: func(in *HostInput) { in.Tags = []string{strings.Repeat("á", 33)} }},
+		{name: "tag com controle", field: "tags", patch: func(in *HostInput) { in.Tags = []string{"olt\u0007"} }},
+		{name: "tag repetida", field: "tags", patch: func(in *HostInput) { in.Tags = []string{"OLT", "olt"} }},
+		{name: "nota longa", field: "notes", patch: func(in *HostInput) { in.Notes = strings.Repeat("segredo", 2001) }},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			in := baseInput()
+			tc.patch(&in)
+			_, err := CreateHost(testContent(), in, t0)
+			var appErr *apperr.Error
+			if !errors.As(err, &appErr) || appErr.Code != apperr.InvalidInput ||
+				!strings.Contains(appErr.Detail, tc.field) {
+				t.Fatalf("erro = %#v; esperado campo %q", err, tc.field)
+			}
+			if strings.Contains(appErr.Detail, "segredo") {
+				t.Fatalf("erro revelou conteúdo da nota: %q", appErr.Detail)
+			}
+		})
+	}
+}
+
+func TestUpdateHostMetadataOmittedAndExplicitlyCleared(t *testing.T) {
+	c := testContent()
+	in := baseInput()
+	in.EnvironmentID = model.Ptr("prod")
+	in.Tags = []string{"olt"}
+	in.Notes = "VLAN 100"
+	host, err := CreateHost(c, in, t0)
+	mustOK(t, err)
+
+	var omitted HostInput
+	err = json.Unmarshal([]byte(`{"label":"Servidor","address":"srv.example.com","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"osIcon":"auto"}`), &omitted)
+	mustOK(t, err)
+	updated, err := UpdateHost(c, host.ID, omitted, t1)
+	mustOK(t, err)
+	if updated.EnvironmentID == nil || *updated.EnvironmentID != "prod" || len(updated.Tags) != 1 || updated.Notes != "VLAN 100" {
+		t.Fatalf("campos omitidos não foram preservados: %+v", updated)
+	}
+
+	var cleared HostInput
+	err = json.Unmarshal([]byte(`{"label":"Servidor","address":"srv.example.com","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"osIcon":"auto","environmentId":null,"tags":[],"notes":""}`), &cleared)
+	mustOK(t, err)
+	updated, err = UpdateHost(c, host.ID, cleared, t1)
+	mustOK(t, err)
+	if updated.EnvironmentID != nil || updated.Tags == nil || len(updated.Tags) != 0 || updated.Notes != "" {
+		t.Fatalf("campos explícitos não foram limpos: %+v", updated)
+	}
+}
+
+func TestDuplicateAndViewPreserveHostMetadata(t *testing.T) {
+	c := testContent()
+	in := baseInput()
+	in.EnvironmentID = model.Ptr("prod")
+	in.Tags = []string{"olt", "cliente-x"}
+	in.Notes = "VLAN 100"
+	host, err := CreateHost(c, in, t0)
+	mustOK(t, err)
+	duplicate, err := DuplicateHost(c, host.ID, t1)
+	mustOK(t, err)
+	if duplicate.EnvironmentID == nil || *duplicate.EnvironmentID != "prod" ||
+		len(duplicate.Tags) != 2 || duplicate.Notes != "VLAN 100" {
+		t.Fatalf("cópia perdeu metadados: %+v", duplicate)
+	}
+	duplicate.Tags[0] = "alterada"
+	if c.Hosts[0].Tags[0] != "olt" {
+		t.Fatal("cópia compartilhou o slice de tags com o original")
+	}
+
+	old := model.Host{ID: "antigo"}
+	view := ToHostView(c, old)
+	if view.Tags == nil || view.Notes != "" {
+		t.Fatalf("view antiga não normalizada: %+v", view)
 	}
 }
