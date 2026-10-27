@@ -147,10 +147,23 @@ Como os demais, escolhem arquivos só por diálogo nativo aberto pelo Go e nunca
 privada, passphrase ou senha. A prévia e o último lote importado ficam só em memória e são
 descartados quando o cofre bloqueia.
 
+## UpdateService (007)
+
+Definido em [`specs/007-in-app-update/contracts/bridge-updater.md`](../../007-in-app-update/contracts/bridge-updater.md).
+Sem 🔒: funciona com o cofre bloqueado e não lê nada dele. `Info`, `Check(manual)`, `Download`,
+`Cancel`, `Remind`, `Skip(version)`, `Prefs`/`SetPrefs`, `RestartNow`, `ApplyOnQuit`, `LastResult`,
+`OpenDownloadFolder`. Evento `updates:state`: `{ state, version?, progress?: { received, total },
+reason? }`. Nenhum argumento vira URL ou caminho: o Go só baixa os assets da release escolhida e
+só grava e abre `updates/<versão>` na pasta de dados. A verificação automática roda depois de
+`OnDomReady`, a cada 6 h, e nunca em build de desenvolvimento.
+
 ## TestService (somente build com tag `e2e`)
 
 Não existe no binário de release. `Maximise()`, `Restore()`, `SetSize(w, h)`, `Goroutines()`,
-`SessionCount()`, `ServerSizeOf(sessionId)`. Usado pelos testes E2E (research R18).
+`SessionCount()`, `ServerSizeOf(sessionId)`, `SetUpdateSource(url, pubkeyB64)` e
+`SetInstallKind(kind)` (007). A origem de releases e o formato de instalação também podem vir de
+`SHELLVAULT_E2E_UPDATE_URL`, `SHELLVAULT_E2E_UPDATE_PUBKEY` e `SHELLVAULT_E2E_INSTALL_KIND`, lidos
+ao iniciar. Usado pelos testes E2E (research R18).
 
 ## Smoke (somente build com tag `smoke`, 004)
 

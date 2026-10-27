@@ -98,6 +98,7 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.importService = newImportService(store, s.Context)
 	s.exportService = newExportService(store, s.Context)
 	s.updateService = newUpdateService(dataDir, preferences, s.Context, s.emit)
+	s.updateService.configureForTest()
 	s.updateService.quit = func() {
 		if ctx := s.Context(); ctx != nil {
 			wruntime.Quit(ctx)

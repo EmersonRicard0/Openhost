@@ -97,8 +97,13 @@ export async function skipVersion(): Promise<void> {
 
 export async function savePrefs(patch: Partial<UpdatePrefs>): Promise<AppError | null> {
   const current = useUpdates.getState().prefs ?? { auto: true, prerelease: false };
+  // A caixa muda na hora; se a ponte recusar, volta ao valor anterior.
+  useUpdates.setState({ prefs: { ...current, ...patch } });
   const res = await window.shellvault.updates.setPrefs({ ...current, ...patch });
-  if (!res.ok) return res.error;
+  if (!res.ok) {
+    useUpdates.setState({ prefs: current });
+    return res.error;
+  }
   useUpdates.setState({ prefs: res.value });
   return null;
 }
