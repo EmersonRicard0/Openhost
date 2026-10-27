@@ -7,6 +7,23 @@ import (
 	"shellvault/internal/apperr"
 )
 
+type SyncKeyMaterial struct {
+	KDF KDFParams
+	DEK []byte
+	KEK []byte
+}
+
+func (s *Store) SyncKeyMaterial() (SyncKeyMaterial, error) {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	if s.status.State != StateUnlocked || len(s.dek) != KeySize || len(s.kek) != KeySize || s.meta == nil {
+		return SyncKeyMaterial{}, apperr.New(apperr.VaultLocked)
+	}
+	params := s.meta.kdf()
+	params.Salt = append([]byte(nil), params.Salt...)
+	return SyncKeyMaterial{KDF: params, DEK: append([]byte(nil), s.dek...), KEK: append([]byte(nil), s.kek...)}, nil
+}
+
 const (
 	syncStateID      = 1
 	syncStateMaxSize = 32 << 20
@@ -76,10 +93,15 @@ func (s *Store) Rekey(password string, newDEK []byte) error {
 	}
 	newKey := append([]byte(nil), newDEK...)
 	defer Zero(newKey)
-	newMeta, err := s.newMeta(password, newKey, s.meta.createdAt)
+	newMeta, newKEK, err := s.newMeta(password, newKey, s.meta.createdAt)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if newKEK != nil {
+			Zero(newKEK)
+		}
+	}()
 	state, err := s.syncStateLocked()
 	if err != nil {
 		return err
@@ -137,8 +159,11 @@ func (s *Store) Rekey(password string, newDEK []byte) error {
 		return err
 	}
 	oldKey := s.dek
+	oldKEK := s.kek
 	s.dek = append([]byte(nil), newKey...)
-	s.meta = newMeta
+	s.kek, s.meta = newKEK, newMeta
+	newKEK = nil
 	Zero(oldKey)
+	Zero(oldKEK)
 	return nil
 }

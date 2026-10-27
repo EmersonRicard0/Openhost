@@ -76,6 +76,7 @@ type Store struct {
 	db              *sql.DB
 	status          Status
 	dek             []byte
+	kek             []byte
 	meta            *meta
 	content         *model.Content
 	sigs            map[string]map[string]string
@@ -218,17 +219,17 @@ func validateNewPassword(password, confirmation string) error {
 	return nil
 }
 
-func (s *Store) newMeta(password string, dek []byte, createdAt string) (*meta, error) {
+func (s *Store) newMeta(password string, dek []byte, createdAt string) (*meta, []byte, error) {
 	p := s.kdf(RandomSalt())
 	m := &meta{time: p.Time, memoryKiB: p.MemoryKiB, salt: p.Salt, createdAt: createdAt}
 	kek := DeriveKEK([]byte(password), p)
-	defer Zero(kek)
 	wrapped, err := Seal(kek, dek, m.wrapAD())
 	if err != nil {
-		return nil, err
+		Zero(kek)
+		return nil, nil, err
 	}
 	m.wrappedDEK = wrapped
-	return m, nil
+	return m, kek, nil
 }
 
 func (s *Store) loadMeta() (*meta, error) {
@@ -249,13 +250,19 @@ func (s *Store) loadMeta() (*meta, error) {
 
 // unwrap: senha errada e cabeçalho adulterado dão o mesmo erro (contrato).
 func unwrap(password string, m *meta) ([]byte, error) {
+	dek, kek, err := unwrapKeyMaterial(password, m)
+	Zero(kek)
+	return dek, err
+}
+
+func unwrapKeyMaterial(password string, m *meta) ([]byte, []byte, error) {
 	kek := DeriveKEK([]byte(password), m.kdf())
-	defer Zero(kek)
 	dek, err := Unseal(kek, m.wrappedDEK, m.wrapAD())
 	if err != nil {
-		return nil, apperr.New(apperr.VaultBadPassword)
+		Zero(kek)
+		return nil, nil, apperr.New(apperr.VaultBadPassword)
 	}
-	return dek, nil
+	return dek, kek, nil
 }
 
 func writeMeta(tx *sql.Tx, m *meta, migratedFrom *string) error {
@@ -299,7 +306,7 @@ func (s *Store) create(password, confirmation string, content *model.Content, mi
 		return err
 	}
 	dek := RandomKey()
-	m, err := s.newMeta(password, dek, s.now())
+	m, kek, err := s.newMeta(password, dek, s.now())
 	if err != nil {
 		Zero(dek)
 		return err
@@ -307,9 +314,10 @@ func (s *Store) create(password, confirmation string, content *model.Content, mi
 	sigs, err := s.persist(func(tx *sql.Tx) error { return writeMeta(tx, m, migratedFrom) }, dek, nil, content)
 	if err != nil {
 		Zero(dek)
+		Zero(kek)
 		return err
 	}
-	s.dek, s.meta, s.content, s.sigs = dek, m, content.Clone(), sigs
+	s.dek, s.kek, s.meta, s.content, s.sigs = dek, kek, m, content.Clone(), sigs
 	s.setStatus(Status{State: StateUnlocked})
 	return nil
 }
@@ -329,16 +337,17 @@ func (s *Store) Unlock(password string) error {
 	if err != nil {
 		return s.corrupted()
 	}
-	dek, err := unwrap(password, m)
+	dek, kek, err := unwrapKeyMaterial(password, m)
 	if err != nil {
 		return err
 	}
 	content, sigs, err := loadContent(s.db, dek)
 	if err != nil {
 		Zero(dek)
+		Zero(kek)
 		return s.corrupted()
 	}
-	s.dek, s.meta, s.content, s.sigs = dek, m, content, sigs
+	s.dek, s.kek, s.meta, s.content, s.sigs = dek, kek, m, content, sigs
 	s.setStatus(Status{State: StateUnlocked})
 	return nil
 }
@@ -374,7 +383,8 @@ func (s *Store) Lock() {
 func (s *Store) lockLocked() {
 	wasUnlocked := s.status.State == StateUnlocked
 	Zero(s.dek)
-	s.dek, s.meta, s.content, s.sigs = nil, nil, nil, nil
+	Zero(s.kek)
+	s.dek, s.kek, s.meta, s.content, s.sigs = nil, nil, nil, nil, nil
 	if s.db != nil {
 		_, _ = s.db.Exec(`PRAGMA wal_checkpoint(TRUNCATE)`)
 	}
@@ -398,10 +408,15 @@ func (s *Store) ChangePassword(current, next, confirmation string) error {
 	if err := validateNewPassword(next, confirmation); err != nil {
 		return err
 	}
-	m, err := s.newMeta(next, s.dek, s.meta.createdAt)
+	m, newKEK, err := s.newMeta(next, s.dek, s.meta.createdAt)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if newKEK != nil {
+			Zero(newKEK)
+		}
+	}()
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -413,7 +428,10 @@ func (s *Store) ChangePassword(current, next, confirmation string) error {
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	s.meta = m
+	oldKEK := s.kek
+	s.meta, s.kek = m, newKEK
+	newKEK = nil
+	Zero(oldKEK)
 	return nil
 }
 
@@ -425,7 +443,8 @@ func (s *Store) Erase() error {
 		return apperr.New(apperr.VaultUnreadable)
 	}
 	Zero(s.dek)
-	s.dek, s.meta, s.content, s.sigs = nil, nil, nil, nil
+	Zero(s.kek)
+	s.dek, s.kek, s.meta, s.content, s.sigs = nil, nil, nil, nil, nil
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err

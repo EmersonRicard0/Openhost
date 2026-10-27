@@ -26,10 +26,11 @@ type Size struct {
 }
 
 type TestService struct {
-	ctx             func() context.Context
-	sessions        func() Sessions
-	setUpdateSource func(string, string) error
-	setInstallKind  func(string) error
+	ctx              func() context.Context
+	sessions         func() Sessions
+	setUpdateSource  func(string, string) error
+	setInstallKind   func(string) error
+	setCloudEndpoint func(string) error
 }
 
 func New(
@@ -37,8 +38,9 @@ func New(
 	sessions func() Sessions,
 	setUpdateSource func(string, string) error,
 	setInstallKind func(string) error,
+	setCloudEndpoint func(string) error,
 ) *TestService {
-	return &TestService{ctx: ctx, sessions: sessions, setUpdateSource: setUpdateSource, setInstallKind: setInstallKind}
+	return &TestService{ctx: ctx, sessions: sessions, setUpdateSource: setUpdateSource, setInstallKind: setInstallKind, setCloudEndpoint: setCloudEndpoint}
 }
 
 func (t *TestService) SetUpdateSource(url, pubkeyB64 string) error {
@@ -53,6 +55,13 @@ func (t *TestService) SetInstallKind(kind string) error {
 		return errors.New("update controls unavailable")
 	}
 	return t.setInstallKind(kind)
+}
+
+func (t *TestService) SetCloudEndpoint(url string) error {
+	if t.setCloudEndpoint == nil {
+		return errors.New("cloud controls unavailable")
+	}
+	return t.setCloudEndpoint(url)
 }
 
 func (t *TestService) Maximise() { wruntime.WindowMaximise(t.ctx()) }

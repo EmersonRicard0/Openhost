@@ -2,6 +2,7 @@
 package drivefake
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"sort"
 	"strconv"
 	"strings"
@@ -23,6 +25,9 @@ type Request struct {
 	OrderBy   string
 	PageSize  string
 	Parent    string
+	Code      string
+	Verifier  string
+	Token     string
 }
 
 type storedFile struct {
@@ -111,6 +116,8 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mu.Unlock()
 
 	switch operation {
+	case "auth":
+		s.authorize(w, r)
 	case "list":
 		s.list(w, r)
 	case "get":
@@ -126,10 +133,16 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 	case "update":
 		s.update(w, r)
 	case "token":
-		s.record(Request{Operation: operation})
-		writeJSON(w, http.StatusOK, map[string]any{"access_token": "access", "refresh_token": "refresh", "token_type": "Bearer", "expires_in": 3600, "id_token": "fake.id.token"})
+		_ = r.ParseForm()
+		clientID := r.Form.Get("client_id")
+		claims, _ := json.Marshal(map[string]any{"iss": "https://accounts.google.com", "aud": clientID, "exp": time.Now().Add(time.Hour).Unix(), "email": "usuario@example.com"})
+		header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"RS256","typ":"JWT"}`))
+		idToken := header + "." + base64.RawURLEncoding.EncodeToString(claims) + ".signature"
+		s.record(Request{Operation: operation, Code: r.Form.Get("code"), Verifier: r.Form.Get("code_verifier"), Token: r.Form.Get("refresh_token")})
+		writeJSON(w, http.StatusOK, map[string]any{"access_token": "access", "refresh_token": "refresh", "token_type": "Bearer", "expires_in": 3600, "id_token": idToken})
 	case "revoke":
-		s.record(Request{Operation: operation})
+		_ = r.ParseForm()
+		s.record(Request{Operation: operation, Token: r.Form.Get("token")})
 		w.WriteHeader(http.StatusOK)
 	default:
 		http.NotFound(w, r)
@@ -138,6 +151,8 @@ func (s *Server) serveHTTP(w http.ResponseWriter, r *http.Request) {
 
 func operationOf(r *http.Request) string {
 	switch {
+	case r.URL.Path == "/auth" && r.Method == http.MethodGet:
+		return "auth"
 	case r.URL.Path == "/drive/v3/files" && r.Method == http.MethodGet:
 		return "list"
 	case strings.HasPrefix(r.URL.Path, "/drive/v3/files/") && r.Method == http.MethodGet:
@@ -159,6 +174,20 @@ func operationOf(r *http.Request) string {
 	default:
 		return ""
 	}
+}
+
+func (s *Server) authorize(w http.ResponseWriter, r *http.Request) {
+	s.record(Request{Operation: "auth"})
+	callback, err := url.Parse(r.URL.Query().Get("redirect_uri"))
+	if err != nil || callback.Scheme != "http" || callback.Hostname() != "127.0.0.1" {
+		writeFailure(w, http.StatusBadRequest, "badRedirect")
+		return
+	}
+	query := callback.Query()
+	query.Set("state", r.URL.Query().Get("state"))
+	query.Set("code", "fake-code")
+	callback.RawQuery = query.Encode()
+	http.Redirect(w, r, callback.String(), http.StatusFound)
 }
 
 func (s *Server) record(request Request) {

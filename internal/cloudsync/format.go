@@ -46,7 +46,16 @@ type Keyring struct {
 }
 
 func SealKeyring(password string, params vault.KDFParams, epoch int, keys map[int][]byte) ([]byte, error) {
+	kek := vault.DeriveKEK([]byte(password), params)
+	defer vault.Zero(kek)
+	return SealKeyringWithKEK(kek, params, epoch, keys)
+}
+
+func SealKeyringWithKEK(kek []byte, params vault.KDFParams, epoch int, keys map[int][]byte) ([]byte, error) {
 	if !validKDF(params) || epoch < 1 || len(keys) == 0 {
+		return nil, apperr.New(apperr.InvalidInput)
+	}
+	if len(kek) != vault.KeySize {
 		return nil, apperr.New(apperr.InvalidInput)
 	}
 	encodedKeys := make(map[string]string, len(keys))
@@ -64,8 +73,6 @@ func SealKeyring(password string, params vault.KDFParams, epoch int, keys map[in
 		return nil, err
 	}
 	defer vault.Zero(plain)
-	kek := vault.DeriveKEK([]byte(password), params)
-	defer vault.Zero(kek)
 	sealed, err := vault.Seal(kek, plain, keyringAD(epoch))
 	if err != nil {
 		return nil, err

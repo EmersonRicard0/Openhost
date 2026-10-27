@@ -11,6 +11,7 @@ import (
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/appwin"
+	"shellvault/internal/cloudsync"
 	"shellvault/internal/forwarding"
 	"shellvault/internal/session"
 	"shellvault/internal/sftpx"
@@ -46,6 +47,7 @@ type Services struct {
 	importService     *ImportService
 	exportService     *ExportService
 	updateService     *UpdateService
+	syncService       *SyncService
 	closeGuard        *appwin.CloseGuard
 }
 
@@ -104,6 +106,18 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 			wruntime.Quit(ctx)
 		}
 	}
+	openBrowser := syncBrowserOpener(s.Context)
+	var syncService *SyncService
+	oauth := cloudsync.NewOAuth(openBrowser)
+	syncer := cloudsync.NewSyncer(store, preferences, func(ctx context.Context, token string) *cloudsync.Drive {
+		syncService.mu.Lock()
+		authorizer := syncService.oauth
+		syncService.mu.Unlock()
+		return cloudsync.NewDrive(authorizer.Client(ctx, refreshToken(token)))
+	}, func(info cloudsync.SyncInfo) { s.emit(EventSyncState, info) })
+	syncService = newSyncService(s.Context, openBrowser, oauth, syncer, cloudsync.NewDrive)
+	s.syncService = syncService
+	s.syncService.configureForTest()
 	store.OnStatus(func(status vault.Status) {
 		if status.State != vault.StateUnlocked {
 			s.importService.coordinator.Clear()
@@ -129,7 +143,7 @@ func (s *Services) connectForward(hostID string) (forwarding.Client, error) {
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
 func (s *Services) Bound() []any {
-	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService, s.exportService, s.updateService}
+	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService, s.exportService, s.updateService, s.syncService}
 }
 
 // Context é o contexto do Wails, disponível depois de Startup.
@@ -164,6 +178,7 @@ func (s *Services) BeforeClose(ctx context.Context) bool {
 
 func (s *Services) Shutdown(ctx context.Context) {
 	s.updateService.stop()
+	s.syncService.syncer.Close()
 	s.forwards.CloseAll()
 	s.sessions.CloseAll()
 	_ = s.store.Close()
