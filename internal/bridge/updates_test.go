@@ -223,3 +223,27 @@ func TestUpdateStateEventJSON(t *testing.T) {
 func serverURL(r *http.Request) string {
 	return "http://" + r.Host
 }
+
+func TestUpdateServiceDevelopmentBuildSkipsAutomaticCheck(t *testing.T) {
+	var requests atomic.Int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_, _ = w.Write([]byte(`[]`))
+	}))
+	defer server.Close()
+	_, service := prepareUpdateService(t, server)
+	service.install = updater.Install{Kind: updater.InstallDev}
+
+	if info, err := service.Check(false); err != nil || info.State != UpdateIdle {
+		t.Fatalf("check automático em dev = %+v, %v", info, err)
+	}
+	if got := requests.Load(); got != 0 {
+		t.Fatalf("check automático em dev fez %d requisições", got)
+	}
+	if _, err := service.Check(true); err != nil {
+		t.Fatalf("check manual em dev = %v", err)
+	}
+	if got := requests.Load(); got != 1 {
+		t.Fatalf("check manual em dev fez %d requisições", got)
+	}
+}

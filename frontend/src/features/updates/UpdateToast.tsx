@@ -4,7 +4,7 @@ import { t } from '../../i18n/pt-BR';
 import { isLive, useSessions } from '../../stores/sessions';
 import { remindLater, skipVersion, useUpdates } from '../../stores/updates';
 import { Button } from '../../ui/Button';
-import { ConfirmDialog } from '../../ui/ConfirmDialog';
+import { Dialog } from '../../ui/Dialog';
 import { CloseIcon, CopyIcon } from '../../ui/icons';
 import { toastError } from '../../ui/Toast';
 import { focusTerminal } from '../terminal/terminalRegistry';
@@ -200,18 +200,44 @@ export function UpdateToast() {
         </Button>
       </section>
       {confirm && (
-        <ConfirmDialog
+        <Dialog
           title={t.updates.restartConfirm.title}
-          message={t.updates.restartConfirm.message(liveSessions)}
-          confirmLabel={t.updates.restartConfirm.confirm}
-          onCancel={() => {
+          onClose={() => {
             setConfirm(false);
           }}
-          onConfirm={() => {
+          onSubmit={() => {
             setConfirm(false);
             void run(() => api.restartNow());
           }}
-        />
+          actions={
+            <>
+              <Button
+                onClick={() => {
+                  setConfirm(false);
+                }}
+              >
+                {t.common.cancel}
+              </Button>
+              {!onQuit && (
+                <Button
+                  onClick={() => {
+                    setConfirm(false);
+                    void run(() => api.applyOnQuit()).then(() => {
+                      setOnQuit(true);
+                    });
+                  }}
+                >
+                  {t.updates.applyOnQuit}
+                </Button>
+              )}
+              <Button type="submit" variant="primary" autoFocus>
+                {t.updates.restartConfirm.confirm}
+              </Button>
+            </>
+          }
+        >
+          <p style={{ margin: 0 }}>{t.updates.restartConfirm.message(liveSessions)}</p>
+        </Dialog>
       )}
     </>
   );

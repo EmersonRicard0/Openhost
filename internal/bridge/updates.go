@@ -167,7 +167,11 @@ func (s *UpdateService) Check(manual bool) (UpdateInfo, error) {
 	if err != nil {
 		return UpdateInfo{}, clean(err)
 	}
-	if !manual && !preferences.Updates.Auto {
+	s.mu.RLock()
+	development := s.install.Kind == updater.InstallDev
+	s.mu.RUnlock()
+	// Build de desenvolvimento nunca recebe atualização: a verificação automática nem vai à rede.
+	if !manual && (!preferences.Updates.Auto || development) {
 		return s.Info()
 	}
 	s.mu.RLock()

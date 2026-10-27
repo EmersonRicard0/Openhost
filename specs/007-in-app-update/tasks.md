@@ -41,7 +41,7 @@ real com servidor de releases local.
 - [X] T009 [P] [US1] Frontend: tipos e `window.shellvault.updates` em `frontend/src/bridge/index.ts` e `frontend/src/shared/ipc/api.ts`; store `frontend/src/stores/updates.ts` (+ teste) assinando `updates:state`.
 - [X] T010 [US1] `frontend/src/features/updates/UpdateToast.tsx`: aviso não bloqueante (sem roubar foco do terminal) com versão, selo "versão de teste", notas expansíveis (Markdown simples, sem HTML), "Atualizar", "Lembrar depois", "Pular esta versão"; i18n em `frontend/src/i18n/pt-BR.ts`; acessível (`role="status"`, foco só por Tab/atalho).
 - [X] T011 [US1] Indicador na barra de status (`frontend/src/app/StatusBar.tsx`) enquanto há versão disponível/pronta, que reabre o aviso (FR-708).
-- [ ] T012 [US1] E2e `frontend/tests/e2e/update.spec.ts` com servidor de releases local: cenários 1, 2 e 6 do quickstart.
+- [X] T012 [US1] E2e `frontend/tests/e2e/update.spec.ts` com servidor de releases local: cenários 1, 2 e 6 do quickstart.
 
 ---
 
@@ -51,15 +51,15 @@ real com servidor de releases local.
 
 - [X] T013 [US2] **Go** `Download`, `Cancel`, verificação após o download (T004), estados `downloading/verifying/ready/failed` no `UpdateService`.
 - [X] T014 [US2] **Go** Auxiliar `--apply-update` em `main.go` (antes do Wails) e `internal/updater/apply_{windows,darwin,linux}.go`: manifesto só em `updates/`, reverificação, espera do PID, NSIS `/S`, troca atômica do `.app` a partir do `.dmg`, troca do AppImage, `last-update.json`, reabrir; `RestartNow`, `ApplyOnQuit`, `LastResult` (R4, FR-711–FR-714). Testes da lógica de manifesto/troca com arquivos temporários.
-- [ ] T015 [US2] Frontend: progresso e cancelar no aviso; "Reiniciar para atualizar" com confirmação que conta sessões abertas (`useSessions`) e oferece "Reiniciar agora"/"Atualizar ao fechar"; mensagem de falha por motivo; aviso de sucesso/falha no início seguinte (`LastResult`).
-- [ ] T016 [US2] E2e: cenários 3, 4 e 5 (progresso até "pronto", assinatura inválida recusada, contagem de sessões na confirmação, sem reiniciar de fato).
+- [X] T015 [US2] Frontend: progresso e cancelar no aviso; "Reiniciar para atualizar" com confirmação que conta sessões abertas (`useSessions`) e oferece "Reiniciar agora"/"Atualizar ao fechar"; mensagem de falha por motivo; aviso de sucesso/falha no início seguinte (`LastResult`).
+- [X] T016 [US2] E2e: cenários 3, 4 e 5 (progresso até "pronto", assinatura inválida recusada, contagem de sessões na confirmação, sem reiniciar de fato).
 
 ---
 
 ## Phase 5: User Story 3 - Instalação manual (P2)
 
-- [ ] T017 [US3] Frontend: quando `oneClick` é falso, "Baixar pacote", "Abrir pasta" e o comando com botão de copiar (FR-715); **Go**: `OpenDownloadFolder` no serviço (abre só a pasta `updates/<versão>`).
-- [ ] T018 [US3] E2e: com `install = deb` simulado pelo `TestService`, o aviso mostra o comando e não oferece reiniciar.
+- [X] T017 [US3] Frontend: quando `oneClick` é falso, "Baixar pacote", "Abrir pasta" e o comando com botão de copiar (FR-715); **Go**: `OpenDownloadFolder` no serviço (abre só a pasta `updates/<versão>`).
+- [X] T018 [US3] E2e: com `install = deb` simulado pelo `TestService`, o aviso mostra o comando e não oferece reiniciar.
 
 ---
 
@@ -67,15 +67,15 @@ real com servidor de releases local.
 
 - [X] T019 [US4] `frontend/src/features/updates/UpdateSettings.tsx` na página de Configurações: versão instalada, última verificação, "Procurar atualizações" (com "Você já está na versão mais recente"), "Verificar automaticamente", "Receber versões de teste" (FR-716).
 - [X] T020 [US4] "Procurar atualizações" na paleta (`frontend/src/features/palette/CommandPalette.tsx`) (FR-717).
-- [ ] T021 [US4] E2e: cenário 7 e desligar o automático sem nenhuma requisição.
+- [X] T021 [US4] E2e: cenário 7 e desligar o automático sem nenhuma requisição.
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T022 Atualizar `specs/002-wails-migration/contracts/bridge.md` com o `UpdateService` e o evento.
-- [ ] T023 Revisão de segurança final (contrato §Segurança): conferir com `grep` que nenhum caminho/URL vem do frontend e que só o pacote verificado é executado.
-- [ ] T024 Rodar quickstart §1–§2 e registrar em `specs/007-in-app-update/validation.md`; §3 depende de duas rcs reais assinadas (pendência do dono do projeto: segredo `UPDATE_SIGNING_KEY`).
+- [X] T022 Atualizar `specs/002-wails-migration/contracts/bridge.md` com o `UpdateService` e o evento.
+- [X] T023 Revisão de segurança final (contrato §Segurança): conferir com `grep` que nenhum caminho/URL vem do frontend e que só o pacote verificado é executado.
+- [X] T024 Rodar quickstart §1–§2 e registrar em `specs/007-in-app-update/validation.md`; §3 depende de duas rcs reais assinadas (pendência do dono do projeto: segredo `UPDATE_SIGNING_KEY`).
 - [ ] T025 CI verde nos três sistemas.
 
 ---
