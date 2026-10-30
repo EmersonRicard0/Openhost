@@ -210,6 +210,7 @@ test('tags e notas ficam no host e entram na busca; repetida é recusada (US4)',
     await tags.fill('olt');
     await tags.press('Enter');
     await tags.fill('cliente-x,');
+    await expect(dialog.locator('[data-tag]')).toHaveText(['olt', 'cliente-x']);
     await tags.fill('OLT');
     await tags.press('Enter');
     await expect(dialog).toContainText('Essa tag já está no host.');

@@ -112,9 +112,9 @@ Testes que abrem cofre usam sempre `SHELLVAULT_DATA_DIR` numa pasta temporária.
 
 ## Phase 9: Polish & Cross-Cutting
 
-- [ ] T026 E2e `frontend/tests/e2e/noc-ui.spec.ts` com os seis cenários do quickstart (o de prompt contra o servidor SSH de teste com `PS1='<BNG.PINDORETAMA>'`); rodar também `settings`, `sync`, `update` e `split` para garantir que a região "Configurações" segue funcionando.
-- [ ] T027 Revisão de segurança (plano, Princípio II): validação dos campos novos na ponte, nota fora de logs e mensagens de erro, nada novo saindo sem a sincronização.
-- [ ] T028 Lint, typecheck, `npm test`, `go test ./...`; `specs/009-noc-ui-tweaks/validation.md` com o resultado de cada cenário e SC; nota de versão sobre versões antigas editando host (spec, edge cases).
+- [X] T026 E2e `frontend/tests/e2e/noc-ui.spec.ts` com os seis cenários do quickstart (o de prompt contra o servidor SSH de teste com `PS1='<BNG.PINDORETAMA>'`); rodar também `settings`, `sync`, `update` e `split` para garantir que a região "Configurações" segue funcionando.
+- [X] T027 Revisão de segurança (plano, Princípio II): validação dos campos novos na ponte, nota fora de logs e mensagens de erro, nada novo saindo sem a sincronização.
+- [X] T028 Lint, typecheck, `npm test`, `go test ./...`; `specs/009-noc-ui-tweaks/validation.md` com o resultado de cada cenário e SC; nota de versão sobre versões antigas editando host (spec, edge cases).
 
 ---
 
