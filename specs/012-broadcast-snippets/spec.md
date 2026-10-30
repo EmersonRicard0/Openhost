@@ -98,7 +98,7 @@ confirmação com o nome do host de produção; colar 3 linhas e ver a confirma�
 ### User Story 3 - Salvar comandos e mandar pela paleta (Priority: P1)
 
 O usuário guarda comandos que usa sempre, cada um com um nome e o texto (uma ou mais linhas).
-Pela paleta (Ctrl+K), digita parte do nome ou do texto, escolhe o comando e ele vai para a sessão
+Pela paleta de comandos, digita parte do nome ou do texto, escolhe o comando e ele vai para a sessão
 ativa. Por padrão o comando é só escrito na linha, sem apertar Enter, para o usuário conferir;
 cada comando pode ser marcado para já apertar Enter.
 
@@ -213,7 +213,7 @@ texto, tags e "Executar ao enviar" iguais.
 - Painel do grupo é SFTP: não existe (SFTP não entra em grupos, spec 006).
 - Painel desconectado ou encerrado com o modo ligado: não recebe, mostra "Desconectado — não
   recebe" na faixa; ao reconectar volta a receber se continuar marcado.
-- Atalhos do app (Ctrl+Shift+W, Ctrl+K, troca de aba) não são transmitidos; só o que iria ao
+- Atalhos do app (fechar aba, paleta, troca de aba) não são transmitidos; só o que iria ao
   terminal ativo é replicado.
 - Selecionar texto, rolar e buscar no terminal ativo não afetam os outros painéis.
 - Tamanhos diferentes de painel: cada equipamento recebe as mesmas teclas; a saída de cada um
@@ -228,8 +228,8 @@ texto, tags e "Executar ao enviar" iguais.
 - Comando com `{{` e `}}`: viram `{` e `}` literais, para comandos que usam chaves de verdade.
 - Comando de nome repetido na mesma biblioteca: recusado na criação, sem diferenciar maiúsculas.
 - Comando muito longo ou com caracteres de controle: recusado ao salvar com mensagem.
-- Versão antiga do app abrindo um cofre com comandos: os comandos são mantidos sem aparecer, como
-  as tags e notas na spec 009.
+- Versão antiga do app abrindo um cofre com comandos: mostra o aviso de cofre de versão mais nova
+  que já existe e não apaga nada.
 - Sincronização com um computador de versão antiga: os comandos não se perdem quando o computador
   antigo envia mudanças em hosts.
 
