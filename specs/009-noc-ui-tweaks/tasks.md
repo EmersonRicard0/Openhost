@@ -141,5 +141,5 @@ cenário do quickstart verde antes da próxima.
 
 ## Phase 10: Convergence
 
-- [ ] T029 Mostrar na lista lateral um indicador de sessão aberta no item do host (nas densidades confortável e compacta, com nome acessível) em `frontend/src/features/hosts/HostList.tsx` per FR-915 (partial)
-- [ ] T030 Registrar na spec (ou mover para a feature 012) o "Agrupar com …" pelo menu da aba e a mola ao segurar a aba arrastada, que entraram nesta branch sem requisito per plan: escopo da 009 (unrequested)
+- [X] T029 Mostrar na lista lateral um indicador de sessão aberta no item do host (nas densidades confortável e compacta, com nome acessível) em `frontend/src/features/hosts/HostList.tsx` per FR-915 (partial)
+- [X] T030 Registrar na spec (ou mover para a feature 012) o "Agrupar com …" pelo menu da aba e a mola ao segurar a aba arrastada, que entraram nesta branch sem requisito per plan: escopo da 009 (unrequested)

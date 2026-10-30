@@ -283,6 +283,14 @@ valor e digita a porta nova.
   renomeadas à mão).
 - **FR-926**: A dica da aba MUST continuar mostrando o rótulo e o endereço do host.
 
+**Agrupar com qualquer sessão (correção)**
+
+- **FR-929**: O menu da aba MUST ter "Agrupar com <sessão>" para cada outra sessão ou grupo da
+  barra (exceto SFTP), juntando sem precisar ativar o destino antes; um grupo com 4 painéis aparece
+  desativado. Ao arrastar uma aba, segurá-la 500 ms sobre outra aba MUST ativar aquela sessão, para
+  soltar no terminal dela. Coberto por `tests/e2e/split.spec.ts` ("agrupa com qualquer sessão da
+  barra, não só a ativa").
+
 **Geral**
 
 - **FR-927**: Todos os textos novos MUST estar em português do Brasil e seguir a identidade visual

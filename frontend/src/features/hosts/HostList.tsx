@@ -4,6 +4,7 @@ import type { Result } from '@shared/ipc/result';
 import type { Group, HostView } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
+import { isLive, useSessions } from '../../stores/sessions';
 import { useUi } from '../../stores/ui';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
 import { Menu, type MenuItem } from '../../ui/Menu';
@@ -132,6 +133,13 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
   const collapsedIds = useUi((u) => u.settings?.collapsedGroups);
   const density = useUi((u) => u.settings?.hostDensity ?? 'comfortable');
   const compact = density === 'compact';
+  // Hosts com sessão aberta (FR-915): o item mostra o indicador nas duas densidades.
+  const sessionTabs = useSessions((st) => st.tabs);
+  const liveHosts = useMemo<ReadonlySet<string>>(
+    () =>
+      new Set(sessionTabs.flatMap((tab) => (tab.hostId && isLive(tab.state) ? [tab.hostId] : []))),
+    [sessionTabs],
+  );
   const collapsed = useMemo<ReadonlySet<string>>(() => new Set(collapsedIds), [collapsedIds]);
   const [menu, setMenu] = useState<{ anchor: PopoverAnchor; items: MenuItem[] } | null>(null);
   const [pending, setPending] = useState<Pending | null>(null);
@@ -370,6 +378,15 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
         <span className={s.itemText}>
           <span className={s.itemLabelRow}>
             <span className={s.itemLabel}>{host.label}</span>
+            {liveHosts.has(host.id) && (
+              <span
+                className={s.liveDot}
+                data-live=""
+                role="img"
+                title={t.hosts.sessionOpen}
+                aria-label={t.hosts.sessionOpen}
+              />
+            )}
             {host.legacyAlgorithms && (
               <span
                 className={s.legacyBadge}

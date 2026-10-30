@@ -319,6 +319,15 @@
   min-width: 0;
 }
 
+/* Host com sessão aberta (specs/009, FR-915). */
+.liveDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
 /* Selo de host com algoritmos legados (FR-121, US3-2): cor e texto, não só cor. */
 .legacyBadge {
   display: inline-flex;

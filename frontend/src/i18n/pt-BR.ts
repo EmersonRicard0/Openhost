@@ -261,6 +261,7 @@ export const t = {
       'Para OLTs, roteadores e servidores antigos que só aceitam SHA-1, CBC ou ssh-rsa. Esses algoritmos são fracos: ligue só para equipamentos que não oferecem outra opção.',
     legacyBadge: 'Legado',
     legacyBadgeTitle: 'Usa algoritmos legados (inseguros)',
+    sessionOpen: 'Sessão aberta',
     credential: 'Credencial',
     newPasswordCredential: 'Nova senha…',
     noCredential: 'Selecione…',

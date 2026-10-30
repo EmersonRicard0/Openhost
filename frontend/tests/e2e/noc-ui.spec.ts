@@ -116,6 +116,18 @@ test('a aba ganha o nome do prompt do equipamento, exceto se renomeada (US5)', a
     await acceptHostKey(page);
     await waitConnected(page, 'pw-host');
 
+    // Indicador de sessão aberta no item, também na densidade compacta (FR-915).
+    const live = hostItem(page, 'pw-host').getByRole('img', { name: 'Sessão aberta' });
+    await expect(live).toBeVisible();
+    await (
+      await openSettingsSection(page, 'Aparência')
+    )
+      .getByRole('radio', { name: 'Compacta' })
+      .click();
+    await page.keyboard.press('Control+Shift+W');
+    await expect(live).toBeVisible();
+    expect(await hostItem(page, 'pw-host').evaluate((el) => el.clientHeight)).toBe(28);
+
     await typeInTerminal(page, 'pw-host', "PS1='<BNG.PINDORETAMA>'\r");
     // O nome visível muda; o rótulo do host continua no nome acessível.
     await expect(tab(page, 'pw-host')).toContainText('BNG.PINDORETAMA', { timeout: 5_000 });
