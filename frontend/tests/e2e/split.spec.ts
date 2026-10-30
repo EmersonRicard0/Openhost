@@ -124,6 +124,42 @@ test('arrastar a aba sobre o terminal junta as sessões, sem reconectar, até 4 
   }
 });
 
+test('agrupa com qualquer sessão da barra, não só a ativa', async () => {
+  const app = await launchApp();
+  try {
+    const { page } = app;
+    await createVault(page);
+    const a = await openCmd(page);
+    const b = await openCmd(page);
+    const c = await openCmd(page);
+    const d = await openCmd(page);
+
+    // Com A ativa, segurar a aba de C sobre a de B abre B; soltar ali junta C a B.
+    await tabs(page).nth(0).click();
+    const from = await box(tabs(page).nth(2));
+    const over = await box(tabs(page).nth(1));
+    await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(over.x + over.width / 2, over.y + over.height / 2, { steps: 8 });
+    await expect(page.locator(`[data-session-id="${b}"]`)).toBeVisible();
+    const to = await box(page.locator(`[data-session-id="${b}"]`));
+    await page.mouse.move(to.x + to.width * 0.85, to.y + to.height / 2, { steps: 8 });
+    await page.mouse.up();
+    await expect(pane(page, b)).toBeVisible();
+    await expect(pane(page, c)).toBeVisible();
+    await expect(pane(page, a)).toHaveCount(0);
+
+    // Pelo menu da aba: D entra no grupo de B e C sem ativá-lo antes.
+    await tabs(page).nth(0).click();
+    await tabs(page).nth(2).click({ button: 'right' });
+    await page.getByRole('menuitem', { name: 'Agrupar com Prompt de Comando e mais 1' }).click();
+    for (const id of [b, c, d]) await expect(pane(page, id)).toBeVisible();
+    await expect(tabs(page)).toHaveCount(2);
+  } finally {
+    await app.close();
+  }
+});
+
 test('divisória ajusta os dois terminais e o teclado move o foco entre painéis (US2)', async () => {
   const app = await launchApp();
   try {

@@ -374,6 +374,7 @@ export const t = {
     group: {
       label: (title: string, more: number) => `${title} e mais ${String(more)}`,
       splitOut: 'Separar em nova aba',
+      joinWith: (title: string) => `Agrupar com ${title}`,
       closePane: 'Fechar painel',
       resize: 'Redimensionar painéis',
       focused: (title: string) => `Painel ativo: ${title}`,

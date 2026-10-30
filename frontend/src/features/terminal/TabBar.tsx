@@ -31,6 +31,7 @@ import {
   ChevronLeftIcon,
   CloseIcon,
   KeyboardIcon,
+  MaximiseIcon,
   PlusIcon,
   RenameIcon,
   SettingsIcon,
@@ -38,7 +39,8 @@ import {
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { toastError } from '../../ui/Toast';
 import { closeGroup, closeSession } from './commands';
-import { endDrag, startDrag } from './dragState';
+import { endDrag, startDrag, useDrag } from './dragState';
+import { MAX_PANES } from './layout';
 import { StateIcon } from './StateIcon';
 import s from './terminal.module.css';
 
@@ -80,6 +82,32 @@ const SEND_KEYS: [SendKeysCombo, string][] = [
 /** No macOS o app só captura ⌃Tab; as outras combinações com ⌃ já chegam ao terminal. */
 const SEND_KEYS_MAC: [SendKeysCombo, string][] = [['ctrl+tab', '⌃Tab']];
 
+/** Sessões e grupos com que a aba pode se juntar: qualquer um da barra, não só o ativo. */
+function groupTargets(tab: Tab): MenuItem[] {
+  const { tabs, groups, join } = useSessions.getState();
+  return stripItems(tabs, groups).flatMap((other): MenuItem[] => {
+    const target = other.kind === 'tab' ? other.tab : other.focus;
+    if (target.id === tab.id || target.kind === 'sftp') return [];
+    if (other.kind === 'group' && other.members.some((m) => m.id === tab.id)) return [];
+    const full = other.kind === 'group' && other.members.length >= MAX_PANES;
+    return [
+      {
+        label: t.terminal.group.joinWith(
+          other.kind === 'group'
+            ? t.terminal.group.label(target.title, other.members.length - 1)
+            : target.title,
+        ),
+        icon: <MaximiseIcon />,
+        disabled: full,
+        onSelect: () => {
+          join(tab.id, target.id, 'right');
+          useWorkspace.getState().setView('terminal');
+        },
+      },
+    ];
+  });
+}
+
 function tabMenu(
   tab: Tab,
   platform: Platform,
@@ -89,6 +117,7 @@ function tabMenu(
   const items: MenuItem[] = [
     { label: t.terminal.renameTab, icon: <RenameIcon />, onSelect: startRename },
   ];
+  if (!groupId && tab.kind !== 'sftp') items.push(...groupTargets(tab));
   if (tab.kind !== 'sftp' && isLive(tab.state))
     for (const [combo, label] of platform === 'darwin' ? SEND_KEYS_MAC : SEND_KEYS)
       items.push({
@@ -159,6 +188,13 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
   const [editing, setEditing] = useState(false);
   const [dropTarget, setDropTarget] = useState(false);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  // Segurar uma aba arrastada sobre outra abre aquela sessão, para soltar na área dela.
+  const springTimer = useRef<number | undefined>(undefined);
+  const cancelSpring = () => {
+    window.clearTimeout(springTimer.current);
+    springTimer.current = undefined;
+  };
+  useEffect(() => cancelSpring, []);
   const platform = useUi((u) => u.platform);
   const dark = useUi((u) => u.dark);
   const environment = useHostEnvironment(tab.hostId);
@@ -229,13 +265,27 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
         if (isTabDrag(e.dataTransfer)) {
           e.preventDefault();
           setDropTarget(true);
+          const dragging = useDrag.getState().dragging;
+          if (
+            !active &&
+            springTimer.current === undefined &&
+            dragging &&
+            !members.some((m) => m.id === dragging.id)
+          )
+            springTimer.current = window.setTimeout(() => {
+              springTimer.current = undefined;
+              activate(tab.id);
+              useWorkspace.getState().setView('terminal');
+            }, SPRING_MS);
         }
       }}
       onDragLeave={() => {
         setDropTarget(false);
+        cancelSpring();
       }}
       onDrop={(e) => {
         setDropTarget(false);
+        cancelSpring();
         dropOnStrip(e.dataTransfer, tab.id);
       }}
     >
@@ -298,6 +348,9 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
     </div>
   );
 }
+
+/** Tempo segurando uma aba arrastada sobre outra até abrir aquela sessão. */
+const SPRING_MS = 500;
 
 const TAB_TYPE = 'application/x-shellvault-tab';
 const PANE_TYPE = 'application/x-shellvault-pane';
