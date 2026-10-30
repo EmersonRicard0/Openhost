@@ -1,9 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import type { HostView } from '@shared/model/types';
 import { buildIndex, filterHosts } from './search';
-import { addTag, MAX_TAGS } from './tags';
+import { addTag, MAX_TAGS, splitTags } from './tags';
 
 describe('tags do host (009, FR-916)', () => {
+  it('texto colado com vírgulas vira tags e o resto fica no campo', () => {
+    expect(splitTags(['olt'], 'cliente-x, bng ,pop')).toEqual({
+      tags: ['olt', 'cliente-x', 'bng'],
+      draft: 'pop',
+    });
+    expect(splitTags([], 'a,,b,')).toEqual({ tags: ['a', 'b'], draft: '' });
+    expect(splitTags(['olt'], 'x,OLT,y')).toEqual({
+      tags: ['olt', 'x'],
+      draft: 'OLT,y',
+      error: 'duplicate',
+    });
+  });
+
   it('adiciona sem espaços nas pontas e mantém a ordem', () => {
     expect(addTag(['olt'], '  cliente-x ')).toEqual({ tags: ['olt', 'cliente-x'] });
   });

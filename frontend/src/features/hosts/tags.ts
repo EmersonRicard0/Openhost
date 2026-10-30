@@ -18,3 +18,23 @@ export function addTag(tags: string[], raw: string): { tags: string[] } | { erro
   if (tags.length >= MAX_TAGS) return { error: 'limit' };
   return { tags: [...tags, tag] };
 }
+
+/**
+ * Texto digitado ou colado com vírgulas: cada parte antes da última vírgula vira tag e o que
+ * vem depois fica no campo. Para na primeira recusada, que volta ao campo com o resto.
+ */
+export function splitTags(
+  tags: string[],
+  text: string,
+): { tags: string[]; draft: string; error?: TagError } {
+  const parts = text.split(',');
+  const draft = parts.pop() ?? '';
+  let current = tags;
+  for (const [i, part] of parts.entries()) {
+    const res = addTag(current, part);
+    if ('error' in res)
+      return { tags: current, draft: [...parts.slice(i), draft].join(','), error: res.error };
+    current = res.tags;
+  }
+  return { tags: current, draft };
+}

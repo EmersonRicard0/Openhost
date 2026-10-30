@@ -2,7 +2,7 @@
 import { useId, useState } from 'react';
 import { t } from '../../i18n/pt-BR';
 import { CloseIcon } from '../../ui/icons';
-import { addTag, type TagError } from './tags';
+import { addTag, splitTags, type TagError } from './tags';
 import ui from '../../ui/ui.module.css';
 import s from './hosts.module.css';
 
@@ -66,8 +66,17 @@ export function TagInput({ tags, onChange, error }: TagInputProps) {
           value={draft}
           aria-invalid={message ? true : undefined}
           onChange={(e) => {
-            setProblem(null);
-            setDraft(e.target.value);
+            const value = e.target.value;
+            if (!value.includes(',')) {
+              setProblem(null);
+              setDraft(value);
+              return;
+            }
+            // Vírgula que chegou colando (ou pelo autocompletar) também separa as tags.
+            const res = splitTags(tags, value);
+            setProblem(res.error ?? null);
+            setDraft(res.draft);
+            if (res.tags !== tags) onChange(res.tags);
           }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' || e.key === ',') {
