@@ -136,3 +136,10 @@ Claude: T007, T008 → T014–T016 → T017 → T022–T025 → (Go pronto) T009
 
 MVP: US1 + US2 (as duas P1). Depois US3 e US4, e por fim US5 e US6. Cada história fecha com o
 cenário do quickstart verde antes da próxima.
+
+---
+
+## Phase 10: Convergence
+
+- [ ] T029 Mostrar na lista lateral um indicador de sessão aberta no item do host (nas densidades confortável e compacta, com nome acessível) em `frontend/src/features/hosts/HostList.tsx` per FR-915 (partial)
+- [ ] T030 Registrar na spec (ou mover para a feature 012) o "Agrupar com …" pelo menu da aba e a mola ao segurar a aba arrastada, que entraram nesta branch sem requisito per plan: escopo da 009 (unrequested)
