@@ -1,6 +1,7 @@
 // Ícones do ShellVault: todos do Lucide, pelo wrapper `icon` (FR-169).
 import {
   ArrowLeft,
+  RadioTower,
   CircleAlert,
   Cloud,
   CloudAlert,
@@ -114,3 +115,4 @@ export const DisconnectedIcon = icon(Unplug);
 export const ErrorIcon = icon(CircleAlert);
 export const ExitedIcon = icon(CircleMinus);
 export const DetachIcon = icon(SquareArrowOutUpRight);
+export const BroadcastIcon = icon(RadioTower);

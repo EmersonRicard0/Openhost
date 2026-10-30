@@ -42,6 +42,7 @@ interface Group {
 | ligar (sem painel `prod`) | `broadcast = { excluded: [] }` |
 | ligar (com painel `prod`) | confirmação; aceitar → `{ excluded: [] }`; cancelar → nada |
 | desmarcar / marcar painel | entra / sai de `excluded` |
+| sessão entra no grupo com o modo ligado | entra já em `excluded` (só recebe depois de marcada) |
 | painel passa a `prod` com o modo ligado | entra em `excluded` + aviso |
 | `splitOut(id)`, sessão fecha | `id` sai do grupo e de `excluded` |
 | grupo fica com 1 sessão ou é fechado | grupo some, modo junto |

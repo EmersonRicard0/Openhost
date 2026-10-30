@@ -16,6 +16,13 @@ export function needsConfirm(text: string): boolean {
   return countLines(text) > 1;
 }
 
+/** Limite mais baixo com "Digitar no grupo" ligado: o texto vai a vários equipamentos (FR-1210). */
+const BROADCAST_MAX_CHARS = 200;
+
+export function needsBroadcastConfirm(text: string): boolean {
+  return needsConfirm(text) || text.length > BROADCAST_MAX_CHARS;
+}
+
 /** Torna visíveis os caracteres de controle (ESC, BEL, NUL, Tab…), exceto a quebra de linha. */
 function escapeControls(text: string): string {
   // eslint-disable-next-line no-control-regex -- casar caracteres de controle é o objetivo

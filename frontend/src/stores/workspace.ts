@@ -28,6 +28,8 @@ interface WorkspaceState {
   pendingPaste: PendingPaste | null;
   /** Aba esperando confirmação para fechar (Ctrl+W com conexão ativa). */
   confirmClose: string | null;
+  /** Grupo esperando confirmação para transmitir a painéis de produção (specs/012, FR-1208). */
+  confirmBroadcast: string | null;
   zoomBy: (sessionId: string, delta: number, base: number) => void;
   zoomReset: (sessionId: string) => void;
   setSearchFor: (sessionId: string | null) => void;
@@ -39,6 +41,7 @@ interface WorkspaceState {
   closeSettings: () => void;
   setPendingPaste: (paste: PendingPaste | null) => void;
   setConfirmClose: (sessionId: string | null) => void;
+  setConfirmBroadcast: (groupId: string | null) => void;
 }
 
 export const useWorkspace = create<WorkspaceState>((set, get) => ({
@@ -51,6 +54,7 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   settingsSection: null,
   pendingPaste: null,
   confirmClose: null,
+  confirmBroadcast: null,
   zoomBy(sessionId, delta, base) {
     const current = get().zoom[sessionId] ?? 0;
     const size = Math.min(FONT_MAX, Math.max(FONT_MIN, base + current + delta));
@@ -84,6 +88,9 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   },
   setConfirmClose(confirmClose) {
     set({ confirmClose });
+  },
+  setConfirmBroadcast(confirmBroadcast) {
+    set({ confirmBroadcast });
   },
 }));
 

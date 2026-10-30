@@ -12,11 +12,12 @@ import { useUi } from '../../stores/ui';
 import { useVault } from '../../stores/vault';
 import { fontSizeOf, useWorkspace } from '../../stores/workspace';
 import { ringBell } from './bell';
+import { broadcastTargets, sendFrom } from './broadcast';
 import { attach } from './dataBus';
 import { opensLink, terminalKeyAction } from './keys';
 import { environmentColor } from '../../theme/environments';
 import { useHostEnvironment } from '../hosts/environment';
-import { needsConfirm } from './paste';
+import { needsBroadcastConfirm, needsConfirm } from './paste';
 import { watchPrompt } from './promptTitle';
 import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from './profile';
 import { SearchBar } from './SearchBar';
@@ -32,10 +33,17 @@ async function copySelection(term: Terminal): Promise<boolean> {
   return true;
 }
 
-/** Cola; várias linhas passam antes pela confirmação (FR-144). */
+/**
+ * Cola; várias linhas passam antes pela confirmação (FR-144). Com "Digitar no grupo", o limite é
+ * menor e o diálogo mostra quantos painéis recebem (FR-1210); a colagem sai pelo `onData` e vai a
+ * todos.
+ */
 function pasteText(sessionId: string, term: Terminal, text: string): void {
   if (!text) return;
-  if (needsConfirm(text)) useWorkspace.getState().setPendingPaste({ sessionId, text });
+  const { tabs, groups, activeId } = useSessions.getState();
+  const broadcasting = activeId === sessionId && broadcastTargets(tabs, groups, sessionId).length > 0;
+  if (broadcasting ? needsBroadcastConfirm(text) : needsConfirm(text))
+    useWorkspace.getState().setPendingPaste({ sessionId, text });
   else term.paste(text);
 }
 
@@ -142,23 +150,10 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
         prompt?.schedule();
       });
     });
-    // Uma escrita por vez: o Wails atende cada chamada numa goroutine e teclas rápidas chegariam
-    // fora de ordem. O que for digitado durante a escrita vai junto na próxima.
-    let pending = '';
-    let writing = false;
-    const flush = () => {
-      if (writing || !pending) return;
-      const data = pending;
-      pending = '';
-      writing = true;
-      void api.write(sessionId, data).finally(() => {
-        writing = false;
-        flush();
-      });
-    };
+    // Fila por sessão (writer.ts); com "Digitar no grupo" o painel ativo escreve também nos
+    // painéis marcados (specs/012, FR-1202).
     const onData = term.onData((data) => {
-      pending += data;
-      flush();
+      sendFrom(sessionId, data, useSessions.getState());
     });
     const onBell = term.onBell(() => {
       ringBell(behavior()?.bell ?? 'visual', container.parentElement ?? container);

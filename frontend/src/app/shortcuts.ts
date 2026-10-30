@@ -21,7 +21,8 @@ export type ShortcutAction =
   | 'focusLeft'
   | 'focusRight'
   | 'focusUp'
-  | 'focusDown';
+  | 'focusDown'
+  | 'broadcast';
 
 export interface KeyLike {
   code: string;
@@ -54,6 +55,7 @@ export const ACTIONS: readonly ShortcutAction[] = [
   'focusRight',
   'focusUp',
   'focusDown',
+  'broadcast',
 ];
 
 /** Ações que existem no sistema: "Novo terminal PowerShell" só no Windows. */
@@ -81,6 +83,8 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, readonly Combo[]> = {
   focusRight: ['Ctrl+Alt+ArrowRight'],
   focusUp: ['Ctrl+Alt+ArrowUp'],
   focusDown: ['Ctrl+Alt+ArrowDown'],
+  // Digitar no grupo (specs/012); Ctrl+Shift+B já é a barra lateral.
+  broadcast: ['Ctrl+Shift+G'],
 };
 
 /** Padrões do macOS (contracts/platform.md): ⌘ no lugar de Ctrl+Shift; ⌃Tab continua. */
@@ -101,6 +105,7 @@ export const MAC_DEFAULT_SHORTCUTS: Record<ShortcutAction, readonly Combo[]> = {
   focusRight: ['Alt+Meta+ArrowRight'],
   focusUp: ['Alt+Meta+ArrowUp'],
   focusDown: ['Alt+Meta+ArrowDown'],
+  broadcast: ['Shift+Meta+G'],
 };
 
 export function defaultShortcuts(platform: Platform = 'windows') {

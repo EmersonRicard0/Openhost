@@ -7,6 +7,7 @@ import { useShells } from '../../stores/shells';
 import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
 import {
+  BroadcastIcon,
   ChevronDownIcon,
   ChevronIcon,
   ChevronLeftIcon,
@@ -22,7 +23,13 @@ import {
 } from '../../ui/icons';
 import { connectHost } from '../hosts/connect';
 import { openSftp } from '../sftp/openSftp';
-import { activeTerminalId, focusDir, openSearch, toggleTheme } from '../terminal/commands';
+import {
+  activeTerminalId,
+  focusDir,
+  openSearch,
+  toggleBroadcast,
+  toggleTheme,
+} from '../terminal/commands';
 import { groupOf, useSessions } from '../../stores/sessions';
 import { checkNow, useUpdates } from '../../stores/updates';
 import { toastError, toastInfo } from '../../ui/Toast';
@@ -50,6 +57,7 @@ function useCommands(): Entry[] {
   const focusRightKey = useShortcutLabel('focusRight') ?? '';
   const focusUpKey = useShortcutLabel('focusUp') ?? '';
   const focusDownKey = useShortcutLabel('focusDown') ?? '';
+  const broadcastKey = useShortcutLabel('broadcast') ?? '';
 
   return useMemo(() => {
     const p = t.palette;
@@ -72,7 +80,19 @@ function useCommands(): Entry[] {
       });
     // Grupo ativo: mover o foco entre painéis (specs/006, contracts/ui.md).
     const { groups, activeId } = useSessions.getState();
-    if (activeId && groupOf(groups, activeId)) {
+    const activeGroup = activeId ? groupOf(groups, activeId) : undefined;
+    if (activeGroup) {
+      // Digitar no grupo (specs/012, FR-1201).
+      actions.push({
+        id: 'broadcast',
+        label: activeGroup.broadcast ? t.terminal.broadcast.off : t.terminal.broadcast.on,
+        hint: broadcastKey,
+        group: 'action',
+        icon: <BroadcastIcon />,
+        run: () => {
+          toggleBroadcast(activeGroup.id);
+        },
+      });
       const names = t.settings.shortcutActions;
       actions.push(
         ...(
@@ -180,6 +200,7 @@ function useCommands(): Entry[] {
     powershellKey,
     searchKey,
     focusLeftKey,
+    broadcastKey,
     focusRightKey,
     focusUpKey,
     focusDownKey,

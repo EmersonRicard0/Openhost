@@ -13,6 +13,7 @@ import { subscribeTransfers } from './stores/transfers';
 import { loadUi } from './stores/ui';
 import { loadSync } from './stores/sync';
 import { loadUpdates } from './stores/updates';
+import { subscribeBroadcastSafety } from './features/terminal/broadcastSafety';
 import './styles/fonts.css';
 import './theme/tokens.css';
 import './theme/base.css';
@@ -22,6 +23,7 @@ async function start(): Promise<void> {
   installBridge();
   subscribeData();
   subscribeSessions();
+  subscribeBroadcastSafety();
   subscribeInteractions();
   subscribeTransfers();
   subscribeForwards();

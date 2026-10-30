@@ -188,6 +188,7 @@ export const t = {
       focusRight: 'Focar painel à direita',
       focusUp: 'Focar painel acima',
       focusDown: 'Focar painel abaixo',
+      broadcast: 'Digitar no grupo (ligar / desligar)',
     },
     shortcutDisabled: 'Desativado',
     shortcutChange: (action: string) => `Trocar o atalho de "${action}"`,
@@ -371,6 +372,33 @@ export const t = {
       preview: 'Início do conteúdo',
     },
     sendKeys: (combo: string) => `Enviar ${combo} ao terminal`,
+    broadcast: {
+      toggle: 'Digitar no grupo',
+      on: 'Digitar no grupo: ligar',
+      off: 'Digitar no grupo: desligar',
+      tabSuffix: 'digitando no grupo',
+      sending: (n: number) =>
+        n === 1 ? 'Transmitindo para 1 painel' : `Transmitindo para ${String(n)} painéis`,
+      receiving: 'Recebendo do grupo',
+      production: 'Produção',
+      disconnected: 'Desconectado — não recebe',
+      receive: 'Receber do grupo',
+      prodTitle: 'Digitar em produção?',
+      prodMessage: (n: number) =>
+        n === 1
+          ? 'Este painel é de um host de Produção e vai receber tudo o que você digitar:'
+          : `Estes ${String(n)} painéis são de hosts de Produção e vão receber tudo o que você digitar:`,
+      prodConfirm: 'Transmitir mesmo assim',
+      becameProduction: (label: string) =>
+        `${label} agora é Produção e saiu da transmissão. Marque "Receber do grupo" para incluí-lo.`,
+      pasteTitle: 'Colar no grupo?',
+      pasteMessage: (lines: number, panes: number) =>
+        `${lines === 1 ? 'O texto vai' : `As ${String(lines)} linhas vão`} para este painel e para ${
+          panes === 1 ? 'mais 1 painel' : `mais ${String(panes)} painéis`
+        }.`,
+      pasteTo: (panes: number) => `Vai para ${String(panes + 1)} painéis`,
+      pasteConfirm: 'Colar em todos',
+    },
     group: {
       label: (title: string, more: number) => `${title} e mais ${String(more)}`,
       splitOut: 'Separar em nova aba',

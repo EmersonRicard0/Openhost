@@ -8,13 +8,15 @@ Nomes acessíveis e marcações que os e2e usam.
   ligado, nome da aba com ", digitando no grupo".
 - Paleta: comando "Digitar no grupo: ligar" / "Digitar no grupo: desligar".
 - Atalho configurável `broadcast` (padrão Ctrl+Shift+G / ⇧⌘G; Ctrl+Shift+B já é a barra lateral), sem efeito fora de grupo.
-- Painel que recebe: `data-broadcast="receive"`, faixa `role="status"` com "Recebendo do grupo"
-  (+ " · Produção" no `prod`; "Desconectado — não recebe" sem conexão).
-- Painel ativo: `data-broadcast="send"`, faixa "Transmitindo para N painéis".
+- O cabeçalho do painel (`[data-pane-header]`) vira a faixa, sem mudar a altura do painel:
+  `data-broadcast="receive"` com `role="status"` "Recebendo do grupo" (+ " · Produção" no `prod`;
+  "Desconectado — não recebe" sem conexão); painel desmarcado fica sem `data-broadcast`.
+- Painel ativo: `data-broadcast="send"` no cabeçalho, status "Transmitindo para N painéis".
 - Cabeçalho do painel: checkbox "Receber do grupo" (só com o modo ligado).
 - Confirmação de produção: `dialog` "Digitar em produção?", lista com os rótulos, botões
   "Transmitir mesmo assim" e "Cancelar".
-- Confirmação de colagem: diálogo existente com o texto extra "Vai para N painéis".
+- Confirmação de colagem: `dialog` "Colar no grupo?" com "Vai para N painéis" (N conta o ativo) e
+  botão "Colar em todos".
 
 ## Biblioteca
 

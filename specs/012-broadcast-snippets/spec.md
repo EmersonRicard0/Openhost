@@ -245,8 +245,9 @@ texto, tags e "Executar ao enviar" iguais.
 - **FR-1202**: Com o modo ligado, toda entrada que iria ao terminal do painel ativo (teclas,
   combinações enviadas ao shell e texto colado) MUST ser enviada também a cada outro painel
   marcado do grupo, na mesma ordem e sem esperar a resposta de um para mandar ao outro.
-- **FR-1203**: Ao ligar, todos os painéis do grupo MUST começar marcados. Cada painel MUST ter no
-  cabeçalho um controle para sair e voltar à transmissão sem desligar o modo.
+- **FR-1203**: Ao ligar, todos os painéis do grupo MUST começar marcados; uma sessão que entra no
+  grupo com o modo já ligado MUST começar desmarcada. Cada painel MUST ter no cabeçalho um
+  controle para sair e voltar à transmissão sem desligar o modo.
 - **FR-1204**: Cada painel que recebe MUST mostrar uma faixa de aviso fixa, na cor de destaque da
   marca, com "Recebendo do grupo"; o painel ativo MUST mostrar "Transmitindo para N painéis". A
   aba do grupo MUST mostrar um indicador do modo ligado, com nome acessível.
@@ -267,8 +268,8 @@ texto, tags e "Executar ao enviar" iguais.
 - **FR-1209**: Se um painel passar a ser de Produção com o modo já ligado, ele MUST sair da
   transmissão e o usuário MUST ver um aviso para incluí-lo de novo à mão.
 - **FR-1210**: Com o modo ligado, colar texto com 2 linhas ou mais, ou com mais de 200
-  caracteres, MUST pedir confirmação com o número de painéis que vão receber e até as 5 primeiras
-  linhas do texto. Cancelar não envia nada a nenhum painel, nem ao ativo.
+  caracteres, MUST pedir confirmação com o número de painéis que vão receber e o início do texto
+  (a mesma prévia da colagem normal). Cancelar não envia nada a nenhum painel, nem ao ativo.
 
 **Biblioteca de comandos**
 

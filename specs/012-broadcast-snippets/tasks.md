@@ -30,7 +30,7 @@ numa pasta temporária.
 - [ ] T003 (Codex) `SnippetService` em `internal/bridge/snippets.go` (`List`, `Create`, `Update`, `Remove`, `Duplicate`, contrato em `contracts/bridge.md`), registro em `internal/bridge/services.go` e evento `snippets:changed` após mudança local ou sincronização aplicada. Teste em `internal/bridge` incluindo `VaultLocked` e `NotFound`.
 - [ ] T004 (Codex) Sincronização em `internal/cloudsync/items.go`: item `snippet:<id>` com validação do T001; `DecodeItems` passa a **ignorar e preservar** tipos desconhecidos (sem `rejected`), e `applyVersions` em `syncer.go` só acusa `CloudCorrupt` para item de tipo conhecido inválido (research R6). Testes: ida e volta de snippet, conflito por item, tipo `futuro:1` preservado no snapshot sem erro.
 - [ ] T005 (Codex) OpenHost v3: `exporter.Version = 3` em `internal/exporter/openhost.go` com `snippets: [{name, text, tags, execute}]`; `ExportRequest.includeSnippets` e `ExportCount.snippets` em `internal/bridge/export.go`; `internal/importer/openhost.go` lê v1–v3, prévia com `snippets: [{name, duplicateOf?}]` e decisão `skip | copy` como hosts; versão > 3 → aviso de versão mais nova. Testes de ida e volta, v1/v2 sem comandos e repetidos.
-- [ ] T006 (Codex) Atualizar `specs/002-wails-migration/contracts/bridge.md` com o `SnippetService` e os campos novos; regerar `frontend/wailsjs`; tipos `Snippet`, `SnippetInput` em `frontend/src/shared/model/types.ts` e métodos em `frontend/src/shared/ipc/api.ts`.
+- [ ] T006 (Codex) Atualizar `specs/002-wails-migration/contracts/bridge.md` com o `SnippetService` e os campos novos; regerar `frontend/wailsjs`; aceitar a ação `broadcast` na lista de atalhos válidos de `internal/appwin/preferences.go` (o frontend já tem o atalho Ctrl+Shift+G / Shift+Meta+G); tipos `Snippet`, `SnippetInput` em `frontend/src/shared/model/types.ts` e métodos em `frontend/src/shared/ipc/api.ts`.
 
 ---
 
@@ -38,8 +38,8 @@ numa pasta temporária.
 
 **Checkpoint**: `npm test` e typecheck verdes; digitação normal sem mudança de comportamento.
 
-- [ ] T007 Testes e depois `frontend/src/features/terminal/writer.ts`: `send(sessionId, data)` com uma fila por sessão (uma escrita por vez por sessão, o que chega durante a escrita vai junto na próxima, filas independentes entre sessões) e `drop(sessionId)` ao fechar; `TerminalView.tsx` passa a usar o módulo no lugar de `pending`/`writing` locais.
-- [ ] T008 [P] Chaves de texto da 012 em `frontend/src/i18n/pt-BR.ts` (textos de `contracts/ui.md`).
+- [X] T007 Testes e depois `frontend/src/features/terminal/writer.ts`: `send(sessionId, data)` com uma fila por sessão (uma escrita por vez por sessão, o que chega durante a escrita vai junto na próxima, filas independentes entre sessões) e `drop(sessionId)` ao fechar; `TerminalView.tsx` passa a usar o módulo no lugar de `pending`/`writing` locais.
+- [X] T008 [P] Chaves de texto da 012 em `frontend/src/i18n/pt-BR.ts` (textos de `contracts/ui.md`).
 
 ---
 
@@ -49,9 +49,9 @@ numa pasta temporária.
 
 **Independent Test**: quickstart cenário 1.
 
-- [ ] T009 [US1] Testes e depois `Group.broadcast?: { excluded: string[] }` em `frontend/src/stores/sessions.ts` com `setBroadcast(groupId, on)` e `setReceiving(groupId, sessionId, on)`; `join`, `splitOut`, `closeTab` e o desfazer de grupo tiram o membro que sai de `excluded`, e o modo some com o grupo (tabela de eventos de `data-model.md`). Teste em `sessions.test.ts`.
-- [ ] T010 [US1] `frontend/src/features/terminal/broadcast.ts` (+ teste): `targets(state, activeId)` = "membros do grupo − `a` − `excluded` − painéis não `connected`"; em `TerminalView.tsx`, o `onData` do painel focado com o grupo transmitindo chama `send` para ele e para cada destino.
-- [ ] T011 [US1] Botão "Digitar no grupo" (`aria-pressed`) e `data-broadcast` na aba do grupo em `TabBar.tsx`; ação `broadcast` em `frontend/src/app/shortcuts.ts` (Ctrl+Shift+G / Shift+Meta+G) e comando na paleta; faixas `data-broadcast="send|receive"` com `role="status"` ("Transmitindo para N painéis", "Recebendo do grupo", "Desconectado — não recebe") e checkbox "Receber do grupo" em `PaneHeader.tsx` + `terminal.module.css` na cor de destaque.
+- [X] T009 [US1] Testes e depois `Group.broadcast?: { excluded: string[] }` em `frontend/src/stores/sessions.ts` com `setBroadcast(groupId, on)` e `setReceiving(groupId, sessionId, on)`; `join`, `splitOut`, `closeTab` e o desfazer de grupo tiram o membro que sai de `excluded`, e o modo some com o grupo (tabela de eventos de `data-model.md`). Teste em `sessions.test.ts`.
+- [X] T010 [US1] `frontend/src/features/terminal/broadcast.ts` (+ teste): `targets(state, activeId)` = "membros do grupo − `a` − `excluded` − painéis não `connected`"; em `TerminalView.tsx`, o `onData` do painel focado com o grupo transmitindo chama `send` para ele e para cada destino.
+- [X] T011 [US1] Botão "Digitar no grupo" (`aria-pressed`) e `data-broadcast` na aba do grupo em `TabBar.tsx`; ação `broadcast` em `frontend/src/app/shortcuts.ts` (Ctrl+Shift+G / Shift+Meta+G) e comando na paleta; faixas `data-broadcast="send|receive"` com `role="status"` ("Transmitindo para N painéis", "Recebendo do grupo", "Desconectado — não recebe") e checkbox "Receber do grupo" em `PaneHeader.tsx` + `terminal.module.css` na cor de destaque.
 
 ---
 
@@ -61,9 +61,9 @@ numa pasta temporária.
 
 **Independent Test**: quickstart cenários 2 e 3.
 
-- [ ] T012 [US2] `frontend/src/features/terminal/BroadcastConfirm.tsx`: diálogo "Digitar em produção?" com os rótulos dos painéis cujo host tem `environmentId === 'prod'`, chamado por botão, atalho e paleta antes de `setBroadcast(…, true)`; faixa com " · Produção".
-- [ ] T013 [US2] Painel que passa a `prod` com o modo ligado entra em `excluded` e mostra toast "<rótulo> agora é Produção e saiu da transmissão" (observando o store `hosts` como o FR-906 da 009).
-- [ ] T014 [US2] Testes e depois `needsBroadcastConfirm(text)` em `frontend/src/features/terminal/paste.ts` ("2 linhas ou mais, ou com mais de 200 caracteres"); `pasteText` com o grupo transmitindo usa a regra e o diálogo de colagem existente mostra "Vai para N painéis"; cancelar não envia a ninguém; confirmar envia ao ativo e aos destinos por `send`.
+- [X] T012 [US2] `frontend/src/features/terminal/BroadcastConfirm.tsx`: diálogo "Digitar em produção?" com os rótulos dos painéis cujo host tem `environmentId === 'prod'`, chamado por botão, atalho e paleta antes de `setBroadcast(…, true)`; faixa com " · Produção".
+- [X] T013 [US2] Painel que passa a `prod` com o modo ligado entra em `excluded` e mostra toast "<rótulo> agora é Produção e saiu da transmissão" (observando o store `hosts` como o FR-906 da 009).
+- [X] T014 [US2] Testes e depois `needsBroadcastConfirm(text)` em `frontend/src/features/terminal/paste.ts` ("2 linhas ou mais, ou com mais de 200 caracteres"); `pasteText` com o grupo transmitindo usa a regra e o diálogo de colagem existente mostra "Vai para N painéis"; cancelar não envia a ninguém; confirmar envia ao ativo e aos destinos por `send`.
 
 ---
 
