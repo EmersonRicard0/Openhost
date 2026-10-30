@@ -153,4 +153,10 @@ const size = files.reduce((n, f) => n + (existsSync(f) ? statSync(f).size : 0), 
 console.log(
   `smoke ok em ${seconds} s: ${files.length} arquivos (${(size / 1024).toFixed(0)} KiB) sem segredos legíveis.`,
 );
-rmSync(work, { recursive: true, force: true });
+// No Windows o WebView2 pode segurar arquivos por alguns segundos depois de sair: limpar a pasta
+// temporária não deve reprovar um smoke que já passou.
+try {
+  rmSync(work, { recursive: true, force: true, maxRetries: 10, retryDelay: 500 });
+} catch (err) {
+  console.warn(`aviso: não deu para apagar ${work}: ${err.code ?? err.message}`);
+}

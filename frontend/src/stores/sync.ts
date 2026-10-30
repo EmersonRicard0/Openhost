@@ -8,6 +8,10 @@ import type {
   SyncInfo,
   SyncStartMode,
 } from '@shared/model/types';
+import { useHosts } from './hosts';
+import { useProfiles } from './profiles';
+import { loadUi } from './ui';
+import { useVault } from './vault';
 
 interface SyncState {
   info: SyncInfo | null;
@@ -29,6 +33,21 @@ function setInfo(info: SyncInfo): void {
   useSync.setState({ info });
   // Conflitos novos ou resolvidos em outro lugar: relê a lista (FR-811).
   if (info.conflicts !== before?.conflicts) void refreshConflicts();
+  // Uma troca com a nuvem terminou: o que veio de outro computador (ou de uma restauração) já
+  // está no cofre local, então a interface relê tudo que sincroniza.
+  if (before && info.lastSync && info.lastSync !== before.lastSync) void reloadSynced();
+}
+
+async function reloadSynced(): Promise<void> {
+  if (useVault.getState().status?.state !== 'unlocked' || !useHosts.getState().loaded) return;
+  const profiles = useProfiles.getState();
+  await Promise.all([
+    useHosts.getState().reload(),
+    useVault.getState().loadSettings(),
+    profiles.load(),
+    profiles.reloadSchemes(),
+    loadUi(),
+  ]);
 }
 
 async function refreshConflicts(): Promise<void> {

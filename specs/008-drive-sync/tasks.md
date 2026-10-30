@@ -57,7 +57,7 @@ real com o Drive falso e duas pastas de dados.
 
 - [X] T018 [US2] **Go** `internal/cloudsync/onboarding.go` + testes: `OpenFromCloud(password)` (senha errada ⇒ `VAULT_BAD_PASSWORD` sem gravar; sem nuvem ⇒ `CLOUD_EMPTY`), `Start("replace")` (backup `vault-backup-<data>.db`), `Start("merge")` (recifra com DEK da nuvem via `Rekey`, deduplicação por conteúdo-chave, R6); métodos no `SyncService`.
 - [X] T019 [US2] Frontend: "Usar meu cofre do Google Drive" em `frontend/src/features/vault/CreateVaultScreen.tsx` (conectar → senha da nuvem → abre; `CLOUD_EMPTY` oferece criar cofre novo já ligado); `frontend/src/features/sync/StartChoiceDialog.tsx` ao conectar com cofre local e nuvem com cofre: "Juntar os dois", "Usar o do Drive (o local vira backup)", "Cancelar", com senha da nuvem.
-- [ ] T020 [US2] E2e: cenários 4 e 5 com duas pastas de dados.
+- [X] T020 [US2] E2e: cenários 4 e 5 com duas pastas de dados.
 
 ---
 
@@ -67,7 +67,7 @@ real com o Drive falso e duas pastas de dados.
 
 - [X] T021 [US3] **Go** Conflitos no `syncer` (guardados em `sync_state`, demais itens seguem), `Conflicts()` com segredos mascarados, `Resolve(key, keep)`; troca de senha com sync ligado gera época nova e regrava o chaveiro; outro computador vê `epoch` maior ⇒ `needsPassword` ⇒ `ProvidePassword` (adota DEK nova com `Rekey`); testes com dois syncers no mesmo fake.
 - [X] T022 [US3] Frontend: `frontend/src/features/sync/ConflictDialog.tsx` (lista de conflitos, as duas versões lado a lado por campo, segredos mascarados, "Manter esta"; exclusão mostrada como "Excluído neste/no outro computador") e `NewPasswordDialog.tsx` para `needsPassword`; aviso não bloqueante quando surge conflito.
-- [ ] T023 [US3] E2e: cenários 6 e 7.
+- [X] T023 [US3] E2e: cenários 6 e 7.
 
 ---
 
@@ -75,16 +75,16 @@ real com o Drive falso e duas pastas de dados.
 
 - [X] T024 [US4] **Go** `retention.go` (30 versões/30 dias) + `Versions()`, `RestoreVersion(name)` (nome da última listagem; vira snapshot novo), `Disconnect(deleteCloud)` (revoga, apaga `sync_state`, opcionalmente apaga a nuvem), detecção de nuvem removida (`error{removed}`) e de token revogado (`error{auth}`); testes.
 - [X] T025 [US4] Frontend: `HistoryDialog.tsx` (data, computador, quantidade de itens, "Restaurar" com confirmação) e `DisconnectDialog.tsx` ("Manter cópia no Drive"/"Apagar do Drive"); estados de erro com "Conectar de novo".
-- [ ] T026 [US4] E2e: cenários 8–10.
+- [X] T026 [US4] E2e: cenários 8–10.
 
 ---
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T027 Atualizar `specs/002-wails-migration/contracts/bridge.md` com o `SyncService` e o evento.
-- [ ] T028 Revisão de segurança final (contrato §Segurança): `grep` de que token, senha e DEK não chegam ao frontend nem a logs; listener só em 127.0.0.1; nenhum argumento do frontend vira URL/caminho.
-- [ ] T029 Rodar quickstart §1–§2 e registrar em `specs/008-drive-sync/validation.md`; §3 depende do cliente OAuth do dono do projeto.
-- [ ] T030 CI verde nos três sistemas.
+- [X] T027 Atualizar `specs/002-wails-migration/contracts/bridge.md` com o `SyncService` e o evento.
+- [X] T028 Revisão de segurança final (contrato §Segurança): `grep` de que token, senha e DEK não chegam ao frontend nem a logs; listener só em 127.0.0.1; nenhum argumento do frontend vira URL/caminho.
+- [X] T029 Rodar quickstart §1–§2 e registrar em `specs/008-drive-sync/validation.md`; §3 depende do cliente OAuth do dono do projeto.
+- [X] T030 CI verde nos três sistemas.
 
 ---
 
