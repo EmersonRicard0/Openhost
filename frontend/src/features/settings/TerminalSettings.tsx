@@ -9,11 +9,12 @@ import { useProfiles } from '../../stores/profiles';
 import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import { ConfirmDialog } from '../../ui/ConfirmDialog';
-import { CheckIcon, WarningIcon } from '../../ui/icons';
+import { CheckIcon, MoreIcon, PlusIcon, WarningIcon } from '../../ui/icons';
+import { Menu, type MenuItem } from '../../ui/Menu';
 import { Segmented } from '../../ui/Segmented';
 import { Slider } from '../../ui/Slider';
 import { toastError, toastInfo } from '../../ui/Toast';
-import { applyProfile, cssFontFamily, schemeOf } from '../terminal/profile';
+import { applyProfile, BRAND_SCHEME_ID, cssFontFamily, schemeOf } from '../terminal/profile';
 import { SchemeEditor } from './SchemeEditor';
 import s from './terminalSettings.module.css';
 
@@ -43,6 +44,16 @@ const SCROLLBACK = [1_000, 5_000, 10_000, 50_000, 100_000] as const;
 
 function formatLines(n: number): string {
   return n.toLocaleString('pt-BR');
+}
+
+function availableSchemeName(schemes: ColorScheme[], base: string): string {
+  const names = new Set(schemes.map((item) => item.name));
+  if (!names.has(base)) return base;
+  for (let number = 2; ; number += 1) {
+    const suffix = ` (${String(number)})`;
+    const candidate = base.slice(0, 100 - suffix.length) + suffix;
+    if (!names.has(candidate)) return candidate;
+  }
 }
 
 /** Terminal de amostra: xterm de verdade, sem sessão, com o perfil aplicado a cada mudança. */
@@ -94,10 +105,12 @@ function SchemeCard({
   scheme,
   selected,
   onSelect,
+  onActions,
 }: {
   scheme: ColorScheme;
   selected: boolean;
   onSelect: () => void;
+  onActions: (anchor: HTMLElement) => void;
 }) {
   const [black, red, green, yellow, blue, magenta, cyan] = scheme.ansi;
   const origin =
@@ -107,41 +120,54 @@ function SchemeCard({
         ? tt.imported
         : tt.custom;
   return (
-    <button
-      type="button"
-      role="radio"
-      aria-checked={selected}
-      aria-label={scheme.name}
-      className={s.schemeCard}
-      onClick={onSelect}
-    >
-      <span
-        className={s.schemeSample}
-        style={{ background: scheme.background, color: scheme.foreground }}
+    <div className={s.schemeCard} data-selected={selected || undefined}>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={selected}
+        aria-label={scheme.name}
+        className={s.schemeSelect}
+        onClick={onSelect}
       >
-        <span>
-          <span style={{ color: green }}>noc@olt</span>:<span style={{ color: blue }}>~</span>$ ls
+        <span
+          className={s.schemeSample}
+          style={{ background: scheme.background, color: scheme.foreground }}
+        >
+          <span>
+            <span style={{ color: green }}>noc@olt</span>:<span style={{ color: blue }}>~</span>$ ls
+          </span>
+          <span>
+            <span style={{ color: blue }}>logs</span> <span style={{ color: green }}>run.sh</span>{' '}
+            <span style={{ color: red }}>err</span> <span style={{ color: yellow }}>cfg</span>
+          </span>
+          <span className={s.schemeDots}>
+            {[black, red, green, yellow, blue, magenta, cyan, scheme.foreground].map((color, i) => (
+              <span key={i} style={{ background: color }} />
+            ))}
+          </span>
         </span>
-        <span>
-          <span style={{ color: blue }}>logs</span> <span style={{ color: green }}>run.sh</span>{' '}
-          <span style={{ color: red }}>err</span> <span style={{ color: yellow }}>cfg</span>
+        <span className={s.schemeMeta}>
+          <span className={s.schemeName}>{scheme.name}</span>
+          <span className={s.schemeOrigin}>{origin}</span>
         </span>
-        <span className={s.schemeDots}>
-          {[black, red, green, yellow, blue, magenta, cyan, scheme.foreground].map((color, i) => (
-            <span key={i} style={{ background: color }} />
-          ))}
-        </span>
-      </span>
-      <span className={s.schemeMeta}>
-        <span className={s.schemeName}>{scheme.name}</span>
-        <span className={s.schemeOrigin}>{origin}</span>
-      </span>
-      {selected && (
-        <span className={s.schemeCheck} aria-hidden>
-          <CheckIcon />
-        </span>
-      )}
-    </button>
+        {selected && (
+          <span className={s.schemeCheck} aria-hidden>
+            <CheckIcon />
+          </span>
+        )}
+      </button>
+      <Button
+        variant="ghost"
+        iconOnly
+        className={s.schemeMenu}
+        aria-label={tt.schemeActions(scheme.name)}
+        onClick={(event) => {
+          onActions(event.currentTarget);
+        }}
+      >
+        <MoreIcon />
+      </Button>
+    </div>
   );
 }
 
@@ -167,8 +193,15 @@ export function TerminalSettings({ profile, onChange: update }: TerminalSettings
   const scheme = schemeOf(schemes, profile.colorSchemeId);
   const fonts = loadedFonts.length > 0 ? loadedFonts : FALLBACK_FONTS;
   const font = fonts.find((f) => f.family === profile.fontFamily);
-  const [editing, setEditing] = useState<ColorScheme | null>(null);
+  const [editing, setEditing] = useState<{
+    scheme: ColorScheme;
+    applyOnSave: boolean;
+  } | null>(null);
   const [removing, setRemoving] = useState<ColorScheme | null>(null);
+  const [schemeMenu, setSchemeMenu] = useState<{
+    anchor: HTMLElement;
+    scheme: ColorScheme;
+  } | null>(null);
 
   async function importScheme() {
     const res = await window.shellvault.profiles.importScheme();
@@ -190,10 +223,36 @@ export function TerminalSettings({ profile, onChange: update }: TerminalSettings
     );
   }
 
-  async function duplicate() {
+  function newScheme(source: ColorScheme = scheme) {
+    setEditing({
+      scheme: {
+        ...source,
+        id: '',
+        name: availableSchemeName(schemes, tt.newSchemeName),
+        origin: 'custom',
+        ansi: [...source.ansi],
+      },
+      applyOnSave: true,
+    });
+  }
+
+  function customize(target: ColorScheme) {
+    setEditing({
+      scheme: {
+        ...target,
+        id: '',
+        name: availableSchemeName(schemes, tt.customName(target.name)),
+        origin: 'custom',
+        ansi: [...target.ansi],
+      },
+      applyOnSave: true,
+    });
+  }
+
+  async function duplicate(target: ColorScheme) {
     const res = await window.shellvault.profiles.duplicateScheme(
-      scheme.id,
-      tt.duplicateName(scheme.name),
+      target.id,
+      availableSchemeName(schemes, tt.duplicateName(target.name)),
     );
     if (!res.ok) {
       toastError(res.error);
@@ -201,11 +260,11 @@ export function TerminalSettings({ profile, onChange: update }: TerminalSettings
     }
     await reloadSchemes();
     update({ colorSchemeId: res.value.id });
-    setEditing(res.value);
+    setEditing({ scheme: res.value, applyOnSave: true });
   }
 
-  async function exportScheme() {
-    const res = await window.shellvault.profiles.exportScheme(scheme.id);
+  async function exportScheme(target: ColorScheme) {
+    const res = await window.shellvault.profiles.exportScheme(target.id);
     if (!res.ok) toastError(res.error);
   }
 
@@ -215,7 +274,40 @@ export function TerminalSettings({ profile, onChange: update }: TerminalSettings
       toastError(res.error);
       return;
     }
+    if (profile.colorSchemeId === target.id) update({ colorSchemeId: BRAND_SCHEME_ID });
     await reloadSchemes();
+  }
+
+  function actionsFor(target: ColorScheme): MenuItem[] {
+    const editable = target.origin !== 'builtin';
+    return [
+      {
+        label: editable ? tt.edit : tt.customize,
+        onSelect: () => {
+          if (editable) setEditing({ scheme: target, applyOnSave: false });
+          else customize(target);
+        },
+      },
+      {
+        label: tt.duplicate,
+        onSelect: () => void duplicate(target),
+      },
+      {
+        label: tt.export,
+        onSelect: () => void exportScheme(target),
+      },
+      ...(editable
+        ? [
+            {
+              label: tt.remove,
+              danger: true,
+              onSelect: () => {
+                setRemoving(target);
+              },
+            } satisfies MenuItem,
+          ]
+        : []),
+    ];
   }
 
   const bundled = fonts.filter((f) => f.source === 'bundled');
@@ -233,11 +325,17 @@ export function TerminalSettings({ profile, onChange: update }: TerminalSettings
             {tt.schemes}
           </h3>
           <div className={s.groupActions}>
+            <Button
+              variant="primary"
+              onClick={() => {
+                newScheme();
+              }}
+            >
+              <PlusIcon />
+              {tt.newScheme}
+            </Button>
             <Button variant="ghost" title={tt.importHint} onClick={() => void importScheme()}>
               {tt.import}
-            </Button>
-            <Button variant="ghost" onClick={() => void exportScheme()}>
-              {tt.export}
             </Button>
           </div>
         </div>
@@ -250,32 +348,11 @@ export function TerminalSettings({ profile, onChange: update }: TerminalSettings
               onSelect={() => {
                 update({ colorSchemeId: item.id });
               }}
+              onActions={(anchor) => {
+                setSchemeMenu({ anchor, scheme: item });
+              }}
             />
           ))}
-        </div>
-        <div className={s.groupActions}>
-          {scheme.origin === 'builtin' ? (
-            <Button onClick={() => void duplicate()}>{tt.duplicate}</Button>
-          ) : (
-            <>
-              <Button
-                onClick={() => {
-                  setEditing(scheme);
-                }}
-              >
-                {tt.edit}
-              </Button>
-              <Button onClick={() => void duplicate()}>{tt.duplicate}</Button>
-              <Button
-                variant="danger"
-                onClick={() => {
-                  setRemoving(scheme);
-                }}
-              >
-                {tt.remove}
-              </Button>
-            </>
-          )}
         </div>
       </section>
 
@@ -511,11 +588,14 @@ export function TerminalSettings({ profile, onChange: update }: TerminalSettings
 
       {editing && (
         <SchemeEditor
-          scheme={editing}
+          scheme={editing.scheme}
           onClose={() => {
             setEditing(null);
           }}
-          onSaved={() => void reloadSchemes()}
+          onSaved={(saved) => {
+            void reloadSchemes();
+            if (editing.applyOnSave) update({ colorSchemeId: saved.id });
+          }}
         />
       )}
       {removing && (
@@ -531,6 +611,15 @@ export function TerminalSettings({ profile, onChange: update }: TerminalSettings
             const target = removing;
             setRemoving(null);
             void remove(target);
+          }}
+        />
+      )}
+      {schemeMenu && (
+        <Menu
+          anchor={schemeMenu.anchor}
+          items={actionsFor(schemeMenu.scheme)}
+          onClose={() => {
+            setSchemeMenu(null);
           }}
         />
       )}

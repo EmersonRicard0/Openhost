@@ -10,6 +10,7 @@ import {
 import { t } from '../../i18n/pt-BR';
 import type { Platform, SendKeysCombo } from '@shared/model/types';
 import {
+  accessibleTitle,
   closeTab,
   isLive,
   stripItems,
@@ -17,7 +18,10 @@ import {
   type StripItem,
   type Tab,
 } from '../../stores/sessions';
+import { useHosts } from '../../stores/hosts';
 import { useUi } from '../../stores/ui';
+import { environmentColor } from '../../theme/environments';
+import { useHostEnvironment } from '../hosts/environment';
 import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
 import { useSlidingIndicator } from '../../ui/motion';
@@ -27,13 +31,15 @@ import {
   ChevronLeftIcon,
   CloseIcon,
   KeyboardIcon,
+  MaximiseIcon,
   PlusIcon,
   RenameIcon,
 } from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { toastError } from '../../ui/Toast';
-import { closeActiveTab, closeGroup } from './commands';
-import { endDrag, startDrag } from './dragState';
+import { closeGroup, closeSession } from './commands';
+import { endDrag, startDrag, useDrag } from './dragState';
+import { MAX_PANES } from './layout';
 import { StateIcon } from './StateIcon';
 import s from './terminal.module.css';
 
@@ -75,6 +81,32 @@ const SEND_KEYS: [SendKeysCombo, string][] = [
 /** No macOS o app só captura ⌃Tab; as outras combinações com ⌃ já chegam ao terminal. */
 const SEND_KEYS_MAC: [SendKeysCombo, string][] = [['ctrl+tab', '⌃Tab']];
 
+/** Sessões e grupos com que a aba pode se juntar: qualquer um da barra, não só o ativo. */
+function groupTargets(tab: Tab): MenuItem[] {
+  const { tabs, groups, join } = useSessions.getState();
+  return stripItems(tabs, groups).flatMap((other): MenuItem[] => {
+    const target = other.kind === 'tab' ? other.tab : other.focus;
+    if (target.id === tab.id || target.kind === 'sftp') return [];
+    if (other.kind === 'group' && other.members.some((m) => m.id === tab.id)) return [];
+    const full = other.kind === 'group' && other.members.length >= MAX_PANES;
+    return [
+      {
+        label: t.terminal.group.joinWith(
+          other.kind === 'group'
+            ? t.terminal.group.label(target.title, other.members.length - 1)
+            : target.title,
+        ),
+        icon: <MaximiseIcon />,
+        disabled: full,
+        onSelect: () => {
+          join(tab.id, target.id, 'right');
+          useWorkspace.getState().setView('terminal');
+        },
+      },
+    ];
+  });
+}
+
 function tabMenu(
   tab: Tab,
   platform: Platform,
@@ -84,6 +116,7 @@ function tabMenu(
   const items: MenuItem[] = [
     { label: t.terminal.renameTab, icon: <RenameIcon />, onSelect: startRename },
   ];
+  if (!groupId && tab.kind !== 'sftp') items.push(...groupTargets(tab));
   if (tab.kind !== 'sftp' && isLive(tab.state))
     for (const [combo, label] of platform === 'darwin' ? SEND_KEYS_MAC : SEND_KEYS)
       items.push({
@@ -103,11 +136,45 @@ function tabMenu(
         closeGroup(groupId);
         return;
       }
-      useSessions.getState().activate(tab.id);
-      closeActiveTab();
+      closeSession(tab.id);
     },
   });
   return items;
+}
+
+/** Aba "Configurações" (FR-908): não arrasta, não entra em grupo, fecha sem confirmar. */
+function SettingsTabItem({ active }: { active: boolean }) {
+  const { setView, closeSettings } = useWorkspace();
+  return (
+    <div
+      role="tab"
+      aria-selected={active}
+      tabIndex={active ? 0 : -1}
+      aria-label={t.settings.title}
+      data-settings-tab=""
+      className={`${s.tab} ${active ? s.tabActive : ''} no-drag`}
+      onClick={() => {
+        setView('settings');
+      }}
+      onAuxClick={(e) => {
+        if (e.button === 1) closeSettings();
+      }}
+    >
+      <span className={s.tabTitle}>{t.settings.title}</span>
+      <Button
+        variant="ghost"
+        iconOnly
+        className={s.tabClose}
+        aria-label={t.settings.closeTab}
+        onClick={(e) => {
+          e.stopPropagation();
+          closeSettings();
+        }}
+      >
+        <CloseIcon width={12} height={12} />
+      </Button>
+    </div>
+  );
 }
 
 function TabItem({ item, activeId }: { item: StripItem; activeId: string | null }) {
@@ -119,16 +186,50 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
   const [editing, setEditing] = useState(false);
   const [dropTarget, setDropTarget] = useState(false);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  // Segurar uma aba arrastada sobre outra abre aquela sessão, para soltar na área dela.
+  const springTimer = useRef<number | undefined>(undefined);
+  const cancelSpring = () => {
+    window.clearTimeout(springTimer.current);
+    springTimer.current = undefined;
+  };
+  useEffect(() => cancelSpring, []);
   const platform = useUi((u) => u.platform);
+  const dark = useUi((u) => u.dark);
+  const environment = useHostEnvironment(tab.hostId);
+  const host = useHosts((h) => (tab.hostId ? h.hosts.find((x) => x.id === tab.hostId) : undefined));
+  // Dica: estado e, para hosts, rótulo e destino (FR-926) e ambiente (FR-905).
+  const tooltip = [
+    stateLabel(tab),
+    host && `${host.label} — ${host.username}@${host.address}:${String(host.port)}`,
+    environment && t.hosts.environmentOf(environment.name),
+  ]
+    .filter(Boolean)
+    .join('\n');
+  const name =
+    item.kind === 'group'
+      ? t.terminal.group.label(tab.title, members.length - 1)
+      : tab.title === tab.baseTitle
+        ? tab.title
+        : accessibleTitle(tab);
 
   return (
     <div
       role="tab"
       aria-selected={active}
       tabIndex={active ? 0 : -1}
-      title={stateLabel(tab)}
+      title={tooltip}
       aria-label={
-        item.kind === 'group' ? t.terminal.group.label(tab.title, members.length - 1) : undefined
+        environment
+          ? `${name}, ${t.hosts.environmentOf(environment.name)}`
+          : name === tab.title
+            ? undefined
+            : name
+      }
+      data-environment={environment?.color}
+      style={
+        environment
+          ? { ['--environment' as string]: environmentColor(environment.color, dark) }
+          : undefined
       }
       data-group={item.kind === 'group' ? '' : undefined}
       className={`${s.tab} ${active ? s.tabActive : ''} ${dropTarget ? s.dropBefore : ''} no-drag`}
@@ -162,13 +263,27 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
         if (isTabDrag(e.dataTransfer)) {
           e.preventDefault();
           setDropTarget(true);
+          const dragging = useDrag.getState().dragging;
+          if (
+            !active &&
+            springTimer.current === undefined &&
+            dragging &&
+            !members.some((m) => m.id === dragging.id)
+          )
+            springTimer.current = window.setTimeout(() => {
+              springTimer.current = undefined;
+              activate(tab.id);
+              useWorkspace.getState().setView('terminal');
+            }, SPRING_MS);
         }
       }}
       onDragLeave={() => {
         setDropTarget(false);
+        cancelSpring();
       }}
       onDrop={(e) => {
         setDropTarget(false);
+        cancelSpring();
         dropOnStrip(e.dataTransfer, tab.id);
       }}
     >
@@ -231,6 +346,9 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
     </div>
   );
 }
+
+/** Tempo segurando uma aba arrastada sobre outra até abrir aquela sessão. */
+const SPRING_MS = 500;
 
 const TAB_TYPE = 'application/x-shellvault-tab';
 const PANE_TYPE = 'application/x-shellvault-pane';
@@ -336,15 +454,19 @@ function scrollByPage(bar: HTMLDivElement | null, dir: -1 | 1) {
 }
 
 export function TabBar({ newTabItems, trailing }: TabBarProps) {
-  const { tabs, groups, activeId, activate } = useSessions();
+  const { tabs, groups, activeId: sessionId, activate } = useSessions();
+  const settingsTab = useWorkspace((w) => w.settingsTab);
+  const settingsActive = useWorkspace((w) => w.view === 'settings');
+  // Com as Configurações à frente, nenhuma sessão aparece como ativa (FR-909).
+  const activeId = settingsActive ? null : sessionId;
   const items = stripItems(tabs, groups);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const [listAnchor, setListAnchor] = useState<HTMLElement | null>(null);
   const barRef = useRef<HTMLDivElement>(null);
   // Ordem e títulos mudam a posição da aba ativa sem trocar o id: entram na chave.
-  const layoutKey = `${activeId ?? ''}|${items.map((it) => `${it.id}:${it.kind === 'tab' ? it.tab.title : `${it.focus.title}+${String(it.members.length)}`}`).join('|')}`;
+  const layoutKey = `${settingsActive ? 'settings' : (activeId ?? '')}|${settingsTab ? 's' : ''}|${items.map((it) => `${it.id}:${it.kind === 'tab' ? it.tab.title : `${it.focus.title}+${String(it.members.length)}`}`).join('|')}`;
   const indicator = useSlidingIndicator(barRef, layoutKey, 'x');
-  const overflow = useTabScroll(barRef, activeId);
+  const overflow = useTabScroll(barRef, settingsActive ? 'settings' : activeId);
   const overflowing = overflow.start || overflow.end;
 
   return (
@@ -389,6 +511,7 @@ export function TabBar({ newTabItems, trailing }: TabBarProps) {
         {items.map((item) => (
           <TabItem key={item.id} item={item} activeId={activeId} />
         ))}
+        {settingsTab && <SettingsTabItem active={settingsActive} />}
       </div>
       {overflowing && (
         <>

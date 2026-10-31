@@ -3,9 +3,11 @@ package vault
 import (
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -36,7 +38,7 @@ func sampleHost(id string) model.Host {
 	return model.Host{
 		ID: id, Label: "OLT-Rotulo-Unico", Address: "10.99.88.77", Port: 22,
 		Username: "usuario-unico-xyz", AuthMethod: model.AuthAsk,
-		OSIcon:    model.OSIconAuto,
+		Tags: []string{}, OSIcon: model.OSIconAuto,
 		CreatedAt: "2026-10-23T12:00:00.000Z", UpdatedAt: "2026-10-23T12:00:00.000Z",
 	}
 }
@@ -104,7 +106,7 @@ func TestUnlockLockAndReopen(t *testing.T) {
 		t.Fatal(err)
 	}
 	c, err := s2.Read()
-	if err != nil || len(c.Hosts) != 1 || c.Hosts[0] != sampleHost(hostA) {
+	if err != nil || len(c.Hosts) != 1 || !reflect.DeepEqual(c.Hosts[0], sampleHost(hostA)) {
 		t.Fatalf("conteúdo após reabrir: %+v, %v", c, err)
 	}
 	if c.Settings.KeepaliveSeconds != 30 || c.Settings.ConnectTimeoutSeconds != 15 ||
@@ -126,6 +128,81 @@ func TestReadReturnsCopy(t *testing.T) {
 	c2, _ := s.Read()
 	if c2.Hosts[0].Label != "OLT-Rotulo-Unico" {
 		t.Fatal("Read expôs o estado interno")
+	}
+}
+
+func TestHostMetadataSurvivesReopen(t *testing.T) {
+	dir := t.TempDir()
+	s := openTest(t, dir)
+	if err := s.Create(pw, pw); err != nil {
+		t.Fatal(err)
+	}
+	host := sampleHost(hostA)
+	host.EnvironmentID = model.Ptr("prod")
+	host.Tags = []string{"olt", "cliente-x"}
+	host.Notes = "VLAN 100"
+	if err := s.Mutate(func(c *model.Content) error { c.Hosts = append(c.Hosts, host); return nil }); err != nil {
+		t.Fatal(err)
+	}
+	_ = s.Close()
+
+	s = openTest(t, dir)
+	if err := s.Unlock(pw); err != nil {
+		t.Fatal(err)
+	}
+	content, err := s.Read()
+	if err != nil || len(content.Hosts) != 1 || !reflect.DeepEqual(content.Hosts[0], host) {
+		t.Fatalf("host após reabrir = %+v, %v", content.Hosts, err)
+	}
+}
+
+func TestOlderVaultGetsDefaultEnvironmentsAndEmptyListStaysEmpty(t *testing.T) {
+	dir := t.TempDir()
+	s := openTest(t, dir)
+	if err := s.Create(pw, pw); err != nil {
+		t.Fatal(err)
+	}
+	oldSettings := struct {
+		AutoLockMinutes       *int   `json:"autoLockMinutes"`
+		ConnectTimeoutSeconds int    `json:"connectTimeoutSeconds"`
+		KeepaliveSeconds      int    `json:"keepaliveSeconds"`
+		LegacyDefault         bool   `json:"legacyDefault"`
+		Term                  string `json:"term"`
+	}{model.Ptr(15), 15, 30, false, model.DefaultTerm}
+	plain, err := json.Marshal(oldSettings)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sealed, err := Seal(s.dek, plain, ad("vault_settings", settingsID))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.db.Exec(`UPDATE vault_settings SET sealed = ? WHERE id = ?`, sealed, settingsID); err != nil {
+		t.Fatal(err)
+	}
+	s.Lock()
+	if err := s.Unlock(pw); err != nil {
+		t.Fatal(err)
+	}
+	content, err := s.Read()
+	if err != nil || len(content.Settings.Environments) != 4 {
+		t.Fatalf("ambientes do cofre antigo = %+v, %v", content.Settings.Environments, err)
+	}
+
+	if err := s.Mutate(func(c *model.Content) error {
+		c.Settings.Environments = []model.Environment{}
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	_ = s.Close()
+	s = openTest(t, dir)
+	if err := s.Unlock(pw); err != nil {
+		t.Fatal(err)
+	}
+	content, err = s.Read()
+	if err != nil || content.Settings.Environments == nil || len(content.Settings.Environments) != 0 {
+		t.Fatalf("lista vazia após reabrir = %+v, %v", content.Settings.Environments, err)
 	}
 }
 
@@ -373,7 +450,31 @@ func TestColorSchemeStoreDeleteAndSeedRefresh(t *testing.T) {
 	if err := s.SaveGlobalProfile(global); err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, s.DeleteColorScheme(inUse.ID), apperr.InUse)
+	hostProfile := global
+	hostProfile.ID, hostProfile.Name, hostProfile.IsGlobal = "00000000-0000-4000-8000-0000000000a3", "Host", false
+	if err := putTerminalProfile(s.db, hostProfile); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteColorScheme(inUse.ID); err != nil {
+		t.Fatal(err)
+	}
+	global, err = s.GlobalProfile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if global.ColorSchemeID != BrandSchemeID {
+		t.Fatalf("exclusão não reassociou o perfil ao esquema padrão: %q", global.ColorSchemeID)
+	}
+	hostProfile, err = scanProfile(s.db.QueryRow(
+		`SELECT id, name, is_global, data FROM terminal_profiles WHERE id = ?`, hostProfile.ID,
+	))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hostProfile.ColorSchemeID != BrandSchemeID {
+		t.Fatalf("exclusão não reassociou o perfil do host ao esquema padrão: %q", hostProfile.ColorSchemeID)
+	}
+	wantCode(t, s.DeleteColorScheme(inUse.ID), apperr.NotFound)
 
 	mutated := brandScheme()
 	mutated.Name, mutated.Origin = "Nome antigo", model.SchemeCustom

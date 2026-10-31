@@ -86,6 +86,18 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 	preferences, err := s.preferences.Update(func(preferences *appwin.Preferences) error {
 		for key, raw := range patch {
 			switch key {
+			case "hostDensity":
+				value, ok := raw.(string)
+				if !ok || validate.OneOf(value, "comfortable", "compact") != nil {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.HostDensity = value
+			case "promptTitle":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.PromptTitle = value
 			case "theme":
 				value, ok := raw.(string)
 				if !ok || validate.OneOf(value, "system", "light", "dark") != nil {

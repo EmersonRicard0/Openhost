@@ -113,7 +113,7 @@ func TestExactlyOneGlobalAndHostOverrideLifecycle(t *testing.T) {
 	}
 }
 
-func TestBuiltinSchemeIsImmutableAndSchemeInUseCannotBeRemoved(t *testing.T) {
+func TestBuiltinSchemeIsImmutableAndRemovingCustomFallsBackToBuiltin(t *testing.T) {
 	_, profiles := testProfiles(t)
 	schemes, err := profiles.ListSchemes()
 	if err != nil || len(schemes) == 0 || schemes[0].Origin != model.SchemeBuiltin {
@@ -134,7 +134,16 @@ func TestBuiltinSchemeIsImmutableAndSchemeInUseCannotBeRemoved(t *testing.T) {
 	if _, err := profiles.UpdateGlobal(global); err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, profiles.RemoveScheme(custom.ID), apperr.InUse)
+	if err := profiles.RemoveScheme(custom.ID); err != nil {
+		t.Fatal(err)
+	}
+	global, err = profiles.GetGlobal()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if global.ColorSchemeID != vault.BrandSchemeID {
+		t.Fatalf("perfil global não voltou ao esquema embutido: %q", global.ColorSchemeID)
+	}
 }
 
 func TestImportedSchemeGetsUniqueNameAndUserDuplicatesFail(t *testing.T) {

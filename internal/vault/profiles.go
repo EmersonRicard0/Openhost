@@ -327,31 +327,48 @@ func (s *Store) DeleteColorScheme(id string) error {
 	if s.db == nil {
 		return apperr.New(apperr.VaultUnreadable)
 	}
-	rows, err := s.db.Query(`SELECT id, name, is_global, data FROM terminal_profiles`)
+	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
+	fail := func(err error) error {
+		_ = tx.Rollback()
+		return err
+	}
+	rows, err := tx.Query(`SELECT id, name, is_global, data FROM terminal_profiles`)
+	if err != nil {
+		return fail(err)
+	}
+	var reassigned []model.TerminalProfile
 	for rows.Next() {
 		p, err := scanProfile(rows)
 		if err != nil {
 			_ = rows.Close()
-			return err
+			return fail(err)
 		}
 		if p.ColorSchemeID == id {
-			_ = rows.Close()
-			return apperr.New(apperr.InUse)
+			p.ColorSchemeID = BrandSchemeID
+			reassigned = append(reassigned, p)
 		}
 	}
 	if err := rows.Close(); err != nil {
-		return err
+		return fail(err)
 	}
-	res, err := s.db.Exec(`DELETE FROM color_schemes WHERE id = ?`, id)
+	for _, profile := range reassigned {
+		if err := putTerminalProfile(tx, profile); err != nil {
+			return fail(err)
+		}
+	}
+	res, err := tx.Exec(`DELETE FROM color_schemes WHERE id = ?`, id)
 	if err != nil {
-		return err
+		return fail(err)
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return apperr.New(apperr.NotFound)
+		return fail(apperr.New(apperr.NotFound))
+	}
+	if err := tx.Commit(); err != nil {
+		return err
 	}
 	s.markChanged()
 	return nil

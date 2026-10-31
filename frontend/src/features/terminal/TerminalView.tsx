@@ -6,7 +6,7 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
-import type { Tab } from '../../stores/sessions';
+import { accessibleTitle, useSessions, type Tab } from '../../stores/sessions';
 import { effectiveProfile, useProfiles } from '../../stores/profiles';
 import { useUi } from '../../stores/ui';
 import { useVault } from '../../stores/vault';
@@ -14,7 +14,10 @@ import { fontSizeOf, useWorkspace } from '../../stores/workspace';
 import { ringBell } from './bell';
 import { attach } from './dataBus';
 import { opensLink, terminalKeyAction } from './keys';
+import { environmentColor } from '../../theme/environments';
+import { useHostEnvironment } from '../hosts/environment';
 import { needsConfirm } from './paste';
+import { watchPrompt } from './promptTitle';
 import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from './profile';
 import { SearchBar } from './SearchBar';
 import { registerTerminal } from './terminalRegistry';
@@ -60,6 +63,8 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
   const unlocked = useVault((v) => v.status?.state === 'unlocked');
   const zoom = useWorkspace((w) => w.zoom);
   const searching = useWorkspace((w) => w.searchFor === tab.id);
+  const environment = useHostEnvironment(tab.hostId);
+  const dark = useUi((u) => u.dark);
   useEffect(() => {
     visibleRef.current = visible;
     focusedRef.current = focused;
@@ -125,8 +130,17 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       },
       fit: fitAndResize,
     });
+    // Nome da aba pelo prompt do equipamento, só em SSH (specs/009, FR-922).
+    const prompt =
+      tab.kind === 'ssh'
+        ? watchPrompt(term, (name) => {
+            useSessions.getState().setPromptTitle(sessionId, name);
+          })
+        : null;
     const detach = attach(sessionId, (data) => {
-      term.write(data);
+      term.write(data, () => {
+        prompt?.schedule();
+      });
     });
     // Uma escrita por vez: o Wails atende cada chamada numa goroutine e teclas rápidas chegariam
     // fora de ordem. O que for digitado durante a escrita vai junto na próxima.
@@ -224,12 +238,13 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       onData.dispose();
       onBell.dispose();
       detach();
+      prompt?.dispose();
       unregisterProbe();
       term.dispose();
       termRef.current = null;
       fitNowRef.current = () => undefined;
     };
-  }, [tab.id, tab.hostId]);
+  }, [tab.id, tab.hostId, tab.kind]);
 
   // WebGL só nos terminais visíveis (limite de contextos do Chromium; research R4): no máximo os
   // quatro painéis de um grupo.
@@ -301,8 +316,9 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       className={`${s.view} ${pane ? s.pane : ''} ${visible ? '' : s.hidden}`}
       style={pane?.style}
       role={pane ? 'group' : 'tabpanel'}
-      aria-label={tab.title}
+      aria-label={accessibleTitle(tab)}
       data-session-id={tab.id}
+      data-environment={environment?.color}
       data-pane={pane ? '' : undefined}
       data-focused={pane && focused ? '' : undefined}
       onPointerDownCapture={(e) => {
@@ -318,7 +334,11 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
           sem descontar o padding e cortaria a última linha. */}
       <div
         className={`${s.frame} solid`}
+        data-environment={environment?.color}
         style={{
+          ['--environment' as string]: environment
+            ? environmentColor(environment.color, dark)
+            : undefined,
           padding: profile.padding,
           background,
           backdropFilter:

@@ -13,6 +13,7 @@ import {
   type Side,
 } from '../features/terminal/layout';
 import { dropInteractions } from './interactions';
+import { useUi } from './ui';
 
 export interface Tab {
   id: string;
@@ -25,6 +26,12 @@ export interface Tab {
   exitCode: number | null;
   /** RTT do keepalive SSH (FR-172); null antes da primeira medição e em shells locais. */
   latencyMs: number | null;
+  /** Título de quando a aba abriu (rótulo do host ou do shell). */
+  baseTitle: string;
+  /** Renomeada pelo usuário: o prompt não muda mais o título (FR-924). */
+  manualTitle: boolean;
+  /** Nome lido do prompt do equipamento (FR-922). */
+  promptTitle: string | null;
 }
 
 /** Até 4 sessões de terminal na mesma aba (specs/006). Só em memória. */
@@ -45,7 +52,14 @@ interface SessionsState {
   /** Sessão com o teclado; num grupo, o painel ativo. */
   activeId: string | null;
   groups: Record<string, Group>;
-  add: (tab: Omit<Tab, 'reason' | 'exitCode' | 'latencyMs'>) => void;
+  /** Preferência "Nome da aba pelo prompt" (FR-925). */
+  promptTitles: boolean;
+  add: (
+    tab: Omit<
+      Tab,
+      'reason' | 'exitCode' | 'latencyMs' | 'baseTitle' | 'manualTitle' | 'promptTitle'
+    >,
+  ) => void;
   setState: (
     id: string,
     state: SessionState,
@@ -54,6 +68,8 @@ interface SessionsState {
     latencyMs?: number | null,
   ) => void;
   rename: (id: string, title: string) => void;
+  setPromptTitle: (id: string, name: string | null) => void;
+  setPromptTitles: (enabled: boolean) => void;
   /** Move a aba `id` para a posição de `beforeId` (ou para o fim). */
   reorder: (id: string, beforeId: string | null) => void;
   close: (id: string) => void;
@@ -64,6 +80,11 @@ interface SessionsState {
   splitOut: (id: string) => void;
   /** Troca a árvore de um grupo (proporções das divisórias). */
   setLayout: (groupId: string, root: LayoutNode) => void;
+}
+
+/** Nome acessível da aba: com nome vindo do prompt, leva junto o rótulo do host (FR-926). */
+export function accessibleTitle(tab: Pick<Tab, 'title' | 'baseTitle'>): string {
+  return tab.title === tab.baseTitle ? tab.title : `${tab.title} — ${tab.baseTitle}`;
 }
 
 export function groupOf(groups: Record<string, Group>, sessionId: string): Group | undefined {
@@ -129,9 +150,12 @@ export const useSessions = create<SessionsState>((set, get) => ({
   tabs: [],
   activeId: null,
   groups: {},
+  promptTitles: true,
   add(tab) {
+    const extra = { reason: null, exitCode: null, latencyMs: null };
+    const naming = { baseTitle: tab.title, manualTitle: false, promptTitle: null };
     set({
-      tabs: [...get().tabs, { ...tab, reason: null, exitCode: null, latencyMs: null }],
+      tabs: [...get().tabs, { ...tab, ...extra, ...naming }],
       activeId: tab.id,
     });
   },
@@ -143,7 +167,29 @@ export const useSessions = create<SessionsState>((set, get) => ({
   rename(id, title) {
     const clean = title.trim();
     if (!clean) return;
-    set({ tabs: get().tabs.map((t) => (t.id === id ? { ...t, title: clean.slice(0, 100) } : t)) });
+    set({
+      tabs: get().tabs.map((t) =>
+        t.id === id ? { ...t, title: clean.slice(0, 100), manualTitle: true } : t,
+      ),
+    });
+  },
+  setPromptTitle(id, name) {
+    const on = get().promptTitles;
+    set({
+      tabs: get().tabs.map((t) => {
+        if (t.id !== id || t.promptTitle === name) return t;
+        const title = t.manualTitle ? t.title : (on && name) || t.baseTitle;
+        return { ...t, promptTitle: name, title };
+      }),
+    });
+  },
+  setPromptTitles(promptTitles) {
+    set({
+      promptTitles,
+      tabs: get().tabs.map((t) =>
+        t.manualTitle ? t : { ...t, title: (promptTitles && t.promptTitle) || t.baseTitle },
+      ),
+    });
   },
   reorder(id, beforeId) {
     const { tabs, groups } = get();
@@ -242,6 +288,11 @@ let subscribed = false;
 export function subscribeSessions(): void {
   if (subscribed) return;
   subscribed = true;
+  // "Nome da aba pelo prompt" (specs/009, FR-925): desligar volta as abas ao rótulo do host.
+  useUi.subscribe((ui, prev) => {
+    const on = ui.settings?.promptTitle !== false;
+    if (on !== (prev.settings?.promptTitle !== false)) useSessions.getState().setPromptTitles(on);
+  });
   window.shellvault.sessions.onState((e) => {
     useSessions
       .getState()

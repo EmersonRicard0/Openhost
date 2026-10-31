@@ -50,6 +50,7 @@ const (
 	WarningLabelRepeated    = "LABEL_REPEATED"
 	WarningTokenUnsupported = "TOKEN_UNSUPPORTED"
 	WarningLineUnreadable   = "LINE_UNREADABLE"
+	WarningEnvironmentLimit = "ENVIRONMENT_LIMIT"
 )
 
 type Warning struct {

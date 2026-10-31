@@ -15,7 +15,9 @@ import { toastError } from '../../ui/Toast';
 import { leaves, neighbor, type Side } from './layout';
 import { openLocal } from './openLocal';
 
+/** Com a aba "Configurações" à frente, nenhuma sessão recebe atalhos de terminal (FR-909). */
 function activeTab() {
+  if (useWorkspace.getState().view === 'settings') return null;
   const { tabs, activeId } = useSessions.getState();
   return tabs.find((tab) => tab.id === activeId) ?? null;
 }
@@ -60,8 +62,12 @@ export function closeGroup(groupId: string): void {
   else for (const id of members) void closeTab(id);
 }
 
-/** Fecha a aba ativa (num grupo, o painel ativo). */
+/** Fecha a aba ativa (num grupo, o painel ativo); com as Configurações à frente, fecha elas. */
 export function closeActiveTab(): void {
+  if (useWorkspace.getState().view === 'settings') {
+    useWorkspace.getState().closeSettings();
+    return;
+  }
   const tab = activeTab();
   if (tab) closeSession(tab.id);
 }
@@ -80,6 +86,7 @@ export function cycleTab(step: 1 | -1): void {
 
 /** Painel vizinho do ativo na direção pedida, dentro do grupo (FR-607). */
 export function focusDir(side: Side): void {
+  if (useWorkspace.getState().view === 'settings') return;
   const { groups, activeId, activate } = useSessions.getState();
   const group = activeId ? groupOf(groups, activeId) : undefined;
   if (!group || !activeId) return;

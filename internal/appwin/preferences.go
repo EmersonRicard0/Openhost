@@ -64,6 +64,8 @@ type Preferences struct {
 	Bell               string            `json:"bell"`
 	BoldBright         bool              `json:"boldBright"`
 	AutoReconnect      bool              `json:"autoReconnect"`
+	HostDensity        string            `json:"hostDensity"`
+	PromptTitle        bool              `json:"promptTitle"`
 	Updates            UpdatePrefs       `json:"updates"`
 }
 
@@ -84,6 +86,8 @@ func DefaultPreferences() Preferences {
 		Bell:               "visual",
 		BoldBright:         true,
 		AutoReconnect:      false,
+		HostDensity:        "comfortable",
+		PromptTitle:        true,
 		Updates:            UpdatePrefs{Auto: true},
 	}
 }
@@ -193,6 +197,11 @@ func normalizedPreferences(preferences Preferences) Preferences {
 	case "off", "sound", "visual":
 	default:
 		preferences.Bell = defaults.Bell
+	}
+	switch preferences.HostDensity {
+	case "comfortable", "compact":
+	default:
+		preferences.HostDensity = defaults.HostDensity
 	}
 	preferences.Updates = normalizedUpdatePrefs(preferences.Updates)
 	return preferences

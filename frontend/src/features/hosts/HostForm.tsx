@@ -10,10 +10,15 @@ import { Checkbox } from '../../ui/Checkbox';
 import { Dialog } from '../../ui/Dialog';
 import { NumberField } from '../../ui/NumberField';
 import { Select } from '../../ui/Select';
-import { TextField } from '../../ui/TextField';
+import { TextAreaField, TextField } from '../../ui/TextField';
 import { WarningIcon } from '../../ui/icons';
 import { OS_OPTIONS, OsLogo, osLabel } from '../../ui/osIcons';
 import { toastError } from '../../ui/Toast';
+import { useUi } from '../../stores/ui';
+import { environmentColor } from '../../theme/environments';
+import { environmentsOf } from './environment';
+import { MAX_NOTES, runeCount } from './tags';
+import { TagInput } from './TagInput';
 import { HostTerminalDialog } from './HostTerminalDialog';
 import s from './hosts.module.css';
 
@@ -50,6 +55,11 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
   const [osIcon, setOsIcon] = useState<OsId | 'auto'>(host?.osIcon ?? 'auto');
   const [legacyChoice, setLegacy] = useState<boolean | null>(host?.legacyAlgorithms ?? null);
   const legacy = legacyChoice ?? legacyDefault;
+  const environments = environmentsOf(useVault((v) => v.settings));
+  const dark = useUi((u) => u.dark);
+  const [environmentId, setEnvironmentId] = useState(host?.environmentId ?? NONE);
+  const [tags, setTags] = useState<string[]>(host?.tags ?? []);
+  const [notes, setNotes] = useState(host?.notes ?? '');
   const [busy, setBusy] = useState(false);
   const [editingProfile, setEditingProfile] = useState(false);
   const hasOwnProfile = useProfiles((p) => (host ? Boolean(p.overrides[host.id]) : false));
@@ -62,8 +72,8 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
   }, [hostId, loadOverride]);
 
   useEffect(() => {
-    if (!host) void loadVaultSettings();
-  }, [host, loadVaultSettings]);
+    void loadVaultSettings();
+  }, [loadVaultSettings]);
 
   const kind = method === 'key' ? 'key' : 'password';
   const options = [
@@ -82,6 +92,7 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
     address.trim() !== '' &&
     username.trim() !== '' &&
     portValid &&
+    runeCount(notes) <= MAX_NOTES &&
     (!needsCredential || (selected === NEW_PASSWORD ? newPassword !== '' : selected !== NONE));
 
   async function submit() {
@@ -107,6 +118,9 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
       groupId: host?.groupId ?? null,
       legacyAlgorithms: legacy,
       osIcon,
+      environmentId: environments.some((e) => e.id === environmentId) ? environmentId : null,
+      tags,
+      notes,
     };
     const res = host
       ? await window.shellvault.hosts.update(host.id, input)
@@ -163,6 +177,24 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
           ]}
           onChange={setOsIcon}
         />
+        <Select
+          label={t.hosts.environment}
+          value={environments.some((e) => e.id === environmentId) ? environmentId : NONE}
+          options={[
+            { value: NONE, label: t.hosts.environmentNone },
+            ...environments.map((e) => ({
+              value: e.id,
+              label: e.name,
+              icon: (
+                <span
+                  className={s.environmentDot}
+                  style={{ ['--environment' as string]: environmentColor(e.color, dark) }}
+                />
+              ),
+            })),
+          ]}
+          onChange={setEnvironmentId}
+        />
         <div className={s.row}>
           <TextField
             label={t.hosts.address}
@@ -179,6 +211,8 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             value={port}
             error={portValid ? null : '1–65535'}
             onChange={setPort}
+            steppers={false}
+            selectOnFocus
           />
         </div>
         <TextField
@@ -228,6 +262,18 @@ export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) 
             <p>{t.hosts.legacyHint}</p>
           </div>
         )}
+        <TagInput tags={tags} onChange={setTags} />
+        <TextAreaField
+          label={t.hosts.notes}
+          hint={t.hosts.notesCount(runeCount(notes))}
+          error={runeCount(notes) > MAX_NOTES ? t.hosts.notesCount(runeCount(notes)) : null}
+          rows={3}
+          style={{ fontFamily: 'inherit', fontSize: 13, minHeight: 64 }}
+          value={notes}
+          onChange={(e) => {
+            setNotes(e.target.value);
+          }}
+        />
         {host && (
           <div className={s.terminalProfile} role="group" aria-label={t.hosts.terminalProfile}>
             <p>{hasOwnProfile ? t.hosts.terminalProfileOwn : t.hosts.terminalProfileGlobal}</p>

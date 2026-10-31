@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -34,8 +35,10 @@ func encryptedOpenHost(t *testing.T) ([]byte, *model.Content, string, string) {
 		t.Fatal(err)
 	}
 	keyHostID, passwordHostID := domain.NewID(), domain.NewID()
+	content.Settings.Environments = append(content.Settings.Environments,
+		model.Environment{ID: "noc", Name: "Operação", Color: model.EnvironmentBlue})
 	content.Hosts = []model.Host{
-		{ID: keyHostID, Label: "Com chave", Address: "key.example", Port: 22, Username: "ops", AuthMethod: model.AuthKey, CredentialID: model.Ptr(key.ID), GroupID: model.Ptr(groupID), LegacyAlgorithms: true, OSIcon: "huawei"},
+		{ID: keyHostID, Label: "Com chave", Address: "key.example", Port: 22, Username: "ops", AuthMethod: model.AuthKey, CredentialID: model.Ptr(key.ID), GroupID: model.Ptr(groupID), EnvironmentID: model.Ptr("noc"), Tags: []string{"olt", "cliente-x"}, Notes: "VLAN 100", LegacyAlgorithms: true, OSIcon: "huawei"},
 		{ID: passwordHostID, Label: "Com senha", Address: "password.example", Port: 2200, Username: "root", AuthMethod: model.AuthPassword, CredentialID: model.Ptr(password.ID), OSIcon: model.OSIconAuto},
 	}
 	content.ForwardRules = []model.ForwardRule{{ID: domain.NewID(), HostID: keyHostID, BindAddress: "127.0.0.1", BindPort: 10022, DestHost: "target", DestPort: 22}}
@@ -176,8 +179,18 @@ func TestCommitOpenHostRestoresProfilesRulesAndCreatesFreshEntityIDs(t *testing.
 	if keyHost == nil || passwordHost == nil || keyHost.ID == oldHostID || keyHost.CredentialID == nil || *keyHost.CredentialID == oldKeyID {
 		t.Fatalf("hosts/ids importados = %+v", imported.Hosts)
 	}
-	if !keyHost.LegacyAlgorithms || keyHost.OSIcon != "huawei" || keyHost.ProfileID == nil || passwordHost.CredentialID != nil {
+	if !keyHost.LegacyAlgorithms || keyHost.OSIcon != "huawei" || keyHost.ProfileID == nil || passwordHost.CredentialID != nil ||
+		keyHost.EnvironmentID == nil || len(keyHost.Tags) != 2 || keyHost.Notes != "VLAN 100" {
 		t.Fatalf("campos importados = key:%+v password:%+v", keyHost, passwordHost)
+	}
+	var importedEnvironment *model.Environment
+	for i := range imported.Settings.Environments {
+		if imported.Settings.Environments[i].Name == "Operação" {
+			importedEnvironment = &imported.Settings.Environments[i]
+		}
+	}
+	if importedEnvironment == nil || *keyHost.EnvironmentID != importedEnvironment.ID || importedEnvironment.Color != model.EnvironmentBlue {
+		t.Fatalf("ambiente importado = %+v; host = %+v", importedEnvironment, keyHost)
 	}
 	if len(imported.ForwardRules) != 1 || imported.ForwardRules[0].HostID != keyHost.ID || imported.ForwardRules[0].DestPort != 22 {
 		t.Fatalf("regras = %+v", imported.ForwardRules)
@@ -185,6 +198,59 @@ func TestCommitOpenHostRestoresProfilesRulesAndCreatesFreshEntityIDs(t *testing.
 	profile, err := store.HostProfile(keyHost.ID)
 	if err != nil || profile == nil || profile.Name != "Perfil" || profile.ID == original.Hosts[0].ID {
 		t.Fatalf("perfil = %+v, %v", profile, err)
+	}
+}
+
+func TestLoadOpenHostVersion1AndStrictFormat(t *testing.T) {
+	v1 := []byte(`{"format":"openhost-export","version":1,"encrypted":false,"data":{"groups":[],"hosts":[{"id":"host-v1","label":"Antigo","address":"old.example","port":22,"username":"ops","authMethod":"ask","keyId":null,"groupId":null,"legacyAlgorithms":false,"osIcon":"auto","profile":null}],"forwardRules":[]}}`)
+	preview, err := importer.LoadOpenHost(writeOpenHost(t, v1), nil, model.EmptyContent())
+	if err != nil || len(preview.Rows) != 1 {
+		t.Fatalf("v1 = %+v, %v", preview, err)
+	}
+	row := preview.Rows[0]
+	environment, environmentOK := row.Extra["environment"].(*model.Environment)
+	if tags, ok := row.Extra["tags"].([]string); !ok || tags == nil || len(tags) != 0 || row.Extra["notes"] != "" || !environmentOK || environment != nil {
+		t.Fatalf("campos padrão da v1 = %#v", row.Extra)
+	}
+
+	var unknown map[string]any
+	if err := json.Unmarshal(v1, &unknown); err != nil {
+		t.Fatal(err)
+	}
+	unknown["unexpected"] = true
+	raw, _ := json.Marshal(unknown)
+	if _, err := importer.LoadOpenHost(writeOpenHost(t, raw), nil, model.EmptyContent()); apperr.CodeOf(err) != apperr.ImportUnreadable {
+		t.Fatalf("campo desconhecido foi aceito: %v", err)
+	}
+}
+
+func TestOpenHostEnvironmentLimitWarnsAndLeavesHostUnassigned(t *testing.T) {
+	environments := make([]model.Environment, 12)
+	colors := []model.EnvironmentColor{model.EnvironmentRed, model.EnvironmentOrange, model.EnvironmentAmber, model.EnvironmentGreen, model.EnvironmentTeal, model.EnvironmentBlue, model.EnvironmentSlate, model.EnvironmentPink}
+	for i := range environments {
+		environments[i] = model.Environment{ID: domain.NewID(), Name: fmt.Sprintf("Ambiente %d", i+1), Color: colors[i%len(colors)]}
+	}
+	destination := model.EmptyContent()
+	destination.Settings.Environments = environments
+	data := exporter.OpenHostData{Groups: []model.Group{}, ForwardRules: []exporter.OpenHostForwardRule{}, Hosts: []exporter.OpenHostHost{{
+		ID: "source-host", Label: "Novo", Address: "new.example", Port: 22, Username: "ops", AuthMethod: model.AuthAsk,
+		OSIcon: model.OSIconAuto, Tags: []string{}, Environment: &exporter.OpenHostEnvironment{Name: "Décimo terceiro", Color: model.EnvironmentBlue},
+	}}}
+	raw, err := json.Marshal(exporter.OpenHostFile{Format: exporter.Format, Version: exporter.Version, Data: &data})
+	if err != nil {
+		t.Fatal(err)
+	}
+	preview, err := importer.LoadOpenHost(writeOpenHost(t, raw), nil, destination)
+	if err != nil || len(preview.Rows) != 1 {
+		t.Fatalf("prévia = %+v, %v", preview, err)
+	}
+	foundWarning := false
+	for _, warning := range preview.Rows[0].Warnings {
+		foundWarning = foundWarning || warning.Code == importer.WarningEnvironmentLimit
+	}
+	environment, environmentOK := preview.Rows[0].Extra["environment"].(*model.Environment)
+	if !foundWarning || !environmentOK || environment != nil {
+		t.Fatalf("limite sem aviso: %+v", preview.Rows[0])
 	}
 }
 
@@ -222,6 +288,7 @@ func TestLoadOpenHostPasswordAndTamperErrors(t *testing.T) {
 	var newer map[string]any
 	_ = json.Unmarshal(raw, &newer)
 	newer["version"] = float64(exporter.Version + 1)
+	newer["futureField"] = "permitido só para detectar a versão"
 	newerRaw, _ := json.Marshal(newer)
 	if _, err := importer.LoadOpenHost(writeOpenHost(t, newerRaw), model.Ptr("senha-arquivo"), model.EmptyContent()); apperr.CodeOf(err) != apperr.ImportFormatNewer {
 		t.Fatalf("versão nova = %v", err)

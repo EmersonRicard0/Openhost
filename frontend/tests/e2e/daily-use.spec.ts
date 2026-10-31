@@ -178,6 +178,46 @@ test('erro mostra o código e copia os detalhes', async () => {
   }
 });
 
+test('cria, edita e exclui tema sem importação e mostra uma só engrenagem', async () => {
+  const app = await launchApp();
+  const { page } = app;
+  try {
+    await createVault(page);
+    const settings = await openSettings(page, 'Terminal');
+
+    // A engrenagem fica na barra superior; a aba usa apenas o texto e o botão de fechar.
+    const settingsTab = page.getByRole('tab', { name: 'Configurações' });
+    await expect(settingsTab.locator(':scope > svg')).toHaveCount(0);
+
+    await settings.getByRole('button', { name: 'Novo tema' }).click();
+    const editor = page.getByRole('dialog', { name: 'Novo tema' });
+    await editor.getByLabel('Nome do esquema').fill('Tema da operação');
+    await editor.getByLabel('Fundo').fill('#102030');
+    await editor.getByLabel('Texto').fill('#f0f0f0');
+    await editor.getByRole('button', { name: 'Salvar' }).click();
+
+    await expect(settings.getByRole('radio', { name: 'Tema da operação' })).toBeChecked();
+    await settings.getByRole('button', { name: 'Ações do tema Tema da operação' }).click();
+    await page.getByRole('menuitem', { name: 'Editar cores' }).click();
+    await expect(page.getByRole('dialog', { name: 'Editar esquema de cores' })).toBeVisible();
+    await page
+      .getByRole('dialog', { name: 'Editar esquema de cores' })
+      .getByRole('button', {
+        name: 'Cancelar',
+      })
+      .click();
+
+    await settings.getByRole('button', { name: 'Ações do tema Tema da operação' }).click();
+    await page.getByRole('menuitem', { name: 'Excluir' }).click();
+    const confirm = page.getByRole('dialog', { name: 'Excluir' });
+    await expect(confirm).toContainText('voltarão ao tema padrão');
+    await confirm.getByRole('button', { name: 'Excluir' }).click();
+    await expect(settings.getByRole('radio', { name: 'Tema da operação' })).toHaveCount(0);
+  } finally {
+    await app.close();
+  }
+});
+
 test('copiar ao selecionar, colar com o botão direito e reconexão automática', async () => {
   test.setTimeout(180_000);
   const app = await launchApp();

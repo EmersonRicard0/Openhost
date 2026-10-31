@@ -27,6 +27,7 @@ type SyncPreferences struct {
 	Bell            string            `json:"bell"`
 	BoldBright      bool              `json:"boldBright"`
 	AutoReconnect   bool              `json:"autoReconnect"`
+	PromptTitle     bool              `json:"promptTitle"`
 }
 
 type SyncData struct {
@@ -49,7 +50,8 @@ func SyncPreferencesFrom(preferences appwin.Preferences) SyncPreferences {
 	}
 	return SyncPreferences{Shortcuts: shortcuts, CopyOnSelect: preferences.CopyOnSelect,
 		RightClickPaste: preferences.RightClickPaste, Bell: preferences.Bell,
-		BoldBright: preferences.BoldBright, AutoReconnect: preferences.AutoReconnect}
+		BoldBright: preferences.BoldBright, AutoReconnect: preferences.AutoReconnect,
+		PromptTitle: preferences.PromptTitle}
 }
 
 func ApplySyncPreferences(base appwin.Preferences, synced SyncPreferences) appwin.Preferences {
@@ -59,6 +61,7 @@ func ApplySyncPreferences(base appwin.Preferences, synced SyncPreferences) appwi
 	}
 	base.CopyOnSelect, base.RightClickPaste = synced.CopyOnSelect, synced.RightClickPaste
 	base.Bell, base.BoldBright, base.AutoReconnect = synced.Bell, synced.BoldBright, synced.AutoReconnect
+	base.PromptTitle = synced.PromptTitle
 	return base
 }
 
@@ -130,7 +133,7 @@ func EncodeItems(data SyncData) ([]PlainItem, error) {
 }
 
 func DecodeItems(items []PlainItem) (SyncData, []string, error) {
-	result := SyncData{Content: model.EmptyContent(), Profiles: []model.TerminalProfile{}, Schemes: []model.ColorScheme{}, Preferences: SyncPreferences{Shortcuts: map[string]string{}, Bell: "visual"}}
+	result := SyncData{Content: model.EmptyContent(), Profiles: []model.TerminalProfile{}, Schemes: []model.ColorScheme{}, Preferences: SyncPreferences{Shortcuts: map[string]string{}, Bell: "visual", PromptTitle: true}}
 	seen := make(map[string]struct{}, len(items))
 	rejected := make([]string, 0)
 	for _, item := range items {
@@ -158,7 +161,12 @@ func decodeOneItem(result *SyncData, kind, id string, raw []byte) bool {
 		result.Content.Groups = append(result.Content.Groups, item)
 	case "host":
 		var item model.Host
-		if decodeStrict(raw, &item) != nil || item.ID != id || !validHost(item) {
+		if decodeStrict(raw, &item) != nil || item.ID != id {
+			return false
+		}
+		var err error
+		item.Tags, err = domain.NormalizeHostMetadata(item.Tags, item.Notes)
+		if err != nil || !validHost(item) {
 			return false
 		}
 		result.Content.Hosts = append(result.Content.Hosts, item)
@@ -182,7 +190,11 @@ func decodeOneItem(result *SyncData, kind, id string, raw []byte) bool {
 		result.Content.ForwardRules = append(result.Content.ForwardRules, item)
 	case "settings":
 		var item model.VaultSettings
-		if id != "1" || decodeStrict(raw, &item) != nil || !validSettings(item) {
+		if id != "1" || decodeStrict(raw, &item) != nil {
+			return false
+		}
+		item = model.NormalizeVaultSettings(item)
+		if !validSettings(item) {
 			return false
 		}
 		result.Content.Settings = item
@@ -199,7 +211,7 @@ func decodeOneItem(result *SyncData, kind, id string, raw []byte) bool {
 		}
 		result.Schemes = append(result.Schemes, item)
 	case "prefs":
-		var item SyncPreferences
+		item := SyncPreferences{PromptTitle: true}
 		if id != "1" || decodeStrict(raw, &item) != nil || !validSyncPreferences(item) {
 			return false
 		}
@@ -265,8 +277,20 @@ func validForward(item model.ForwardRule) bool {
 }
 
 func validSettings(item model.VaultSettings) bool {
+	_, environmentErr := domain.ValidateEnvironments(item.Environments)
+	seenEnvironmentIDs := make(map[string]struct{}, len(item.Environments))
+	for _, environment := range item.Environments {
+		if environment.ID == "" {
+			return false
+		}
+		if _, duplicate := seenEnvironmentIDs[environment.ID]; duplicate {
+			return false
+		}
+		seenEnvironmentIDs[environment.ID] = struct{}{}
+	}
 	return (item.AutoLockMinutes == nil || validate.Int(*item.AutoLockMinutes, 1, 120) == nil) &&
-		validate.Int(item.ConnectTimeoutSeconds, 5, 120) == nil && validate.Int(item.KeepaliveSeconds, 10, 300) == nil && model.ValidTerm(item.Term)
+		validate.Int(item.ConnectTimeoutSeconds, 5, 120) == nil && validate.Int(item.KeepaliveSeconds, 10, 300) == nil &&
+		model.ValidTerm(item.Term) && environmentErr == nil
 }
 
 var (

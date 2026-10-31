@@ -71,8 +71,22 @@ func TestPreferencesWithoutTerminalOptionsKeepDefaults(t *testing.T) {
 		t.Fatal(err)
 	}
 	preferences = normalizedPreferences(preferences)
-	if preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect {
+	if preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect ||
+		preferences.HostDensity != "comfortable" || !preferences.PromptTitle {
 		t.Fatalf("preferências migradas = %+v", preferences)
+	}
+}
+
+func TestHostDensityAndPromptTitleDefaults(t *testing.T) {
+	preferences := DefaultPreferences()
+	if preferences.HostDensity != "comfortable" || !preferences.PromptTitle {
+		t.Fatalf("padrões da interface = %+v", preferences)
+	}
+	preferences.HostDensity = "dense"
+	preferences.PromptTitle = false
+	got := normalizedPreferences(preferences)
+	if got.HostDensity != "comfortable" || got.PromptTitle {
+		t.Fatalf("preferências normalizadas = %+v", got)
 	}
 }
 

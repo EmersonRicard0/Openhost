@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type {
   BellMode,
+  HostDensity,
   LocalShell,
   Settings,
   TermType,
@@ -34,6 +35,7 @@ import {
 } from '../../ui/icons';
 import { useSlidingIndicator } from '../../ui/motion';
 import { NumberField } from '../../ui/NumberField';
+import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { ShellIcon } from '../../ui/ShellIcon';
 import { toastError } from '../../ui/Toast';
@@ -43,6 +45,7 @@ import { EraseVaultDialog } from '../vault/EraseVaultDialog';
 import { ImportExportPage } from '../importexport/ImportExportPage';
 import { SyncSection } from '../sync/SyncSettings';
 import { ShortcutsEditor } from './ShortcutsEditor';
+import { EnvironmentsEditor } from './EnvironmentsEditor';
 import { Group } from './Group';
 import { GlobalTerminalSettings } from './TerminalSettings';
 import s from './settings.module.css';
@@ -149,6 +152,10 @@ function GeneralSection({ settings }: { settings: Settings }) {
   );
 }
 
+const DENSITIES: { value: HostDensity; label: string }[] = (['comfortable', 'compact'] as const).map(
+  (value) => ({ value, label: t.settings.hostDensityOptions[value] }),
+);
+
 const BELLS: { value: BellMode; label: string }[] = (['visual', 'sound', 'off'] as const).map(
   (value) => ({ value, label: t.settings.bellOptions[value] }),
 );
@@ -179,6 +186,12 @@ function TerminalBehavior({ settings }: { settings: Settings }) {
         hint={t.settings.autoReconnectHint}
         checked={settings.autoReconnect}
         onChange={(e) => void saveUi({ autoReconnect: e.target.checked })}
+      />
+      <Checkbox
+        label={t.settings.promptTitle}
+        hint={t.settings.promptTitleHint}
+        checked={settings.promptTitle !== false}
+        onChange={(e) => void saveUi({ promptTitle: e.target.checked })}
       />
       <Select
         label={t.settings.bell}
@@ -231,6 +244,13 @@ function AppearanceSection({ settings }: { settings: Settings }) {
         onChange={(theme) => void saveUi({ theme })}
       />
       <AccentSelect value={settings.accent} />
+      <Segmented
+        label={t.settings.hostDensity}
+        value={settings.hostDensity ?? 'comfortable'}
+        options={DENSITIES}
+        hint={t.settings.hostDensityHint}
+        onChange={(hostDensity) => void saveUi({ hostDensity })}
+      />
       {glassAvailable && (
         <Checkbox
           label={t.settings.glass}
@@ -239,6 +259,17 @@ function AppearanceSection({ settings }: { settings: Settings }) {
           onChange={(e) => void saveUi({ glassEnabled: e.target.checked })}
         />
       )}
+    </Group>
+  );
+}
+
+/** Ambientes ficam no cofre: só aparecem desbloqueado. */
+function EnvironmentsGroup() {
+  const { unlocked } = useVaultSettings();
+  if (!unlocked) return null;
+  return (
+    <Group title={t.environments.title}>
+      <EnvironmentsEditor />
     </Group>
   );
 }
@@ -529,7 +560,7 @@ function UpdatesGroup() {
 }
 
 export function SettingsPage() {
-  const setView = useWorkspace((w) => w.setView);
+  const closeSettings = useWorkspace((w) => w.closeSettings);
   const settings = useUi((u) => u.settings);
   const [section, setSection] = useState<Section>(() => {
     const wanted = useWorkspace.getState().settingsSection;
@@ -539,8 +570,21 @@ export function SettingsPage() {
   const navRef = useRef<HTMLElement>(null);
   const indicator = useSlidingIndicator(navRef, section, 'y', '[aria-current="page"]');
 
+  // Trocar para uma sessão desmonta a página; com a aba ainda aberta, volta na mesma seção.
+  const sectionRef = useRef(section);
+  useEffect(() => {
+    sectionRef.current = section;
+  }, [section]);
+  useEffect(
+    () => () => {
+      if (useWorkspace.getState().settingsTab)
+        useWorkspace.setState({ settingsSection: sectionRef.current });
+    },
+    [],
+  );
+
   function close() {
-    setView('terminal');
+    closeSettings();
     const active = useSessions.getState().activeId;
     if (active) {
       requestAnimationFrame(() => {
@@ -640,7 +684,12 @@ export function SettingsPage() {
         >
           <h2 className={s.sectionTitle}>{t.settings.sections[section]}</h2>
           {settings && section === 'general' && <GeneralSection settings={settings} />}
-          {settings && section === 'appearance' && <AppearanceSection settings={settings} />}
+          {settings && section === 'appearance' && (
+            <>
+              <AppearanceSection settings={settings} />
+              <EnvironmentsGroup />
+            </>
+          )}
           {section === 'terminal' && (
             <>
               {settings && <TerminalBehavior settings={settings} />}

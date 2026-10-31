@@ -55,7 +55,7 @@ Como `vault.*` da 001, com:
 |---|---|
 | `GetStatus()` | **alterado**: `state` ganha `"migratable"` — existe `vault.svlt` da 001 e ainda não há `shellvault.db` |
 | `Unlock(password)` | **alterado**: no estado `migratable`, desbloqueia e migra (R5); falha da migração → `VAULT_MIGRATION_FAILED` e estado volta a `migratable` |
-| `GetSettings()` / `UpdateSettings(patch)` 🔒 | **alterado**: `VaultSettings` inclui `connectTimeoutSeconds` (5–120), `keepaliveSeconds`, `legacyDefault` e `term` (`xterm-256color` \| `xterm` \| `vt100` \| `linux`) |
+| `GetSettings()` / `UpdateSettings(patch)` 🔒 | **alterado**: `VaultSettings` inclui `connectTimeoutSeconds` (5–120), `keepaliveSeconds`, `legacyDefault`, `term` (`xterm-256color` \| `xterm` \| `vt100` \| `linux`) e `environments: {id,name,color}[]`; o patch de ambientes substitui a lista inteira e gera ids vazios |
 
 Evento `vault:state`: `VaultStatus` a cada mudança de estado (equivale ao `onStateChanged` da 001).
 
@@ -65,6 +65,8 @@ Como `hosts.*`/`groups.*` da 001. **Alterado**: `HostInput`/`HostView` ganham
 `authMethod: "agent"`, `legacyAlgorithms: boolean`, `profileId: string | null`,
 `detectedOs: OsId | null` e `osIcon: OsId | "auto"`. `detectedOs` é somente saída: valores
 enviados em `Create`/`Update` são ignorados; `osIcon` é validado pela lista fechada do modelo.
+Desde a 009, `HostInput`/`HostView` também incluem `environmentId: string | null`,
+`tags: string[]` e `notes: string`; no `Update`, chaves omitidas preservam o valor atual.
 
 Evento `hosts:changed`: `{ hostId: string, detectedOs: OsId | null }`, emitido quando a detecção
 de sistema de uma conexão SSH altera o host persistido.
@@ -131,7 +133,7 @@ Como `app.*` da 001, com:
 | Método / evento | Mudança |
 |---|---|
 | `GetAppearance()` / `app:appearance` | igual |
-| `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups` e `shortcuts: Record<string, string>`; no patch, `shortcuts` substitui o mapa inteiro (`""` desativa a ação) |
+| `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups`, `shortcuts: Record<string, string>`, `hostDensity: "comfortable" | "compact"` e `promptTitle: boolean`; no patch, `shortcuts` substitui o mapa inteiro (`""` desativa a ação) |
 | `app:close-requested` / `ConfirmClose(bool)` | igual à 001 (FR-028) |
 | `WindowMinimise()`, `WindowToggleMaximise()`, `WindowClose()` **novo** | botões da barra de título própria (FR-133); `WindowClose` passa pela confirmação de FR-028 |
 | `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (⌘-clique no macOS) (FR-145) |
@@ -149,6 +151,9 @@ Definidos em [`specs/003-host-import-export/contracts/bridge.md`](../../003-host
 Como os demais, escolhem arquivos só por diálogo nativo aberto pelo Go e nunca devolvem chave
 privada, passphrase ou senha. A prévia e o último lote importado ficam só em memória e são
 descartados quando o cofre bloqueia.
+
+Desde a 009, o formato próprio OpenHost é versão 2 e inclui `tags`, `notes` e
+`environment: {name,color} | null`; a importação estrita continua aceitando a versão 1.
 
 ## UpdateService (007)
 
