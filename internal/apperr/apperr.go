@@ -113,7 +113,7 @@ var Messages = map[Code]string{
 	FilePasswordWrong:       "Senha incorreta.",
 	PreviewExpired:          "A prévia expirou. Escolha a origem de novo.",
 	UndoUnavailable:         "Não há importação para desfazer.",
-	Network:                 "Não foi possível verificar as atualizações. Confira a conexão.",
+	Network:                 "Sem conexão com a internet ou o serviço não respondeu.",
 	RateLimited:             "O serviço de atualizações está temporariamente limitado. Tente mais tarde.",
 	SyncUnavailable:         "A sincronização com o Google Drive não está disponível neste build.",
 	SyncCancelled:           "A conexão com o Google Drive foi cancelada.",
