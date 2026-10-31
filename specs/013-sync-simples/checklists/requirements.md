@@ -33,5 +33,5 @@
 
 - Termos técnicos (PKCE, 127.0.0.1, GitHub Pages) aparecem só em Assumptions, para registrar o
   limite de "nada vaza" para o segredo OAuth de app instalado; os requisitos não dependem deles.
-- Decisões tomadas sem perguntar: juntar sem escolha quando os dois têm dados (a escolha fica em
+- Decisões tomadas sem perguntar: pasta sincronizada (Google Drive, OneDrive, Dropbox) como caminho principal e "Conectar Google Drive" como alternativa; juntar sem escolha quando os dois têm dados (a escolha fica em
   "Mais opções"); convite só para cofres novos; páginas públicas no GitHub Pages.

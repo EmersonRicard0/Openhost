@@ -1,4 +1,4 @@
-# Feature Specification: Sincronização com o Google Drive simples para o usuário final
+# Feature Specification: Sincronização simples para o usuário final
 
 **Feature Branch**: `013-sync-simples`
 
@@ -24,18 +24,57 @@ Google real, mas o primeiro uso mostrou um caminho que faz o usuário comum desi
 - Um envio interrompido deixou a nuvem com a chave e sem o cofre; o Conectar seguinte pediu a
   senha de um cofre que não existia, e só uma limpeza manual resolveu.
 
-O objetivo é que o usuário veja um botão e, no máximo, uma senha. A sincronização em si (o que
-vai, cifragem, conflitos, histórico, troca de senha) não muda.
+O objetivo é que o usuário veja um botão e, no máximo, uma senha. O caminho mais fácil não passa
+pelo Google: quem já tem o Google Drive, o OneDrive ou o Dropbox instalado no computador tem uma
+pasta que já sincroniza sozinha; o app grava ali o cofre cifrado, com um clique, sem conta, sem
+navegador e sem permissão. "Conectar Google Drive" continua como alternativa para quem não tem
+esses programas. A sincronização em si (o que vai, cifragem, conflitos, histórico, troca de senha)
+é a mesma nos dois caminhos.
 
 Os requisitos usam a faixa FR-1301 em diante e SC-1301 em diante.
 
 ## User Scenarios & Testing *(mandatory)*
 
-### User Story 1 - Ligar a sincronização sem procurar (Priority: P1)
+### User Story 1 - Sincronizar pela pasta com um clique (Priority: P1)
+
+O app encontra no computador a pasta do Google Drive, do OneDrive ou do Dropbox e oferece
+"Sincronizar pela pasta do Google Drive" (ou do programa encontrado). Um clique e pronto: o app
+grava o cofre cifrado numa pasta "OpenHost" dentro dela, e o próprio programa do Drive leva para os
+outros computadores. No outro computador, o app acha a mesma pasta com o cofre e oferece "Usar o
+cofre da pasta do Google Drive", pedindo só a senha.
+
+**Why this priority**: é o caminho sem autorização nenhuma; para quem já tem um desses programas,
+some toda a parte do Google.
+
+**Independent Test**: duas pastas de dados do app apontando para a mesma pasta comum (simulando a
+pasta sincronizada) → ligar no primeiro, abrir no segundo com a senha, editar nos dois.
+
+**Acceptance Scenarios**:
+
+1. **Given** a pasta do Google Drive, do OneDrive ou do Dropbox existe neste computador, **When**
+   o usuário abre o convite ou a tela de sincronização, **Then** a primeira opção é "Sincronizar
+   pela pasta do <programa>", e "Conectar Google Drive" aparece como alternativa.
+2. **Given** a pasta sem cofre do OpenHost, **When** o usuário clica nessa opção, **Then** o cofre
+   é gravado cifrado na pasta, sem nenhuma pergunta, e o app mostra "Sincronizado pela pasta do
+   <programa>".
+3. **Given** a pasta já tem o cofre de outro computador, **When** o usuário clica nessa opção,
+   **Then** o comportamento é o da US3: uma senha, e o app usa ou junta sozinho.
+4. **Given** mais de um programa encontrado, **Then** o app oferece o primeiro na ordem Google
+   Drive, OneDrive, Dropbox, e os outros em "Mais opções", junto de "Escolher outra pasta".
+5. **Given** nenhum programa encontrado, **Then** o convite oferece "Conectar Google Drive" e,
+   em "Mais opções", "Escolher uma pasta".
+6. **Given** a sincronização pela pasta ligada, **When** o usuário muda um host, **Then** a mudança
+   é gravada na pasta em até 10 segundos; mudanças que chegam pela pasta vindas de outro computador
+   aparecem neste em até 1 minuto, sem ação do usuário.
+
+---
+
+### User Story 2 - Ligar a sincronização sem procurar (Priority: P1)
 
 Logo depois de criar o cofre, o usuário vê um convite: "Usar estes hosts em outros computadores?",
-com "Conectar Google Drive" e "Agora não". Um clique abre o navegador, ele escolhe a conta, autoriza
-e volta ao app, que mostra "Sincronizado com <e-mail>". Quem dispensou o convite acha o mesmo
+com a opção mais fácil disponível (a pasta, US1, ou "Conectar Google Drive") e "Agora não". No caso
+do Google, um clique abre o navegador, ele escolhe a conta, autoriza e volta ao app, que mostra
+"Sincronizado com <e-mail>". Quem dispensou o convite acha o mesmo
 caminho no ícone de nuvem da barra de status.
 
 **Why this priority**: sem achar a opção, nada mais importa; é a maior perda hoje.
@@ -45,20 +84,21 @@ caminho no ícone de nuvem da barra de status.
 **Acceptance Scenarios**:
 
 1. **Given** o usuário acabou de criar o cofre e a sincronização está disponível nesta versão,
-   **When** o cofre abre pela primeira vez, **Then** aparece o convite com "Conectar Google Drive"
-   e "Agora não", sem bloquear o uso do app.
+   **When** o cofre abre pela primeira vez, **Then** aparece o convite com a opção mais fácil
+   disponível e "Agora não", sem bloquear o uso do app.
 2. **Given** o convite, **When** o usuário clica em "Agora não", **Then** o convite some e não
    volta sozinho nesta nem nas próximas execuções.
 3. **Given** a sincronização desligada, **When** o usuário clica no ícone de nuvem da barra de
-   status, **Then** vê o mesmo convite com "Conectar Google Drive".
+   status, **Then** vê o mesmo convite.
 4. **Given** a nuvem da conta vazia, **When** o usuário autoriza no navegador, **Then** o cofre é
    enviado sem nenhuma pergunta e o app mostra "Sincronizado com <e-mail>".
-5. **Given** uma versão compilada sem a sincronização, **When** o cofre é criado, **Then** nem o
-   convite nem o ícone de nuvem aparecem.
+5. **Given** uma versão compilada sem a conexão com o Google, **When** o cofre é criado, **Then**
+   o convite e o ícone de nuvem oferecem só a pasta; sem pasta encontrada, oferecem "Escolher uma
+   pasta".
 
 ---
 
-### User Story 2 - O app decide o óbvio ao conectar (Priority: P1)
+### User Story 3 - O app decide o óbvio ao conectar (Priority: P1)
 
 Ao conectar uma conta que já tem cofre, o app não pergunta o que fazer: num computador sem hosts
 pede só "a senha que você usa no outro computador" e traz o cofre; num computador com hosts pede a
@@ -89,7 +129,7 @@ computador vazio, os dois com hosts).
 
 ---
 
-### User Story 3 - Envio interrompido se resolve sozinho (Priority: P1)
+### User Story 4 - Envio interrompido se resolve sozinho (Priority: P1)
 
 Se um envio cai no meio (rede, app fechado, erro do Google) e deixa na nuvem só a chave, sem
 nenhuma versão do cofre, o próximo Conectar trata a nuvem como vazia e envia o cofre, sem pedir
@@ -104,11 +144,11 @@ senha de um cofre que não existe.
 1. **Given** a nuvem com a chave e sem nenhuma versão do cofre, **When** o usuário conecta,
    **Then** o app substitui a chave e envia o cofre, sem perguntar nada.
 2. **Given** a nuvem com chave e com versões do cofre, **When** o usuário conecta, **Then** o
-   comportamento é o da US2 (nada é apagado).
+   comportamento é o da US3 (nada é apagado).
 
 ---
 
-### User Story 4 - Tela e erros que não assustam (Priority: P2)
+### User Story 5 - Tela e erros que não assustam (Priority: P2)
 
 Com a sincronização ligada, a tela mostra uma linha de estado ("✓ Sincronizado com <e-mail>") e
 "Desconectar". Nome do computador, versões anteriores e "Sincronizar agora" ficam em "Mais
@@ -136,7 +176,7 @@ falso; conferir texto, "Mais opções" e "Detalhes".
 
 ---
 
-### User Story 5 - Google sem aviso de app não verificado (Priority: P2)
+### User Story 6 - Google sem aviso de app não verificado (Priority: P2)
 
 Qualquer pessoa com conta Google conecta sem ser cadastrada como teste, sem o aviso "O Google não
 verificou este app" e sem precisar conectar de novo a cada semana.
@@ -160,6 +200,15 @@ release, sem aviso de app não verificado.
 
 ### Edge Cases
 
+- O programa da pasta ainda está baixando um arquivo do cofre: arquivo incompleto ou que não abre é
+  tratado como "ainda não chegou" e lido de novo depois, sem erro para o usuário.
+- O programa da pasta cria cópias de conflito com outro nome (por exemplo "(cópia em conflito)"):
+  o app ignora arquivos com nomes que não são dele e resolve conflitos pelo mesmo caminho da 008.
+- A pasta some (programa desinstalado, disco desligado): estado "Pendente" com a frase "A pasta do
+  <programa> não está disponível"; as mudanças ficam guardadas e vão quando a pasta voltar.
+- Pasta escolhida à mão que não sincroniza com nada (pasta comum): funciona como cópia local; o app
+  não tenta adivinhar.
+
 - Usuário clica em "Conectar" e fecha o navegador sem autorizar: o app volta ao estado anterior em
   até o tempo limite atual, sem mensagem de erro alarmante ("Conexão cancelada").
 - Computador com cofre que tem só grupos ou credenciais, sem hosts: conta como "com dados" e segue
@@ -177,18 +226,35 @@ release, sem aviso de app não verificado.
 
 ### Functional Requirements
 
-**Oferecer na hora certa (US1)**
+**Sincronizar pela pasta (US1)**
+
+- **FR-1322**: O app MUST encontrar sozinho as pastas do Google Drive, do OneDrive e do Dropbox
+  instalados no computador, nos três sistemas, e oferecer a primeira encontrada como opção
+  principal de sincronização.
+- **FR-1323**: Sincronizar pela pasta MUST NOT exigir conta, navegador nem autorização; o app MUST
+  usar só uma subpasta "OpenHost" dentro dela e MUST NOT ler nem alterar nada fora dessa subpasta.
+- **FR-1324**: A sincronização pela pasta MUST ter o mesmo comportamento da sincronização pelo
+  Google: cofre cifrado, mudanças enviadas sozinhas, mudanças recebidas sozinhas, conflitos,
+  versões anteriores, troca de senha e "Desconectar" (que pergunta se apaga ou mantém a cópia na
+  pasta).
+- **FR-1325**: O usuário MUST poder escolher outra pasta em "Mais opções".
+- **FR-1326**: Os nomes dos arquivos na pasta MUST NOT conter nada do conteúdo do cofre (rótulos,
+  endereços, usuários) nem o nome do computador.
+- **FR-1327**: Arquivos incompletos, ilegíveis ou com nomes desconhecidos na subpasta MUST ser
+  ignorados até ficarem legíveis, sem apagar nada que o app não criou.
+
+**Oferecer na hora certa (US2)**
 
 - **FR-1301**: Depois de criar um cofre, o app MUST mostrar um convite não bloqueante para ligar a
-  sincronização, com "Conectar Google Drive" e "Agora não", só quando a sincronização estiver
-  disponível na versão.
+  sincronização, com a opção mais fácil disponível (pasta encontrada; senão "Conectar Google
+  Drive"; senão "Escolher uma pasta") e "Agora não".
 - **FR-1302**: "Agora não" MUST esconder o convite de vez para aquele cofre; a escolha MUST ser
   guardada entre execuções.
-- **FR-1303**: Com a sincronização disponível, a barra de status MUST ter um ícone de nuvem que
-  mostra o estado (desligada, sincronizado, pendente, erro) e, desligada, leva ao convite.
+- **FR-1303**: A barra de status MUST ter um ícone de nuvem que mostra o estado (desligada,
+  sincronizado, pendente, erro) e, desligada, leva ao convite.
 - **FR-1304**: Configurações → Sincronização MUST continuar existindo com as mesmas funções.
 
-**Decidir o óbvio (US2, US3)**
+**Decidir o óbvio (US3, US4)**
 
 - **FR-1305**: Ao conectar uma conta sem cofre na nuvem, o app MUST enviar o cofre sem perguntas.
 - **FR-1306**: Nuvem só com a chave e sem nenhuma versão do cofre MUST ser tratada como nuvem
@@ -203,7 +269,7 @@ release, sem aviso de app não verificado.
 - **FR-1310**: "Mais opções" na tela da senha MUST oferecer "Usar só o cofre do Google Drive".
 - **FR-1311**: Senha errada MUST ser indicada no próprio campo, sem alterar nada local nem na nuvem.
 
-**Tela e erros (US4)**
+**Tela e erros (US5)**
 
 - **FR-1312**: Com a sincronização ligada, a tela MUST mostrar só a linha de estado com o e-mail,
   "Desconectar" e "Mais opções" fechado; nome do computador, versões anteriores e "Sincronizar
@@ -215,7 +281,7 @@ release, sem aviso de app não verificado.
 - **FR-1315**: Falhas de rede e respostas temporárias do Google MUST ser tentadas de novo sozinhas,
   sem aviso a cada tentativa; o usuário só vê o estado "Pendente".
 
-**Google (US5)**
+**Google (US6)**
 
 - **FR-1316**: O cliente OAuth do projeto MUST sair do modo de teste, com nome OpenHost, página
   inicial e política de privacidade públicas, e pedir só o acesso à área do app no Drive e ao
@@ -240,6 +306,8 @@ release, sem aviso de app não verificado.
 ### Key Entities
 
 - **Convite de sincronização**: estado por cofre — mostrado, dispensado.
+- **Lugar de sincronização**: pasta (com o programa detectado ou escolhida à mão) ou Google Drive
+  pela conta; um por cofre.
 - **Estado da nuvem ao conectar**: vazia, só chave (envio interrompido), com cofre, de versão mais
   nova.
 - **Erro de sincronização apresentável**: frase, ação sugerida, detalhes (código, operação, hora).
@@ -248,6 +316,10 @@ release, sem aviso de app não verificado.
 
 ### Measurable Outcomes
 
+- **SC-1307**: Com a pasta de um dos três programas presente, ligar a sincronização leva 1 clique
+  depois do convite, sem navegador e sem nenhuma pergunta (nuvem vazia).
+- **SC-1308**: Duas instalações apontando para a mesma pasta convergem para os mesmos hosts em até
+  1 minuto depois de cada mudança, nos cenários de edição em itens diferentes e no mesmo item.
 - **SC-1301**: Num cofre novo, ligar a sincronização com a nuvem vazia leva no máximo 2 cliques no
   app mais a autorização no Google, sem nenhuma pergunta.
 - **SC-1302**: Num segundo computador, usar o cofre da nuvem pede exatamente um campo (a senha), em
@@ -264,7 +336,12 @@ release, sem aviso de app não verificado.
 ## Assumptions
 
 - A sincronização da 008 (formato, cifragem, conflitos, histórico, troca de senha) não muda; esta
-  feature muda o caminho de ligar, as decisões automáticas e a apresentação.
+  feature acrescenta a pasta como segundo lugar de guarda e muda o caminho de ligar, as decisões
+  automáticas e a apresentação.
+- Quem leva os arquivos entre computadores no caminho da pasta é o programa do Drive, do OneDrive
+  ou do Dropbox; o app não fala com esses serviços pela internet. Quem não tem nenhum deles usa
+  "Conectar Google Drive".
+- Só um lugar de sincronização por cofre de cada vez (pasta ou Google Drive pela conta).
 - Num app de computador, o "segredo" do cliente OAuth vai embutido no programa distribuído e pode
   ser extraído dele; o Google trata esse valor como não confidencial para apps instalados, e a
   proteção da conta vem do PKCE e do retorno só para 127.0.0.1. "Nada vaza" para o projeto
