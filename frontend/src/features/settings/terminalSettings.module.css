@@ -86,8 +86,6 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   background: var(--input-background);
-  text-align: left;
-  cursor: pointer;
   transition:
     border-color var(--motion-fast) var(--ease-standard),
     box-shadow var(--motion-fast) var(--ease-standard),
@@ -103,14 +101,45 @@
   transform: translateY(0);
 }
 
-.schemeCard[aria-checked='true'] {
+.schemeCard[data-selected='true'] {
   border-color: var(--accent);
   box-shadow: var(--ring-focus-thin);
 }
 
-.schemeCard:focus-visible {
+.schemeSelect {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.schemeSelect:focus-visible {
   outline: 2px solid var(--focus);
-  outline-offset: 2px;
+  outline-offset: -2px;
+}
+
+.schemeMenu {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  padding: 4px;
+  background: var(--panel-solid);
+  box-shadow: var(--shadow-sm);
+}
+
+.schemeMenu svg {
+  width: 15px;
+  height: 15px;
 }
 
 .schemeSample {
@@ -162,7 +191,7 @@
 .schemeCheck {
   position: absolute;
   top: 6px;
-  right: 6px;
+  left: 6px;
   display: grid;
   place-items: center;
   width: 20px;

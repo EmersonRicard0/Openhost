@@ -450,7 +450,31 @@ func TestColorSchemeStoreDeleteAndSeedRefresh(t *testing.T) {
 	if err := s.SaveGlobalProfile(global); err != nil {
 		t.Fatal(err)
 	}
-	wantCode(t, s.DeleteColorScheme(inUse.ID), apperr.InUse)
+	hostProfile := global
+	hostProfile.ID, hostProfile.Name, hostProfile.IsGlobal = "00000000-0000-4000-8000-0000000000a3", "Host", false
+	if err := putTerminalProfile(s.db, hostProfile); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.DeleteColorScheme(inUse.ID); err != nil {
+		t.Fatal(err)
+	}
+	global, err = s.GlobalProfile()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if global.ColorSchemeID != BrandSchemeID {
+		t.Fatalf("exclusão não reassociou o perfil ao esquema padrão: %q", global.ColorSchemeID)
+	}
+	hostProfile, err = scanProfile(s.db.QueryRow(
+		`SELECT id, name, is_global, data FROM terminal_profiles WHERE id = ?`, hostProfile.ID,
+	))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if hostProfile.ColorSchemeID != BrandSchemeID {
+		t.Fatalf("exclusão não reassociou o perfil do host ao esquema padrão: %q", hostProfile.ColorSchemeID)
+	}
+	wantCode(t, s.DeleteColorScheme(inUse.ID), apperr.NotFound)
 
 	mutated := brandScheme()
 	mutated.Name, mutated.Origin = "Nome antigo", model.SchemeCustom

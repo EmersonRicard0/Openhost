@@ -34,7 +34,6 @@ import {
   MaximiseIcon,
   PlusIcon,
   RenameIcon,
-  SettingsIcon,
 } from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { toastError } from '../../ui/Toast';
@@ -161,7 +160,6 @@ function SettingsTabItem({ active }: { active: boolean }) {
         if (e.button === 1) closeSettings();
       }}
     >
-      <SettingsIcon width={14} height={14} aria-hidden />
       <span className={s.tabTitle}>{t.settings.title}</span>
       <Button
         variant="ghost"
