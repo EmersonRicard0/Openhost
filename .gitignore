@@ -45,3 +45,6 @@ frontend/package.json.md5
 
 # Chave privada de assinatura das atualizações (specs/007): nunca versionar
 update-signing.key
+
+# Credenciais OAuth do Google baixadas do Console (nunca no git)
+client_secret*.json
