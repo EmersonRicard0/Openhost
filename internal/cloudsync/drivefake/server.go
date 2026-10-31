@@ -58,6 +58,8 @@ type fileMetadata struct {
 	Name          string            `json:"name"`
 	Parents       []string          `json:"parents"`
 	AppProperties map[string]string `json:"appProperties,omitempty"`
+	// fields pedido na criação: sem ele o Google devolve só id, nome e tipo (sem tamanho).
+	fields string
 }
 
 func New() *Server {
@@ -293,6 +295,7 @@ func (s *Server) createMultipart(w http.ResponseWriter, r *http.Request) {
 		writeFailure(w, http.StatusBadRequest, "badData")
 		return
 	}
+	metadata.fields = r.URL.Query().Get("fields")
 	s.create(w, metadata, data, "create")
 }
 
@@ -302,6 +305,7 @@ func (s *Server) createResumable(w http.ResponseWriter, r *http.Request) {
 		writeFailure(w, http.StatusBadRequest, "badMetadata")
 		return
 	}
+	metadata.fields = r.URL.Query().Get("fields")
 	s.mu.Lock()
 	s.next++
 	session := fmt.Sprintf("session-%d", s.next)
@@ -342,6 +346,10 @@ func (s *Server) create(w http.ResponseWriter, metadata fileMetadata, data []byt
 	s.files[id] = file
 	s.requests = append(s.requests, Request{Operation: operation, Parent: first(metadata.Parents)})
 	s.mu.Unlock()
+	if metadata.fields == "" {
+		writeJSON(w, http.StatusOK, map[string]any{"kind": "drive#file", "id": file.ID, "name": file.Name, "mimeType": "application/octet-stream"})
+		return
+	}
 	writeJSON(w, http.StatusOK, fileResponse(file))
 }
 

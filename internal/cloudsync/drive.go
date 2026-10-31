@@ -152,6 +152,10 @@ func (d *Drive) Create(ctx context.Context, name string, data []byte, appPropert
 	return d.createResumable(ctx, metadata, data)
 }
 
+// createdFields pede na criação os campos que doFile confere; sem isso o Google devolve só id,
+// nome e tipo, e o tamanho vazio parecia arquivo corrompido.
+const createdFields = "id,name,createdTime,size,appProperties"
+
 func (d *Drive) createMultipart(ctx context.Context, metadata any, data []byte) (DriveFile, error) {
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)
@@ -174,7 +178,7 @@ func (d *Drive) createMultipart(ctx context.Context, metadata any, data []byte) 
 	if err := writer.Close(); err != nil {
 		return DriveFile{}, err
 	}
-	request, err := d.request(ctx, http.MethodPost, "/upload/drive/v3/files?uploadType=multipart", &body)
+	request, err := d.request(ctx, http.MethodPost, "/upload/drive/v3/files?uploadType=multipart&fields="+createdFields, &body)
 	if err != nil {
 		return DriveFile{}, err
 	}
@@ -187,7 +191,7 @@ func (d *Drive) createResumable(ctx context.Context, metadata any, data []byte) 
 	if err != nil {
 		return DriveFile{}, err
 	}
-	request, err := d.request(ctx, http.MethodPost, "/upload/drive/v3/files?uploadType=resumable", bytes.NewReader(metadataJSON))
+	request, err := d.request(ctx, http.MethodPost, "/upload/drive/v3/files?uploadType=resumable&fields="+createdFields, bytes.NewReader(metadataJSON))
 	if err != nil {
 		return DriveFile{}, err
 	}
