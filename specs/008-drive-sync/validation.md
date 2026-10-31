@@ -26,3 +26,18 @@ Sem achados.
   A primeira rodada achou a lista de hosts desatualizada depois de aplicar mudanças da nuvem
   (corrigido em aa93f54).
 - §3 (conta Google real) pendente: depende do client id do dono do projeto.
+
+## Quickstart §3 com conta Google real, 2026-10-30 (Windows 11) — parcial
+
+Projeto `openhost-513300`, cliente "App para computador", escopos `drive.appdata`, `email` e
+`openid` (não confidenciais), tela de consentimento em teste. Segredos `GOOGLE_CLIENT_ID` e
+`GOOGLE_CLIENT_SECRET` no repositório.
+
+- Conectar e enviar (cenário 1): ✅ depois de duas correções achadas só com o Google real:
+  - o Google responde à criação de arquivo só com id, nome e tipo; sem `size` o envio virava
+    `CLOUD_CORRUPT` (0aa08c8, o Drive falso agora responde igual);
+  - `NETWORK` dizia "verificar as atualizações" também na sincronização (6481ed4).
+  O primeiro `Connect` falhou com `NETWORK` logo após ativar a Drive API (propagação do Google).
+- Achado sem correção ainda: um envio que falha depois de criar o `keyring.json` deixa a chave
+  sozinha na nuvem, e o próximo Conectar pede a senha de um cofre que não existe.
+- Pendentes: segundo computador (cenários 2, 4, 6, 9), macOS e Linux.
