@@ -69,18 +69,21 @@ func (m meta) wrapAD() []byte {
 // cofre); as tabelas cifradas só são lidas e escritas com o cofre desbloqueado.
 // Os ouvintes de OnStatus rodam depois que o Store libera o lock e podem chamá-lo de volta.
 type Store struct {
-	mu        sync.Mutex
-	dir       string
-	kdf       func(salt []byte) KDFParams
-	now       func() string
-	db        *sql.DB
-	status    Status
-	dek       []byte
-	meta      *meta
-	content   *model.Content
-	sigs      map[string]map[string]string
-	listeners []func(Status)
-	pending   []Status
+	mu              sync.Mutex
+	dir             string
+	kdf             func(salt []byte) KDFParams
+	now             func() string
+	db              *sql.DB
+	status          Status
+	dek             []byte
+	kek             []byte
+	meta            *meta
+	content         *model.Content
+	sigs            map[string]map[string]string
+	listeners       []func(Status)
+	pending         []Status
+	changeListeners []func()
+	pendingChange   bool
 }
 
 // Open abre (ou cria) o banco em dir. kdf define o custo do Argon2id para cofres novos e trocas
@@ -110,6 +113,9 @@ func Open(dir string, kdf func(salt []byte) KDFParams) (*Store, error) {
 }
 
 func openDB(path string) (*sql.DB, error) {
+	if err := restrictFiles(path); err != nil {
+		return nil, err
+	}
 	dsn := filepath.ToSlash(path) + "?_pragma=foreign_keys(1)&_pragma=journal_mode(WAL)" +
 		"&_pragma=synchronous(FULL)&_pragma=secure_delete(1)&_pragma=busy_timeout(5000)"
 	db, err := sql.Open("sqlite", dsn)
@@ -119,6 +125,11 @@ func openDB(path string) (*sql.DB, error) {
 	// Uma conexão: pragmas por conexão valem sempre e as escritas ficam serializadas.
 	db.SetMaxOpenConns(1)
 	if err := migrate(db); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	// O -wal e o -shm só nascem na primeira escrita: confere o modo deles também.
+	if err := restrictFiles(path); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
@@ -163,6 +174,16 @@ func (s *Store) OnStatus(fn func(Status)) {
 	s.listeners = append(s.listeners, fn)
 }
 
+// OnChange registra um ouvinte de mudanças locais persistidas. Os callbacks rodam depois de
+// liberar o lock e podem chamar o Store novamente.
+func (s *Store) OnChange(fn func()) {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	s.changeListeners = append(s.changeListeners, fn)
+}
+
+func (s *Store) markChanged() { s.pendingChange = true }
+
 func (s *Store) setStatus(st Status) {
 	s.status = st
 	s.pending = append(s.pending, st)
@@ -171,11 +192,18 @@ func (s *Store) setStatus(st Status) {
 // unlockAndNotify libera o lock e só então avisa os ouvintes das mudanças de estado.
 func (s *Store) unlockAndNotify() {
 	pending, listeners := s.pending, append([]func(Status){}, s.listeners...)
+	changed, changeListeners := s.pendingChange, append([]func(){}, s.changeListeners...)
 	s.pending = nil
+	s.pendingChange = false
 	s.mu.Unlock()
 	for _, st := range pending {
 		for _, l := range listeners {
 			l(st)
+		}
+	}
+	if changed {
+		for _, listener := range changeListeners {
+			listener()
 		}
 	}
 }
@@ -191,17 +219,17 @@ func validateNewPassword(password, confirmation string) error {
 	return nil
 }
 
-func (s *Store) newMeta(password string, dek []byte, createdAt string) (*meta, error) {
+func (s *Store) newMeta(password string, dek []byte, createdAt string) (*meta, []byte, error) {
 	p := s.kdf(RandomSalt())
 	m := &meta{time: p.Time, memoryKiB: p.MemoryKiB, salt: p.Salt, createdAt: createdAt}
 	kek := DeriveKEK([]byte(password), p)
-	defer Zero(kek)
 	wrapped, err := Seal(kek, dek, m.wrapAD())
 	if err != nil {
-		return nil, err
+		Zero(kek)
+		return nil, nil, err
 	}
 	m.wrappedDEK = wrapped
-	return m, nil
+	return m, kek, nil
 }
 
 func (s *Store) loadMeta() (*meta, error) {
@@ -222,13 +250,19 @@ func (s *Store) loadMeta() (*meta, error) {
 
 // unwrap: senha errada e cabeçalho adulterado dão o mesmo erro (contrato).
 func unwrap(password string, m *meta) ([]byte, error) {
+	dek, kek, err := unwrapKeyMaterial(password, m)
+	Zero(kek)
+	return dek, err
+}
+
+func unwrapKeyMaterial(password string, m *meta) ([]byte, []byte, error) {
 	kek := DeriveKEK([]byte(password), m.kdf())
-	defer Zero(kek)
 	dek, err := Unseal(kek, m.wrappedDEK, m.wrapAD())
 	if err != nil {
-		return nil, apperr.New(apperr.VaultBadPassword)
+		Zero(kek)
+		return nil, nil, apperr.New(apperr.VaultBadPassword)
 	}
-	return dek, nil
+	return dek, kek, nil
 }
 
 func writeMeta(tx *sql.Tx, m *meta, migratedFrom *string) error {
@@ -272,7 +306,7 @@ func (s *Store) create(password, confirmation string, content *model.Content, mi
 		return err
 	}
 	dek := RandomKey()
-	m, err := s.newMeta(password, dek, s.now())
+	m, kek, err := s.newMeta(password, dek, s.now())
 	if err != nil {
 		Zero(dek)
 		return err
@@ -280,9 +314,10 @@ func (s *Store) create(password, confirmation string, content *model.Content, mi
 	sigs, err := s.persist(func(tx *sql.Tx) error { return writeMeta(tx, m, migratedFrom) }, dek, nil, content)
 	if err != nil {
 		Zero(dek)
+		Zero(kek)
 		return err
 	}
-	s.dek, s.meta, s.content, s.sigs = dek, m, content.Clone(), sigs
+	s.dek, s.kek, s.meta, s.content, s.sigs = dek, kek, m, content.Clone(), sigs
 	s.setStatus(Status{State: StateUnlocked})
 	return nil
 }
@@ -302,17 +337,33 @@ func (s *Store) Unlock(password string) error {
 	if err != nil {
 		return s.corrupted()
 	}
-	dek, err := unwrap(password, m)
+	dek, kek, err := unwrapKeyMaterial(password, m)
 	if err != nil {
 		return err
 	}
 	content, sigs, err := loadContent(s.db, dek)
 	if err != nil {
 		Zero(dek)
+		Zero(kek)
 		return s.corrupted()
 	}
-	s.dek, s.meta, s.content, s.sigs = dek, m, content, sigs
+	s.dek, s.kek, s.meta, s.content, s.sigs = dek, kek, m, content, sigs
 	s.setStatus(Status{State: StateUnlocked})
+	return nil
+}
+
+// VerifyPassword confirma a senha mestra sem alterar o estado nem reembrulhar a DEK.
+func (s *Store) VerifyPassword(password string) error {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	if s.status.State != StateUnlocked {
+		return apperr.New(apperr.VaultLocked)
+	}
+	check, err := unwrap(password, s.meta)
+	if err != nil {
+		return err
+	}
+	Zero(check)
 	return nil
 }
 
@@ -332,7 +383,8 @@ func (s *Store) Lock() {
 func (s *Store) lockLocked() {
 	wasUnlocked := s.status.State == StateUnlocked
 	Zero(s.dek)
-	s.dek, s.meta, s.content, s.sigs = nil, nil, nil, nil
+	Zero(s.kek)
+	s.dek, s.kek, s.meta, s.content, s.sigs = nil, nil, nil, nil, nil
 	if s.db != nil {
 		_, _ = s.db.Exec(`PRAGMA wal_checkpoint(TRUNCATE)`)
 	}
@@ -356,10 +408,15 @@ func (s *Store) ChangePassword(current, next, confirmation string) error {
 	if err := validateNewPassword(next, confirmation); err != nil {
 		return err
 	}
-	m, err := s.newMeta(next, s.dek, s.meta.createdAt)
+	m, newKEK, err := s.newMeta(next, s.dek, s.meta.createdAt)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		if newKEK != nil {
+			Zero(newKEK)
+		}
+	}()
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
@@ -371,7 +428,10 @@ func (s *Store) ChangePassword(current, next, confirmation string) error {
 	if err := tx.Commit(); err != nil {
 		return err
 	}
-	s.meta = m
+	oldKEK := s.kek
+	s.meta, s.kek = m, newKEK
+	newKEK = nil
+	Zero(oldKEK)
 	return nil
 }
 
@@ -383,12 +443,13 @@ func (s *Store) Erase() error {
 		return apperr.New(apperr.VaultUnreadable)
 	}
 	Zero(s.dek)
-	s.dek, s.meta, s.content, s.sigs = nil, nil, nil, nil
+	Zero(s.kek)
+	s.dek, s.kek, s.meta, s.content, s.sigs = nil, nil, nil, nil, nil
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
-	for _, t := range []string{"forward_rules", "hosts", "known_hosts", "credentials", "groups", "vault_settings", "vault_meta"} {
+	for _, t := range []string{"sync_state", "forward_rules", "hosts", "known_hosts", "credentials", "groups", "vault_settings", "vault_meta"} {
 		if _, err := tx.Exec(`DELETE FROM ` + t); err != nil {
 			_ = tx.Rollback()
 			return err
@@ -415,15 +476,64 @@ func (s *Store) Read() (*model.Content, error) {
 // Mutate aplica fn a um rascunho e grava, numa transação, só as linhas que mudaram.
 // Se fn ou a gravação falharem, nada muda.
 func (s *Store) Mutate(fn func(c *model.Content) error) error {
+	return s.MutateWithProfiles(func(c *model.Content) (ProfileChanges, error) {
+		return ProfileChanges{}, fn(c)
+	})
+}
+
+// ProfileChanges permite que uma mutação do cofre atualize overrides de terminal na mesma
+// transação que hosts e regras. Perfis não guardam segredos, mas precisam acompanhar o host.
+type ProfileChanges struct {
+	Save   []model.TerminalProfile
+	Delete []string
+}
+
+func (s *Store) MutateWithProfiles(fn func(c *model.Content) (ProfileChanges, error)) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
 	if s.status.State != StateUnlocked {
 		return apperr.New(apperr.VaultLocked)
 	}
 	draft := s.content.Clone()
-	if err := fn(draft); err != nil {
+	profiles, err := fn(draft)
+	if err != nil {
 		return err
 	}
+	pre := func(tx *sql.Tx) error {
+		for _, id := range profiles.Delete {
+			if _, err := tx.Exec(`DELETE FROM terminal_profiles WHERE id = ? AND is_global = 0`, id); err != nil {
+				return err
+			}
+		}
+		for _, profile := range profiles.Save {
+			profile.IsGlobal = false
+			if err := putTerminalProfile(tx, profile); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+	sigs, err := s.persist(pre, s.dek, s.sigs, draft)
+	if err != nil {
+		return err
+	}
+	s.content, s.sigs = draft, sigs
+	s.markChanged()
+	return nil
+}
+
+// Apply persiste conteúdo vindo da nuvem sem disparar OnChange e, portanto, sem criar um ciclo
+// de upload. O chamador deve validar todos os itens antes de chamar este método.
+func (s *Store) Apply(content *model.Content) error {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	if s.status.State != StateUnlocked {
+		return apperr.New(apperr.VaultLocked)
+	}
+	if content == nil {
+		return apperr.New(apperr.InvalidInput)
+	}
+	draft := content.Clone()
 	sigs, err := s.persist(nil, s.dek, s.sigs, draft)
 	if err != nil {
 		return err
@@ -462,6 +572,9 @@ func (s *Store) SetPreference(key string, value any) error {
 	}
 	_, err = s.db.Exec(`INSERT INTO preferences (key, value) VALUES (?, ?)
 		ON CONFLICT(key) DO UPDATE SET value = excluded.value`, key, string(raw))
+	if err == nil {
+		s.markChanged()
+	}
 	return err
 }
 

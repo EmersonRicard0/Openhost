@@ -1,0 +1,2 @@
+Label;IP;Port;User;Folder;IdentityFile
+web-1;192.0.2.30;22;deploy;Web;

@@ -10,7 +10,9 @@ Operações sem marcação mantêm assinatura e semântica da 001.
 
 - Cada grupo de operações é uma struct Go ligada ao Wails (`Bind`): `VaultService`,
   `HostService` (hosts e grupos), `CredentialService`, `SessionService`, `SftpService`,
-  `ForwardService`, `ProfileService` **novo**, `AppService`. Nenhuma outra struct é ligada.
+  `ForwardService`, `ProfileService` **novo**, `AppService`, e, desde a 003, `ImportService` e
+  `ExportService`. Nenhuma outra struct é ligada no binário de release (os builds de teste
+  ligam também `TestService` e `Smoke`, abaixo).
   Métodos exportados que não fazem parte deste contrato MUST NOT existir nessas structs (teste
   de reflexão compara a lista de métodos com este documento).
 - A interface recebe sempre `Result<T>` =
@@ -39,6 +41,12 @@ Os da 001 mais **novos**: `NO_COMMON_ALGORITHM` (FR-122), `AGENT_UNAVAILABLE` (F
 `IN_USE` (excluir esquema/perfil em uso),
 `VAULT_MIGRATION_FAILED` (FR-102/103; o arquivo original permanece intacto).
 
+Da 003 (importar e exportar): `IMPORT_TOO_LARGE`, `IMPORT_UNREADABLE`, `IMPORT_FORMAT_NEWER`,
+`FILE_PASSWORD_REQUIRED`, `FILE_PASSWORD_WRONG`, `PREVIEW_EXPIRED`, `UNDO_UNAVAILABLE`.
+
+Da 008 (sincronização): `SYNC_UNAVAILABLE`, `SYNC_CANCELLED`, `SYNC_AUTH`, `SYNC_QUOTA`,
+`SYNC_FORMAT`, `CLOUD_EMPTY`, `CLOUD_CORRUPT`.
+
 ## VaultService
 
 Como `vault.*` da 001, com:
@@ -54,7 +62,12 @@ Evento `vault:state`: `VaultStatus` a cada mudança de estado (equivale ao `onSt
 ## HostService 🔒
 
 Como `hosts.*`/`groups.*` da 001. **Alterado**: `HostInput`/`HostView` ganham
-`authMethod: "agent"`, `legacyAlgorithms: boolean` e `profileId: string | null`.
+`authMethod: "agent"`, `legacyAlgorithms: boolean`, `profileId: string | null`,
+`detectedOs: OsId | null` e `osIcon: OsId | "auto"`. `detectedOs` é somente saída: valores
+enviados em `Create`/`Update` são ignorados; `osIcon` é validado pela lista fechada do modelo.
+
+Evento `hosts:changed`: `{ hostId: string, detectedOs: OsId | null }`, emitido quando a detecção
+de sistema de uma conexão SSH altera o host persistido.
 
 ## CredentialService 🔒
 
@@ -121,9 +134,65 @@ Como `app.*` da 001, com:
 | `GetPreferences()` / `UpdatePreferences(patch)` | **renomeado** de `getUiSettings`; inclui `glassEnabled`, `defaultShell`, `collapsedGroups` e `shortcuts: Record<string, string>`; no patch, `shortcuts` substitui o mapa inteiro (`""` desativa a ação) |
 | `app:close-requested` / `ConfirmClose(bool)` | igual à 001 (FR-028) |
 | `WindowMinimise()`, `WindowToggleMaximise()`, `WindowClose()` **novo** | botões da barra de título própria (FR-133); `WindowClose` passa pela confirmação de FR-028 |
-| `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (FR-145) |
+| `OpenExternalUrl(url)` **novo** | abre no navegador padrão; só `http`/`https`; chamado apenas por Ctrl+clique (⌘-clique no macOS) (FR-145) |
+
+**Plataformas (004).** A mesma ponte vale no Windows, no Linux e no macOS. A interface lê o
+sistema pelo `Environment()` do runtime do Wails (não é método ligado). `WindowMinimise`,
+`WindowToggleMaximise` e `WindowClose` só são chamados no Windows, onde a barra de título é
+própria; no Linux e no macOS a moldura é nativa e o fechamento passa pelo mesmo `OnBeforeClose`.
+`defaultShell` aceita os ids do Windows (`powershell`, `pwsh`, `cmd`, `gitbash`, `wsl:<distro>`) e,
+no Unix, o nome do shell de `/etc/shells` (`bash`, `zsh`, `fish`…).
+
+## ImportService e ExportService 🔒 (003)
+
+Definidos em [`specs/003-host-import-export/contracts/bridge.md`](../../003-host-import-export/contracts/bridge.md).
+Como os demais, escolhem arquivos só por diálogo nativo aberto pelo Go e nunca devolvem chave
+privada, passphrase ou senha. A prévia e o último lote importado ficam só em memória e são
+descartados quando o cofre bloqueia.
+
+## UpdateService (007)
+
+Definido em [`specs/007-in-app-update/contracts/bridge-updater.md`](../../007-in-app-update/contracts/bridge-updater.md).
+Sem 🔒: funciona com o cofre bloqueado e não lê nada dele. `Info`, `Check(manual)`, `Download`,
+`Cancel`, `Remind`, `Skip(version)`, `Prefs`/`SetPrefs`, `RestartNow`, `ApplyOnQuit`, `LastResult`,
+`OpenDownloadFolder`. Evento `updates:state`: `{ state, version?, progress?: { received, total },
+reason? }`. Nenhum argumento vira URL ou caminho: o Go só baixa os assets da release escolhida e
+só grava e abre `updates/<versão>` na pasta de dados. A verificação automática roda depois de
+`OnDomReady`, a cada 6 h, e nunca em build de desenvolvimento.
+
+## SyncService (008)
+
+Definido em [`specs/008-drive-sync/contracts/bridge-sync.md`](../../008-drive-sync/contracts/bridge-sync.md).
+`Info`, `Connect`, `CancelConnect`, `Start(mode, cloudPassword)`, `OpenFromCloud(password)`,
+`SyncNow`, `Conflicts`, `Resolve(key, keep)`, `Versions`, `RestoreVersion(name)`,
+`ProvidePassword(password)`, `SetDeviceName(name)`, `Disconnect(deleteCloud)`. Evento
+`sync:state` com `SyncInfo` (`state`, `available`, `email`, `deviceName`, `lastSync`, `pending`,
+`conflicts`, `reason`) a cada mudança; quando `lastSync` muda, a interface relê o cofre, porque
+mudanças de outro computador já foram aplicadas localmente. Senha mestra, DEK e refresh token
+nunca cruzam a ponte; conflitos chegam com senha, passphrase e chave privada como `"••••"`.
+`Resolve` e `RestoreVersion` só aceitam chaves e nomes da última listagem; nenhum argumento vira
+URL ou caminho. Funciona só com o cofre aberto, exceto `Info`, `Connect`, `CancelConnect` e
+`OpenFromCloud` (primeira tela, sem cofre). Sem client id no build, `Info` traz
+`available: false` e `Connect` devolve `SYNC_UNAVAILABLE`. Em e2e, `SHELLVAULT_E2E_CLOUD_URL` aponta para o Drive falso.
 
 ## TestService (somente build com tag `e2e`)
 
 Não existe no binário de release. `Maximise()`, `Restore()`, `SetSize(w, h)`, `Goroutines()`,
-`SessionCount()`, `ServerSizeOf(sessionId)`. Usado pelos testes E2E (research R18).
+`SessionCount()`, `ServerSizeOf(sessionId)`, `SetUpdateSource(url, pubkeyB64)` e
+`SetInstallKind(kind)` (007). A origem de releases e o formato de instalação também podem vir de
+`SHELLVAULT_E2E_UPDATE_URL`, `SHELLVAULT_E2E_UPDATE_PUBKEY` e `SHELLVAULT_E2E_INSTALL_KIND`, lidos
+ao iniciar. Usado pelos testes E2E (research R18).
+
+## Smoke (somente build com tag `smoke`, 004)
+
+Não existe no binário de release (`scripts/check-release.mjs` recusa `smokesvc`). Ligado em
+`window.go.smokesvc.Smoke`.
+
+| Método | Entrada | Saída | Efeito |
+|---|---|---|---|
+| `Ready()` | — | `void` | responde e encerra o processo com código 0 |
+
+O frontend chama `Ready()` só quando `import.meta.env.VITE_SMOKE` está definido, depois de a tela
+de criar o cofre aparecer e de criar cofre, host e chave pela ponte normal
+(`frontend/src/app/smoke.ts`). Usado por `scripts/smoke.mjs` no CI dos três sistemas
+(specs/004-linux-macos, R11).

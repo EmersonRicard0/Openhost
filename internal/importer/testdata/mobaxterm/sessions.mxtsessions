@@ -1,0 +1,9 @@
+[Bookmarks]
+SubRep=Clientes\Norte
+Core SSH=#109#0%192.0.2.10%2222%deploy%%%%..\ppk\rsa-v3-none.ppk#MobaFont%10
+Chave deslocada=#109#0%edge.example.net%22%ops%%%%%..\ppk\ed25519-v3-none.ppk#MobaFont%10
+Desktop NOC=#91#4%198.51.100.20%3389%noc
+Console legado=#98#1%203.0.113.30%23%legacy
+
+[Passwords]
+ssh:core=MOBAXTERM_PASSWORD_SENTINEL_DO_NOT_READ

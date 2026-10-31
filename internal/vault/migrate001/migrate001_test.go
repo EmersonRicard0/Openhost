@@ -93,6 +93,7 @@ func TestMigratePreservesEverything(t *testing.T) {
 	}
 	for i, h := range c.Hosts {
 		w := e.Hosts[i]
+		w.OSIcon = model.OSIconAuto
 		if h.LegacyAlgorithms || h.ProfileID != nil {
 			t.Errorf("host %s: campos novos deveriam vir com padrão", h.ID)
 		}

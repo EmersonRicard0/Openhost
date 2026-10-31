@@ -1,12 +1,51 @@
-.tabBar {
-  position: relative;
+.tabStrip {
   display: flex;
   align-items: center;
   gap: 4px;
   height: 42px;
   padding: 0 2px;
+}
+
+/* Só as abas rolam; setas, lista e + ficam fixos ao lado. */
+.tabBar {
+  position: relative;
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  height: 100%;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+/* Abas cortadas na borda somem aos poucos, indicando que há mais para rolar. */
+.tabBar[data-fade-start] {
+  mask-image: linear-gradient(to right, transparent, black 32px);
+}
+
+.tabBar[data-fade-end] {
+  mask-image: linear-gradient(to left, transparent, black 32px);
+}
+
+.tabBar[data-fade-start][data-fade-end] {
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black 32px,
+    black calc(100% - 32px),
+    transparent
+  );
+}
+
+.tabScroll {
+  flex: none;
+  width: 26px;
+  height: 26px;
+}
+
+.tab {
+  flex: none;
 }
 
 /* A pílula da aba ativa desliza entre as abas (FR-166); sem medida, a própria aba a desenha. */
@@ -142,6 +181,62 @@
   align-self: center;
 }
 
+/* Quantidade de sessões na aba de um grupo (FR-611). */
+.groupCount {
+  min-width: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Zonas de soltura sobre os terminais durante o arrasto (specs/006, FR-603). */
+.dropLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+}
+
+.dropPreview {
+  position: absolute;
+  border: 2px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  pointer-events: none;
+  transition:
+    left var(--motion-fast) var(--ease-standard),
+    top var(--motion-fast) var(--ease-standard),
+    width var(--motion-fast) var(--ease-standard),
+    height var(--motion-fast) var(--ease-standard);
+}
+
+.dropRefuse {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.dropRefuse > span {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-small);
+  color: var(--text-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropPreview {
+    transition: none;
+  }
+}
+
 .view {
   position: absolute;
   inset: 0;
@@ -151,6 +246,118 @@
 
 .hidden {
   display: none;
+}
+
+/* Painel de um grupo (specs/006): posição vem de `rects()` no estilo inline. */
+.pane {
+  inset: auto;
+  /* O xterm pode passar do painel até o próximo `fit` e cobriria o cabeçalho vizinho. */
+  overflow: hidden;
+}
+
+/* Painel ativo destacado na cor de destaque (FR-606). */
+.pane[data-focused]::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border: 1px solid var(--accent);
+  pointer-events: none;
+}
+
+/* Divisória: 6 px para pegar, linha de 1 px (research R5). */
+.divider {
+  position: absolute;
+  z-index: 4;
+  touch-action: none;
+}
+
+.divider[aria-orientation='vertical'] {
+  width: 6px;
+  margin-left: -3px;
+  cursor: col-resize;
+}
+
+.divider[aria-orientation='horizontal'] {
+  height: 6px;
+  margin-top: -3px;
+  cursor: row-resize;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  background: var(--border);
+  transition: background var(--motion-fast) var(--ease-standard);
+}
+
+.divider[aria-orientation='vertical']::before {
+  top: 0;
+  bottom: 0;
+  left: 2.5px;
+  width: 1px;
+}
+
+.divider[aria-orientation='horizontal']::before {
+  top: 2.5px;
+  right: 0;
+  left: 0;
+  height: 1px;
+}
+
+.divider:hover::before,
+.divider[data-dragging]::before,
+.divider:focus-visible::before {
+  background: var(--accent);
+}
+
+.divider:focus-visible {
+  outline: none;
+}
+
+.divider:focus-visible[aria-orientation='vertical']::before {
+  left: 1.5px;
+  width: 3px;
+}
+
+.divider:focus-visible[aria-orientation='horizontal']::before {
+  top: 1.5px;
+  height: 3px;
+}
+
+.paneHeader {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 2px 0 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-raised);
+  color: var(--text-secondary);
+  font-size: 12px;
+  cursor: grab;
+  user-select: none;
+}
+
+.pane[data-focused] .paneHeader {
+  color: var(--text-primary);
+}
+
+.paneTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.paneButton {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  padding: 0;
 }
 
 /* Espaçamento e fundo vêm do perfil (FR-152). */

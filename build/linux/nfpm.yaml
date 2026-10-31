@@ -1,0 +1,54 @@
+# Pacotes .deb e .rpm (specs/004-linux-macos, contracts/release.md). Gerado por
+# scripts/package-linux.sh, que define VERSION e ARCH e copia o binário para
+# dist/.stage/openhost (o nfpm não expande variáveis em `src`). Sem scripts de remoção: desinstalar
+# nunca toca no cofre do usuário (~/.config/ShellVault).
+name: openhost
+arch: ${ARCH}
+platform: linux
+version: ${VERSION}
+release: "1"
+section: net
+priority: optional
+maintainer: OpenHost <silvaemerson797@gmail.com>
+description: |
+  Cliente SSH local-first com cofre criptografado.
+  Terminal SSH, SFTP, encaminhamento de portas e terminal local num app só.
+vendor: OpenHost
+homepage: https://github.com/EmersonRicard0/Openhost
+license: Proprietary
+
+contents:
+  - src: dist/.stage/openhost
+    dst: /usr/bin/openhost
+    file_info:
+      mode: 0755
+  - src: build/linux/openhost.desktop
+    dst: /usr/share/applications/openhost.desktop
+    file_info:
+      mode: 0644
+  - src: build/linux/icons/128x128/openhost.png
+    dst: /usr/share/icons/hicolor/128x128/apps/openhost.png
+    file_info:
+      mode: 0644
+  - src: build/linux/icons/512x512/openhost.png
+    dst: /usr/share/icons/hicolor/512x512/apps/openhost.png
+    file_info:
+      mode: 0644
+  - src: build/linux/copyright
+    dst: /usr/share/doc/openhost/copyright
+    file_info:
+      mode: 0644
+  - src: docs/licenses.md
+    dst: /usr/share/doc/openhost/licencas-de-terceiros.md
+    file_info:
+      mode: 0644
+
+overrides:
+  deb:
+    depends:
+      - libgtk-3-0 | libgtk-3-0t64
+      - libwebkit2gtk-4.1-0
+  rpm:
+    depends:
+      - libgtk-3.so.0()(64bit)
+      - libwebkit2gtk-4.1.so.0()(64bit)

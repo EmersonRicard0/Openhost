@@ -19,7 +19,7 @@ func TestCreateHost(t *testing.T) {
 	if h.Label != "Servidor" || h.CreatedAt != t0 || h.UpdatedAt != t0 || validate.UUID(h.ID) != nil {
 		t.Fatalf("host: %+v", h)
 	}
-	if h.LegacyAlgorithms || h.ProfileID != nil {
+	if h.LegacyAlgorithms || h.ProfileID != nil || h.DetectedOS != nil || h.OSIcon != model.OSIconAuto {
 		t.Fatal("campos novos devem vir com padrão")
 	}
 	if len(c.Hosts) != 1 {
@@ -132,6 +132,7 @@ func TestUpdateHost(t *testing.T) {
 	c := testContent()
 	h, _ := CreateHost(c, baseInput(), t0)
 	c.Hosts[0].ProfileID = model.Ptr("perfil-do-host")
+	c.Hosts[0].DetectedOS = model.Ptr(OSAlpine)
 	in := baseInput()
 	in.Port = 2222
 	u, err := UpdateHost(c, h.ID, in, t1)
@@ -142,6 +143,9 @@ func TestUpdateHost(t *testing.T) {
 	// O override de perfil é do ProfileService; editar o host não o perde.
 	if u.ProfileID == nil || *u.ProfileID != "perfil-do-host" {
 		t.Fatal("update perdeu o profileId")
+	}
+	if u.DetectedOS == nil || *u.DetectedOS != OSAlpine {
+		t.Fatal("update aceitou/perdeu detectedOs")
 	}
 	_, err = UpdateHost(c, missing, baseInput(), t1)
 	wantCode(t, err, "NOT_FOUND")
@@ -204,13 +208,16 @@ func TestDuplicateHost(t *testing.T) {
 	in.LegacyAlgorithms = true
 	h, _ := CreateHost(c, in, t0)
 	c.Hosts[0].ProfileID = model.Ptr("perfil")
+	c.Hosts[0].DetectedOS = model.Ptr(OSAlpine)
+	c.Hosts[0].OSIcon = OSUbuntu
 	c.ForwardRules = append(c.ForwardRules, model.ForwardRule{ID: "00000000-0000-4000-8000-0000000000b1",
 		HostID: h.ID, Label: model.Ptr("db"), BindAddress: "127.0.0.1", BindPort: 15432,
 		DestHost: "db.internal", DestPort: 5432})
 	cp, err := DuplicateHost(c, h.ID, t1)
 	mustOK(t, err)
 	if cp.ID == h.ID || cp.Label != "Servidor (cópia)" || *cp.CredentialID != pwCred ||
-		*cp.GroupID != g.ID || cp.CreatedAt != t1 || !cp.LegacyAlgorithms || cp.ProfileID == nil {
+		*cp.GroupID != g.ID || cp.CreatedAt != t1 || !cp.LegacyAlgorithms || cp.ProfileID == nil ||
+		cp.DetectedOS == nil || *cp.DetectedOS != OSAlpine || cp.OSIcon != OSUbuntu {
 		t.Fatalf("cópia: %+v", cp)
 	}
 	var copied []model.ForwardRule
@@ -222,6 +229,38 @@ func TestDuplicateHost(t *testing.T) {
 	if len(copied) != 1 || copied[0].ID == "00000000-0000-4000-8000-0000000000b1" ||
 		copied[0].DestHost != "db.internal" || copied[0].BindPort != 15433 {
 		t.Fatalf("regras copiadas: %+v", copied)
+	}
+}
+
+func TestOSIconValidationAndDetectedOSIsNotEditable(t *testing.T) {
+	c := testContent()
+	var create HostInput
+	if err := json.Unmarshal([]byte(`{"label":"Servidor","address":"localhost","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"detectedOs":"cisco","osIcon":"ubuntu"}`), &create); err != nil {
+		t.Fatal(err)
+	}
+	host, err := CreateHost(c, create, t0)
+	mustOK(t, err)
+	if host.DetectedOS != nil || host.OSIcon != OSUbuntu {
+		t.Fatalf("host criado = %+v", host)
+	}
+	changed, err := SetDetectedOS(c, host.ID, model.Ptr(OSAlpine), t1)
+	mustOK(t, err)
+	if !changed {
+		t.Fatal("detecção não alterou o host")
+	}
+	var update HostInput
+	if err := json.Unmarshal([]byte(`{"label":"Servidor","address":"localhost","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"detectedOs":"cisco","osIcon":"auto"}`), &update); err != nil {
+		t.Fatal(err)
+	}
+	host, err = UpdateHost(c, host.ID, update, t1)
+	mustOK(t, err)
+	if host.DetectedOS == nil || *host.DetectedOS != OSAlpine || host.OSIcon != model.OSIconAuto {
+		t.Fatalf("host atualizado = %+v", host)
+	}
+	invalid := baseInput()
+	invalid.OSIcon = "solaris"
+	if _, err := CreateHost(testContent(), invalid, t0); err == nil {
+		t.Fatal("osIcon desconhecido foi aceito")
 	}
 }
 

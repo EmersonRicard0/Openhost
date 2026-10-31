@@ -150,6 +150,8 @@ func convert(lc *legacyContent) *model.Content {
 	for _, h := range lc.Hosts {
 		h.LegacyAlgorithms = false
 		h.ProfileID = nil
+		h.DetectedOS = nil
+		h.OSIcon = model.OSIconAuto
 		c.Hosts = append(c.Hosts, h)
 	}
 	c.Credentials = append(c.Credentials, lc.Credentials...)

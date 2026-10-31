@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+
+	"shellvault/internal/vault"
 )
 
 func TestValidateShortcuts(t *testing.T) {
@@ -13,6 +15,13 @@ func TestValidateShortcuts(t *testing.T) {
 		{"closeTab": "Ctrl+Shift+W", "palette": ""},
 		{"newTab": "Ctrl+Alt+T", "nextTab": "Ctrl+Tab", "search": "F5"},
 		{"zoomIn": "Alt+Equal", "zoomOut": "Ctrl+Minus", "zoomReset": "Ctrl+Digit0"},
+		{
+			"openSettings": "Ctrl+Comma",
+			"focusLeft":    "Alt+ArrowLeft",
+			"focusRight":   "Alt+ArrowRight",
+			"focusUp":      "Alt+ArrowUp",
+			"focusDown":    "Alt+ArrowDown",
+		},
 	}
 	for _, shortcuts := range valid {
 		if err := ValidateShortcuts(shortcuts); err != nil {
@@ -64,5 +73,51 @@ func TestPreferencesWithoutTerminalOptionsKeepDefaults(t *testing.T) {
 	preferences = normalizedPreferences(preferences)
 	if preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect {
 		t.Fatalf("preferências migradas = %+v", preferences)
+	}
+}
+
+func TestUpdatePreferencesDefaultsAndValidation(t *testing.T) {
+	preferences := DefaultPreferences()
+	if !preferences.Updates.Auto || preferences.Updates.Prerelease {
+		t.Fatalf("padrões de update = %+v", preferences.Updates)
+	}
+
+	preferences.Updates = UpdatePrefs{
+		Auto:        false,
+		Prerelease:  true,
+		Skipped:     "não-é-versão",
+		RemindAfter: "amanhã",
+		LastCheck:   "ontem",
+		ETag:        strings.Repeat("x", 2048),
+	}
+	got := normalizedPreferences(preferences).Updates
+	if got.Auto || !got.Prerelease || got.Skipped != "" || got.RemindAfter != "" || got.LastCheck != "" || got.ETag != "" {
+		t.Fatalf("updates normalizadas = %+v", got)
+	}
+}
+
+func TestUpdatePreferencesReadWhileVaultLocked(t *testing.T) {
+	store, err := vault.Open(t.TempDir(), vault.TestKDF)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	if err := store.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	preferenceStore := NewPreferenceStore(store)
+	preferences := DefaultPreferences()
+	preferences.Updates = UpdatePrefs{Auto: false, Prerelease: true, Skipped: "0.6.0"}
+	if err := preferenceStore.Save(preferences); err != nil {
+		t.Fatal(err)
+	}
+	store.Lock()
+
+	got, err := preferenceStore.Get()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got.Updates != preferences.Updates {
+		t.Fatalf("updates com cofre bloqueado = %+v", got.Updates)
 	}
 }
