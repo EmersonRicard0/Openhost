@@ -99,8 +99,8 @@ log ou mensagem usa credenciais OAuth reais.
 
 **Independent Test**: quickstart, cenário 9 (manual).
 
-- [ ] T022 [P] [US6] `site/index.html` e `site/privacidade.html` estáticos, em português, preto piano com laranja do chevron: o que o app guarda e envia (cofre cifrado, só na pasta ou na área do app no Drive; e-mail só para mostrar a conta; nenhuma telemetria). Sem credenciais, ID do projeto no Google, e-mails pessoais nem dados de usuário.
-- [ ] T023 [US6] `.github/workflows/pages.yml` publicando só `site/` no GitHub Pages; conferir que nada de `docs/` ou `specs/` é publicado.
+- [X] T022 [P] [US6] `site/index.html` e `site/privacidade.html` estáticos, em português, preto piano com laranja do chevron: o que o app guarda e envia (cofre cifrado, só na pasta ou na área do app no Drive; e-mail só para mostrar a conta; nenhuma telemetria). Sem credenciais, ID do projeto no Google, e-mails pessoais nem dados de usuário.
+- [X] T023 [US6] `.github/workflows/pages.yml` publicando só `site/` no GitHub Pages; conferir que nada de `docs/` ou `specs/` é publicado.
 - [ ] T024 [US6] No Console do Google (com confirmação do dono do projeto): Branding com nome, logotipo, página inicial e política; Público → "Publicar app". Registrar o resultado em `specs/013-sync-simples/validation.md`.
 
 ---

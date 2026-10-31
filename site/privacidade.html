@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Política de privacidade — OpenHost</title>
+    <link rel="icon" href="logo.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <img src="logo.svg" alt="" />
+        <a href="./">OpenHost</a>
+      </header>
+
+      <h1>Política de privacidade</h1>
+      <p>Última atualização: 31 de outubro de 2026.</p>
+
+      <h2>Resumo</h2>
+      <p>
+        O OpenHost é um app de computador. Ele <strong>não tem servidor</strong>, não pede conta,
+        não coleta dados de uso e não envia telemetria. Tudo o que você cadastra (hosts, usuários,
+        senhas, chaves, notas) fica num cofre cifrado no seu computador, protegido pela sua senha
+        mestra, que nunca sai dele.
+      </p>
+
+      <h2>Sincronização (opcional)</h2>
+      <p>Só acontece se você ligar. Há dois jeitos:</p>
+      <ul>
+        <li>
+          <strong>Pela pasta</strong> do Google Drive, do OneDrive ou do Dropbox instalados no seu
+          computador: o OpenHost grava uma cópia cifrada do cofre numa subpasta chamada
+          <code>OpenHost</code> e não lê nem altera nada fora dela. Quem leva os arquivos para os
+          outros computadores é o programa desse serviço, segundo a política dele. O OpenHost não
+          acessa a sua conta nesse caso.
+        </li>
+        <li>
+          <strong>Pela conta Google</strong> ("Conectar Google Drive"): você autoriza no navegador, e
+          o OpenHost pede só duas permissões.
+        </li>
+      </ul>
+
+      <h2>O que o OpenHost acessa na sua conta Google</h2>
+      <div class="card">
+        <ul>
+          <li>
+            <strong>Área de dados do app no Google Drive</strong>: uma pasta escondida, exclusiva do
+            OpenHost. Ele não vê nem altera seus outros arquivos do Drive. Ali ficam só o cofre
+            cifrado e as versões anteriores dele.
+          </li>
+          <li>
+            <strong>Seu endereço de e-mail</strong>: usado só para mostrar no app com qual conta a
+            sincronização está ligada.
+          </li>
+        </ul>
+      </div>
+      <p>
+        O cofre sai do computador sempre cifrado com uma chave derivada da sua senha mestra. Nem o
+        Google nem o projeto OpenHost conseguem ler nomes de hosts, endereços, usuários, senhas ou
+        chaves. A autorização da conta fica guardada dentro do cofre cifrado, no seu computador.
+      </p>
+
+      <h2>Com quem os dados são compartilhados</h2>
+      <p>
+        Com ninguém. Os dados não são enviados a servidores do projeto (não existem), não são
+        vendidos, não são usados para publicidade nem para treinar modelos de IA. O uso das
+        informações recebidas das APIs do Google segue a
+        <a href="https://developers.google.com/terms/api-services-user-data-policy"
+          >Política de dados do usuário dos serviços de API do Google</a
+        >, incluindo os requisitos de uso limitado.
+      </p>
+
+      <h2>Por quanto tempo e como apagar</h2>
+      <ul>
+        <li>
+          No app, <strong>Desconectar → Apagar</strong> remove todas as cópias da pasta ou da área do
+          app no Drive e a autorização deste computador. O cofre do seu computador continua inteiro.
+        </li>
+        <li>
+          Você também pode remover o acesso a qualquer momento em
+          <a href="https://myaccount.google.com/permissions">myaccount.google.com/permissions</a>.
+        </li>
+        <li>As versões anteriores guardadas são limitadas às mais recentes (pelo menos 30).</li>
+      </ul>
+
+      <h2>Contato</h2>
+      <p>
+        Dúvidas sobre privacidade: abra uma solicitação em
+        <a href="https://github.com/EmersonRicard0/Openhost/issues">github.com/EmersonRicard0/Openhost/issues</a>.
+      </p>
+
+      <footer><a href="./">Início</a></footer>
+    </main>
+  </body>
+</html>
