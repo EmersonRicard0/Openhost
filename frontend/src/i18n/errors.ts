@@ -46,6 +46,7 @@ export const ERROR_CAUSES: Record<ErrorCode, string> = {
   SYNC_FORMAT: 'O cofre da nuvem foi gravado por uma versão mais nova do OpenHost. Atualize o app.',
   CLOUD_EMPTY: 'Não há cofre do OpenHost nesta conta Google.',
   CLOUD_CORRUPT: 'O cofre da nuvem está danificado. Restaure uma versão anterior.',
+  SYNC_FOLDER_UNAVAILABLE: 'A pasta de sincronização não está disponível.',
   INTERNAL: 'Ocorreu um erro inesperado.',
 };
 

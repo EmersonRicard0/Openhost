@@ -44,6 +44,7 @@ export const ERROR_CODES = [
   'SYNC_FORMAT',
   'CLOUD_EMPTY',
   'CLOUD_CORRUPT',
+  'SYNC_FOLDER_UNAVAILABLE',
   'INTERNAL',
 ] as const;
 

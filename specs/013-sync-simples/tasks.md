@@ -87,7 +87,7 @@ log ou mensagem usa credenciais OAuth reais.
 
 **Independent Test**: quickstart, cenário 8.
 
-- [ ] T019 [P] [US5] Testes e depois `frontend/src/features/sync/syncErrors.ts`: frase + ação para `NETWORK`, `SYNC_AUTH`, `SYNC_QUOTA`, `SYNC_FORMAT`, `SYNC_FOLDER_UNAVAILABLE`, `CLOUD_CORRUPT`, `CLOUD_EMPTY`, `SYNC_CANCELLED` ("Conexão cancelada"), sem código técnico no texto; "Detalhes" só com código, operação e hora (sem `detail`, e-mail ou caminho); teste em `syncErrors.test.ts`.
+- [X] T019 [P] [US5] Testes e depois `frontend/src/features/sync/syncErrors.ts`: frase + ação para `NETWORK`, `SYNC_AUTH`, `SYNC_QUOTA`, `SYNC_FORMAT`, `SYNC_FOLDER_UNAVAILABLE`, `CLOUD_CORRUPT`, `CLOUD_EMPTY`, `SYNC_CANCELLED` ("Conexão cancelada"), sem código técnico no texto; "Detalhes" só com código, operação e hora (sem `detail`, e-mail ou caminho); teste em `syncErrors.test.ts`.
 - [ ] T020 [US5] `SyncSettings.tsx` ligada: "✓ Sincronizado pela pasta do <programa>" ou "✓ Sincronizado com <e-mail>", estado na mesma linha, "Desconectar", "Mais opções" fechado com nome do computador, versões anteriores, sincronizar agora e conflitos; erros pelo `syncErrors.ts` com "Detalhes" recolhido; rede/pasta indisponível sem aviso, só "Pendente".
 - [ ] T021 [US5] E2e: cenário 8 (pasta removida ⇒ "Pendente" e frase, sem aviso repetido; "Detalhes" sem caminho nem e-mail).
 
