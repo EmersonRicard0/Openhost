@@ -79,6 +79,20 @@ func (s *SessionService) Write(sessionID, data string) error {
 	return clean(s.sessions.Write(sessionID, data))
 }
 
+func (s *SessionService) Pause(sessionID string) error {
+	if err := validate.UUID(sessionID); err != nil {
+		return clean(err)
+	}
+	return clean(s.sessions.Pause(sessionID))
+}
+
+func (s *SessionService) Resume(sessionID string) error {
+	if err := validate.UUID(sessionID); err != nil {
+		return clean(err)
+	}
+	return clean(s.sessions.Resume(sessionID))
+}
+
 func (s *SessionService) Resize(sessionID string, cols, rows int) error {
 	if err := validate.UUID(sessionID); err != nil {
 		return clean(err)

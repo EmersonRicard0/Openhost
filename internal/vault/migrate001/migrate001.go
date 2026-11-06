@@ -115,6 +115,7 @@ func read(path, password string) (*legacyContent, error) {
 		return nil, apperr.New(apperr.VaultUnreadable)
 	}
 	kek := vault.DeriveKEK([]byte(password), vault.LibsodiumKDF(h.Kdf.OpsLimit, h.Kdf.MemLimit, salt))
+	defer vault.ReleaseDerivedMemory()
 	dek, err := vault.Unseal(kek, wrapped, wrapAD(h))
 	vault.Zero(kek)
 	if err != nil {

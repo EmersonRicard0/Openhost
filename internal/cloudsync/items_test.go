@@ -114,12 +114,13 @@ func TestSyncPreferencesExcludeMachineLocalFields(t *testing.T) {
 	preferences.Updates.Skipped = "9.9.9"
 	preferences.HostDensity = "compact"
 	preferences.PromptTitle = false
+	preferences.GpuRendering = true
 	preferences.Shortcuts = map[string]string{"newTab": "Ctrl+T"}
 	encoded, err := json.Marshal(SyncPreferencesFrom(preferences))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, local := range []string{"dark", "Fonte só desta máquina", "shell-local", "9.9.9", "updates", "compact", "hostDensity"} {
+	for _, local := range []string{"dark", "Fonte só desta máquina", "shell-local", "9.9.9", "updates", "compact", "hostDensity", "gpuRendering"} {
 		if string(encoded) == local || containsJSONText(encoded, local) {
 			t.Fatalf("preferência local %q entrou no item: %s", local, encoded)
 		}
@@ -127,9 +128,10 @@ func TestSyncPreferencesExcludeMachineLocalFields(t *testing.T) {
 	base := appwin.DefaultPreferences()
 	base.Theme = "light"
 	base.DefaultShell = "cmd"
+	base.GpuRendering = true
 	merged := ApplySyncPreferences(base, SyncPreferencesFrom(preferences))
 	if merged.Theme != "light" || merged.DefaultShell != "cmd" || merged.HostDensity != "comfortable" ||
-		merged.Shortcuts["newTab"] != "Ctrl+T" || merged.PromptTitle {
+		!merged.GpuRendering || merged.Shortcuts["newTab"] != "Ctrl+T" || merged.PromptTitle {
 		t.Fatalf("preferências aplicadas incorretamente: %+v", merged)
 	}
 }

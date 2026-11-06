@@ -197,6 +197,12 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 					return apperr.New(apperr.InvalidInput)
 				}
 				preferences.AutoReconnect = value
+			case "gpuRendering":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.GpuRendering = value
 			default:
 				return apperr.New(apperr.InvalidInput)
 			}

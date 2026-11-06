@@ -4,6 +4,7 @@ package vault
 import (
 	"crypto/rand"
 	"errors"
+	"runtime/debug"
 
 	"golang.org/x/crypto/argon2"
 	"golang.org/x/crypto/chacha20poly1305"
@@ -40,6 +41,12 @@ func LibsodiumKDF(opsLimit uint32, memLimitBytes uint64, salt []byte) KDFParams 
 func DeriveKEK(password []byte, p KDFParams) []byte {
 	return argon2.IDKey(password, p.Salt, p.Time, p.MemoryKiB, 1, KeySize)
 }
+
+func freeDerivedMemory() { debug.FreeOSMemory() }
+
+// ReleaseDerivedMemory devolve ao sistema, de forma assíncrona, as páginas temporárias usadas
+// por uma derivação feita fora de Store (como chaveiros da nuvem e migração legada).
+func ReleaseDerivedMemory() { go freeDerivedMemory() }
 
 func RandomKey() []byte {
 	return randomBytes(KeySize)

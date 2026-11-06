@@ -16,9 +16,9 @@ regressão do vazamento.
 
 ## Phase 2: Foundational
 
-- [ ] T003 [Codex] Teste em `internal/session/pause_test.go`: `Pause` para a leitura da saída, `Resume` volta, pausa "expira sozinha em 30 s", `Close` libera o leitor mesmo pausado, idempotência e sessão inexistente retorna `nil` (contracts/bridge.md)
-- [ ] T004 [Codex] Implementar `paused`/`pausedAt` e o gate no leitor em `internal/session/manager.go` (entrada do usuário continua indo; data-model.md "Fluxo da sessão")
-- [ ] T005 [Codex] `SessionService.Pause/Resume(sessionId)` em `internal/bridge/` com validação do formato de id; `wails generate module`
+- [X] T003 [Codex] Teste em `internal/session/pause_test.go`: `Pause` para a leitura da saída, `Resume` volta, pausa "expira sozinha em 30 s", `Close` libera o leitor mesmo pausado, idempotência e sessão inexistente retorna `nil` (contracts/bridge.md)
+- [X] T004 [Codex] Implementar `paused`/`pausedAt` e o gate no leitor em `internal/session/manager.go` (entrada do usuário continua indo; data-model.md "Fluxo da sessão")
+- [X] T005 [Codex] `SessionService.Pause/Resume(sessionId)` em `internal/bridge/` com validação do formato de id; `wails generate module`
 - [ ] T006 [Claude] `sessions.pause/resume` em `frontend/src/shared/ipc/api.ts` e `frontend/src/bridge/index.ts` (+ mock dos testes, se houver)
 
 **Checkpoint**: ponte com pause/resume pronta.
@@ -28,9 +28,9 @@ regressão do vazamento.
 **Goal**: ≤ 300 MB com cofre aberto e sem abas (SC-1401).
 **Independent Test**: cenário "cofre aberto, sem abas" do `memory.spec.ts`.
 
-- [ ] T007 [P] [US1] [Codex] Teste em `internal/vault/` que, após `Create`/`Unlock`/`ChangePassword`, chama o gancho de devolução de memória (função injetável) uma vez, fora do lock
-- [ ] T008 [US1] [Codex] Chamar `debug.FreeOSMemory()` em goroutine após cada derivação Argon2id em `internal/vault/` (abrir, criar, trocar senha, abrir cofre da nuvem em `internal/cloudsync` se derivar) — parâmetros do Argon2 inalterados
-- [ ] T009 [P] [US1] [Codex] `debug.SetMemoryLimit(256 << 20)` na inicialização em `main.go` (limite suave), com comentário citando research R1
+- [X] T007 [P] [US1] [Codex] Teste em `internal/vault/` que, após `Create`/`Unlock`/`ChangePassword`, chama o gancho de devolução de memória (função injetável) uma vez, fora do lock
+- [X] T008 [US1] [Codex] Chamar `debug.FreeOSMemory()` em goroutine após cada derivação Argon2id em `internal/vault/` (abrir, criar, trocar senha, abrir cofre da nuvem em `internal/cloudsync` se derivar) — parâmetros do Argon2 inalterados
+- [X] T009 [P] [US1] [Codex] `debug.SetMemoryLimit(256 << 20)` na inicialização em `main.go` (limite suave), com comentário citando research R1
 - [ ] T010 [US1] [Claude] Meta SC-1401 em `frontend/tests/e2e/memory.spec.ts`: total do app ≤ 300 MB 10 s após abrir o cofre; e 5 bloqueios/desbloqueios não somam > 20 MB
 
 ## Phase 4: User Story 2 — Fechar abas devolve a memória (P1)
@@ -69,7 +69,7 @@ regressão do vazamento.
 
 ## Phase 7b: Opção de GPU (descoberta da T018)
 
-- [ ] T027 [US3] [Codex] Preferência `gpuRendering` (bool, padrão `false`) em `internal/appwin/preferences.go` e no `case` de `internal/bridge/app.go` (mesmo caminho de `boldBright`); não sincroniza (depende da placa de vídeo de cada computador)
+- [X] T027 [US3] [Codex] Preferência `gpuRendering` (bool, padrão `false`) em `internal/appwin/preferences.go` e no `case` de `internal/bridge/app.go` (mesmo caminho de `boldBright`); não sincroniza (depende da placa de vídeo de cada computador)
 - [ ] T028 [US3] [Claude] Interruptor "Aceleração por GPU" em Configurações → Terminal, com texto dizendo que usa mais memória; trocar vale para as abas que aparecerem depois
 
 ## Phase 8: Polish

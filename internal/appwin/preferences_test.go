@@ -90,6 +90,13 @@ func TestHostDensityAndPromptTitleDefaults(t *testing.T) {
 	}
 }
 
+func TestGpuRenderingDefaultsToDisabled(t *testing.T) {
+	preferences := DefaultPreferences()
+	if preferences.GpuRendering {
+		t.Fatal("gpuRendering deve iniciar desativado")
+	}
+}
+
 func TestUpdatePreferencesDefaultsAndValidation(t *testing.T) {
 	preferences := DefaultPreferences()
 	if !preferences.Updates.Auto || preferences.Updates.Prerelease {
