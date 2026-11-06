@@ -152,9 +152,9 @@ function GeneralSection({ settings }: { settings: Settings }) {
   );
 }
 
-const DENSITIES: { value: HostDensity; label: string }[] = (['comfortable', 'compact'] as const).map(
-  (value) => ({ value, label: t.settings.hostDensityOptions[value] }),
-);
+const DENSITIES: { value: HostDensity; label: string }[] = (
+  ['comfortable', 'compact'] as const
+).map((value) => ({ value, label: t.settings.hostDensityOptions[value] }));
 
 const BELLS: { value: BellMode; label: string }[] = (['visual', 'sound', 'off'] as const).map(
   (value) => ({ value, label: t.settings.bellOptions[value] }),
@@ -180,6 +180,12 @@ function TerminalBehavior({ settings }: { settings: Settings }) {
         hint={t.settings.boldBrightHint}
         checked={settings.boldBright}
         onChange={(e) => void saveUi({ boldBright: e.target.checked })}
+      />
+      <Checkbox
+        label={t.settings.gpuRendering}
+        hint={t.settings.gpuRenderingHint}
+        checked={settings.gpuRendering ?? false}
+        onChange={(e) => void saveUi({ gpuRendering: e.target.checked })}
       />
       <Checkbox
         label={t.settings.autoReconnect}

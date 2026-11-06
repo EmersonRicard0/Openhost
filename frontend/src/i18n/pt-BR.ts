@@ -156,6 +156,9 @@ export const t = {
     bellOptions: { off: 'Desligado', sound: 'Som', visual: 'Piscar a tela' },
     boldBright: 'Negrito em cores claras',
     boldBrightHint: 'Texto em negrito usa a versão clara da cor, como nos terminais clássicos.',
+    gpuRendering: 'Aceleração por GPU',
+    gpuRenderingHint:
+      'Desenha o terminal pela placa de vídeo: rolagem mais leve com muita saída, mas usa mais memória. Vale para as abas abertas depois de mudar.',
     hostDensity: 'Densidade da lista de hosts',
     hostDensityOptions: { comfortable: 'Confortável', compact: 'Compacta' },
     hostDensityHint: 'Compacta mostra uma linha por host, com nome e endereço lado a lado.',
