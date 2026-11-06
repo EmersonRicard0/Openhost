@@ -12,6 +12,7 @@ import { DisconnectedIcon, ErrorIcon, ExitedIcon, RefreshIcon, TerminalIcon } fr
 import { ShellIcon } from '../../ui/ShellIcon';
 import { ConflictDialog } from '../sftp/ConflictDialog';
 import { SettingsPage } from '../settings/SettingsPage';
+import { SnippetDialogs } from '../snippets/SnippetDialogs';
 import { SftpView } from '../sftp/SftpView';
 import { MAX_ATTEMPTS, stopAutoReconnect, useAutoReconnect } from './autoReconnect';
 import { runShortcut } from './commands';
@@ -250,6 +251,7 @@ export function Workspace() {
       <PasteConfirmDialog />
       <CloseTabConfirm />
       <BroadcastConfirm />
+      <SnippetDialogs />
       <ConflictDialog />
     </>
   );

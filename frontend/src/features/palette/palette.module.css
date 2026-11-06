@@ -162,3 +162,9 @@
     animation: none;
   }
 }
+
+/* Comando salvo sem terminal ativo (specs/012, US3-5). */
+.item[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: default;
+}

@@ -73,9 +73,9 @@ numa pasta temporária.
 
 **Independent Test**: quickstart cenário 4.
 
-- [ ] T015 [US3] Store `frontend/src/stores/snippets.ts`: `load()` por `SnippetService.List`, recarga no evento `snippets:changed`, limpar ao bloquear o cofre; CRUD chamando a ponte e mostrando erros por `field`.
-- [ ] T016 [US3] `frontend/src/features/snippets/SnippetsSettings.tsx`: seção "Comandos" em Configurações com lista, "Novo comando", "Duplicar", "Apagar" (confirmação) e formulário "Nome", "Comando" (área de texto), "Tags" (`TagInput` da 009) e "Executar ao enviar"; registro em `SettingsPage.tsx`.
-- [ ] T017 [US3] Testes e depois `snippetPayload(text, execute)` em `frontend/src/features/snippets/send.ts`: linhas unidas por `\r`, `\r` no fim só com `execute` (research R9); grupo "Comandos" na paleta (`frontend/src/features/palette/`) com busca por nome e texto sem maiúsculas nem acentos (normalização da 009), item desativado sem terminal com "Abra um terminal para enviar", envio por `send` e foco de volta ao terminal.
+- [X] T015 [US3] Store `frontend/src/stores/snippets.ts`: `load()` por `SnippetService.List`, recarga no evento `snippets:changed`, limpar ao bloquear o cofre; CRUD chamando a ponte e mostrando erros por `field`.
+- [X] T016 [US3] `frontend/src/features/snippets/SnippetsSettings.tsx`: seção "Comandos" em Configurações com lista, "Novo comando", "Duplicar", "Apagar" (confirmação) e formulário "Nome", "Comando" (área de texto), "Tags" (`TagInput` da 009) e "Executar ao enviar"; registro em `SettingsPage.tsx`.
+- [X] T017 [US3] Testes e depois `snippetPayload(text, execute)` em `frontend/src/features/snippets/send.ts`: linhas unidas por `\r`, `\r` no fim só com `execute` (research R9); grupo "Comandos" na paleta (`frontend/src/features/palette/`) com busca por nome e texto sem maiúsculas nem acentos (normalização da 009), item desativado sem terminal com "Abra um terminal para enviar", envio por `send` e foco de volta ao terminal.
 
 ---
 
@@ -85,8 +85,8 @@ numa pasta temporária.
 
 **Independent Test**: quickstart cenário 5.
 
-- [ ] T018 [US4] Testes (usando `internal/domain/testdata/snippet_fields.json` do T001) e depois `frontend/src/features/snippets/fields.ts`: `parseFields(text)` (ordem da primeira ocorrência, repetido uma vez, `{{`/`}}` literais) e `fill(text, values)`.
-- [ ] T019 [US4] `frontend/src/features/snippets/FieldsDialog.tsx`: um campo por nome, Enter envia, recusa vazio ("Preencha o campo <nome>") e quebra de linha ("O campo <nome> não pode ter quebra de linha"), valor até 1.000 caracteres; últimos valores em memória no store `snippets` (`snippetId → campo → valor`), limpos ao bloquear.
+- [X] T018 [US4] Testes (usando `internal/domain/testdata/snippet_fields.json` do T001) e depois `frontend/src/features/snippets/fields.ts`: `parseFields(text)` (ordem da primeira ocorrência, repetido uma vez, `{{`/`}}` literais) e `fill(text, values)`.
+- [X] T019 [US4] `frontend/src/features/snippets/FieldsDialog.tsx`: um campo por nome, Enter envia, recusa vazio ("Preencha o campo <nome>") e quebra de linha ("O campo <nome> não pode ter quebra de linha"), valor até 1.000 caracteres; últimos valores em memória no store `snippets` (`snippetId → campo → valor`), limpos ao bloquear.
 
 ---
 
@@ -96,8 +96,8 @@ numa pasta temporária.
 
 **Independent Test**: quickstart cenário 6.
 
-- [ ] T020 [US5] Testes e depois `rankSnippets(snippets, hostTags, query)` em `frontend/src/features/snippets/rank.ts`: sem busca, tag em comum → sem tag → (outras só com busca); uso na paleta. Teste com 500 comandos dentro de 100 ms.
-- [ ] T021 [US5] Paleta num grupo: Enter = "Enviar ao painel", Shift+Enter = "Enviar ao grupo (N)" com rodapé visível; envio ao grupo passa pela confirmação de produção do T012 e mostra toast com os desconectados que não receberam.
+- [X] T020 [US5] Testes e depois `rankSnippets(snippets, hostTags, query)` em `frontend/src/features/snippets/rank.ts`: sem busca, tag em comum → sem tag → (outras só com busca); uso na paleta. Teste com 500 comandos dentro de 100 ms.
+- [X] T021 [US5] Paleta num grupo: Enter = "Enviar ao painel", Shift+Enter = "Enviar ao grupo (N)" com rodapé visível; envio ao grupo passa pela confirmação de produção do T012 e mostra toast com os desconectados que não receberam.
 
 ---
 
@@ -107,13 +107,13 @@ numa pasta temporária.
 
 **Independent Test**: quickstart cenário 7.
 
-- [ ] T022 [US6] Checkbox "Incluir comandos" (marcado) e contagem em `frontend/src/features/importexport/ExportDialog.tsx`; comandos repetidos na prévia de `ImportWizard.tsx`/`PreviewTable.tsx` com pular ou cópia; `stores/importExport.ts` passa `includeSnippets`.
+- [X] T022 [US6] Checkbox "Incluir comandos" (marcado) e contagem em `frontend/src/features/importexport/ExportDialog.tsx`; comandos repetidos na prévia de `ImportWizard.tsx`/`PreviewTable.tsx` com pular ou cópia; `stores/importExport.ts` passa `includeSnippets`.
 
 ---
 
 ## Phase 9: Polish & Cross-Cutting
 
-- [ ] T023 E2e `frontend/tests/e2e/broadcast-snippets.spec.ts` com os sete cenários do quickstart (produção contra o servidor SSH de teste); rodar também `split`, `sync`, `import-export`, `noc-ui` e `daily-use`.
+- [X] T023 E2e `frontend/tests/e2e/broadcast-snippets.spec.ts` com os sete cenários do quickstart (produção contra o servidor SSH de teste); rodar também `split`, `sync`, `import-export`, `noc-ui` e `daily-use`.
 - [ ] T024 Revisão de segurança (plano, Princípio II): validação do `SnippetService` na ponte, texto de comando e valores de campo fora de logs, erros e disco; nenhum caminho de `send` para sessão fora do grupo, desmarcada ou de produção sem confirmação; leitor tolerante da nuvem não aceita item inválido de tipo conhecido.
 - [ ] T025 Lint, typecheck, `npm test`, `go test ./...`; `specs/012-broadcast-snippets/validation.md` com o resultado de cada cenário e SC (medir SC-1202 e SC-1205); nota de versão sobre o esquema 3 do cofre (versões antigas mostram o aviso de cofre mais novo).
 

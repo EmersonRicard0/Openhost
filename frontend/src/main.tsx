@@ -9,6 +9,7 @@ import { subscribeForwards } from './stores/forwards';
 import { subscribeInteractions } from './stores/interactions';
 import { subscribeProfiles } from './stores/profiles';
 import { subscribeSessions } from './stores/sessions';
+import { subscribeSnippets } from './stores/snippets';
 import { subscribeTransfers } from './stores/transfers';
 import { loadUi } from './stores/ui';
 import { loadSync } from './stores/sync';
@@ -24,6 +25,7 @@ async function start(): Promise<void> {
   subscribeData();
   subscribeSessions();
   subscribeBroadcastSafety();
+  subscribeSnippets();
   subscribeInteractions();
   subscribeTransfers();
   subscribeForwards();

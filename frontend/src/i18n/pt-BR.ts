@@ -110,6 +110,7 @@ export const t = {
       shortcuts: 'Atalhos',
       importExport: 'Importar e exportar',
       sync: 'Sincronização',
+      snippets: 'Comandos',
       about: 'Sobre',
     },
     defaultShell: 'Shell da nova aba',
@@ -714,6 +715,38 @@ export const t = {
     lockTitle: 'Clique para bloquear o cofre',
     unlockTitle: 'Clique para desbloquear o cofre',
   },
+  snippets: {
+    title: 'Comandos',
+    hint: 'Comandos que você usa sempre. Envie pela paleta (Ctrl+Shift+P) para a sessão ativa ou para o grupo. Use {nome} para um campo a preencher.',
+    list: 'Lista de comandos',
+    empty: 'Nenhum comando salvo ainda.',
+    new: 'Novo comando',
+    newName: (n: number) => (n === 1 ? 'Novo comando' : `Novo comando (${String(n)})`),
+    duplicate: 'Duplicar',
+    remove: 'Apagar',
+    save: 'Salvar',
+    saved: 'Comando salvo',
+    name: 'Nome',
+    text: 'Comando',
+    textHint:
+      'Uma linha por comando. {interface} vira um campo a preencher; {{ e }} são chaves de verdade.',
+    tags: 'Tags',
+    tagsHint:
+      'Com as tags do host (huawei, olt…) o comando aparece primeiro na paleta nas sessões dele.',
+    execute: 'Executar ao enviar',
+    executeHint: 'Desmarcado, o comando só é escrito na linha para você conferir.',
+    fieldsCount: (n: number) =>
+      n === 1 ? '1 campo a preencher' : `${String(n)} campos a preencher`,
+    removeTitle: 'Apagar comando?',
+    removeMessage: (name: string) =>
+      `O comando "${name}" sai deste computador e, com a sincronização ligada, dos outros.`,
+    fieldsTitle: (name: string) => name,
+    send: 'Enviar',
+    notSent: (n: number) =>
+      n === 1
+        ? '1 painel desconectado não recebeu'
+        : `${String(n)} painéis desconectados não receberam`,
+  },
   palette: {
     label: 'Paleta de comandos',
     placeholder: 'Digite uma ação ou o nome de um host',
@@ -728,6 +761,10 @@ export const t = {
     toggleTheme: 'Alternar tema claro/escuro',
     search: 'Buscar no terminal',
     hostGroup: 'Host',
+    snippet: (name: string) => `Comando: ${name}`,
+    snippetNoTerminal: 'Abra um terminal para enviar',
+    sendPane: 'Enviar ao painel',
+    sendGroup: (n: number) => `Enviar ao grupo (${String(n)})`,
     navigate: 'navegar',
     run: 'executar',
   },
@@ -904,6 +941,9 @@ export const t = {
     filterAttention: 'Precisam de atenção',
     selectAll: 'Marcar todos',
     selectNone: 'Desmarcar todos',
+    snippetsTitle: (n: number) => (n === 1 ? '1 comando salvo' : `${count(n)} comandos salvos`),
+    snippetDuplicate: (name: string) => `Já existe "${name}"`,
+    snippetActions: { skip: 'Pular', copy: 'Importar como cópia' },
     duplicatesAll: 'Duplicados',
     duplicateActions: {
       skip: 'Pular',
@@ -978,6 +1018,8 @@ export const t = {
       replaced: (n: number) => (n === 1 ? '1 substituído' : `${count(n)} substituídos`),
       skipped: (n: number) => (n === 1 ? '1 pulado' : `${count(n)} pulados`),
       ignored: (n: number) => (n === 1 ? '1 ignorado' : `${count(n)} ignorados`),
+      snippets: (n: number) =>
+        n === 1 ? '1 comando salvo importado' : `${count(n)} comandos salvos importados`,
       keys: (stored: number, reused: number) =>
         `${count(stored)} ${stored === 1 ? 'chave guardada' : 'chaves guardadas'} no cofre` +
         (reused > 0 ? `, ${count(reused)} já existia${reused === 1 ? '' : 'm'}` : ''),
@@ -1017,6 +1059,9 @@ export const t = {
         const h = `${count(hosts)} ${hosts === 1 ? 'host' : 'hosts'}`;
         return groups === 0 ? h : `${h} em ${count(groups)} ${groups === 1 ? 'grupo' : 'grupos'}`;
       },
+      includeSnippets: 'Incluir comandos',
+      includeSnippetsHint: (n: number) =>
+        n === 1 ? '1 comando salvo' : `${count(n)} comandos salvos`,
       includeKeys: 'Incluir chaves privadas',
       includeKeysHint: (n: number) =>
         `${n === 1 ? '1 chave' : `${count(n)} chaves`}. O arquivo inteiro fica criptografado com uma senha sua.`,

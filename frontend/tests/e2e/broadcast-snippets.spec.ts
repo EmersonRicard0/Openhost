@@ -1,14 +1,19 @@
 // Digitar no grupo inteiro e biblioteca de comandos (specs/012, quickstart).
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import * as sshd from '../../../scripts/sshd.mjs';
-import { launchApp } from './helpers/launch';
+import { launchApp, testService } from './helpers/launch';
 import {
   acceptHostKey,
+  addHost,
   chooseOption,
   createVault,
   expectTerminalLine,
   hostItem,
   terminalText,
+  unlock,
   waitConnected,
 } from './helpers/ui';
 
@@ -16,6 +21,7 @@ const { SSHD } = sshd;
 
 const tabs = (page: Page) => page.getByRole('tab');
 const pane = (page: Page, id: string) => page.locator(`[data-pane][data-session-id="${id}"]`);
+const term = (page: Page, id: string) => page.locator(`[data-session-id="${id}"] .xterm`);
 const header = (page: Page, id: string) => pane(page, id).locator('[data-pane-header]');
 
 /** Abre um Prompt de Comando e devolve o id da sessão nova, com o prompt pronto. */
@@ -193,6 +199,190 @@ test('produção pede confirmação e colar texto grande no grupo também (US2)'
     await expect(paste).toBeHidden();
     await page.keyboard.press('Enter');
     await expectTerminalLine(page, local, 'curta');
+  } finally {
+    await app.close();
+  }
+});
+
+// ---- Biblioteca de comandos (US4 a US6) ----
+
+async function openSnippets(page: Page): Promise<Locator> {
+  await page.getByRole('button', { name: 'Configurações', exact: true }).click();
+  const settings = page.getByRole('region', { name: 'Configurações' });
+  await settings.getByRole('button', { name: 'Comandos', exact: true }).click();
+  return settings;
+}
+
+async function closeSettings(page: Page) {
+  await page.getByRole('button', { name: 'Fechar Configurações' }).click();
+  await expect(page.getByRole('region', { name: 'Configurações' })).toBeHidden();
+}
+
+/** Cria um comando salvo pela tela Configurações → Comandos e volta ao terminal. */
+async function createSnippet(page: Page, name: string, text: string, execute: boolean) {
+  const settings = await openSnippets(page);
+  await settings.getByRole('button', { name: 'Novo comando' }).click();
+  const form = settings.getByRole('form');
+  await form.getByLabel('Nome', { exact: true }).fill(name);
+  await form.getByLabel('Comando', { exact: true }).fill(text);
+  if (execute) await form.getByText('Executar ao enviar').click();
+  await form.getByRole('button', { name: 'Salvar' }).click();
+  await expect(settings.getByRole('list', { name: 'Lista de comandos' })).toContainText(name);
+  await closeSettings(page);
+}
+
+/** Paleta → busca → Enter (ou Shift+Enter para o grupo). */
+async function sendFromPalette(page: Page, query: string, toGroup = false) {
+  await page.keyboard.press('Control+Shift+P');
+  const palette = page.getByRole('dialog', { name: 'Paleta de comandos' });
+  await expect(palette).toBeVisible();
+  await page.keyboard.type(query);
+  await expect(palette.getByRole('option').first()).toContainText('Comando: ');
+  await page.keyboard.press(toGroup ? 'Shift+Enter' : 'Enter');
+  await expect(palette).toBeHidden();
+}
+
+const lines = async (page: Page, id: string) =>
+  (await terminalText(page, id)).split('\n').map((l) => l.trimEnd());
+
+test('comando salvo pela paleta: escreve sem executar, executa quando marcado e sobrevive ao bloqueio (US4)', async () => {
+  const app = await launchApp();
+  const { page } = app;
+  try {
+    await createVault(page);
+    const id = await openCmd(page);
+    await createSnippet(page, 'Eco', 'echo snip', false);
+
+    await term(page, id).click();
+    await sendFromPalette(page, 'eco');
+    await expect
+      .poll(async () => (await lines(page, id)).some((l) => l.endsWith('>echo snip')))
+      .toBe(true);
+    expect(await lines(page, id)).not.toContain('snip');
+    await page.keyboard.press('Escape');
+
+    // Marcar "Executar ao enviar": agora roda.
+    const settings = await openSnippets(page);
+    await settings.getByRole('button', { name: /^Eco/ }).click();
+    await settings.getByText('Executar ao enviar').click();
+    await settings.getByRole('button', { name: 'Salvar' }).click();
+    await closeSettings(page);
+    await term(page, id).click();
+    await sendFromPalette(page, 'eco');
+    await expectTerminalLine(page, id, 'snip');
+
+    // Bloquear e desbloquear: o comando continua no cofre.
+    await page.getByRole('button', { name: 'Bloquear cofre' }).click();
+    await unlock(page);
+    const again = await openSnippets(page);
+    await expect(again.getByRole('list', { name: 'Lista de comandos' })).toContainText('Eco');
+  } finally {
+    await app.close();
+  }
+});
+
+test('campos a preencher: vazio é recusado, valor repete e volta preenchido (US4)', async () => {
+  const app = await launchApp();
+  const { page } = app;
+  try {
+    await createVault(page);
+    const id = await openCmd(page);
+    await createSnippet(page, 'Vlan', 'echo {vlan}-{vlan} {{x}}', true);
+
+    await term(page, id).click();
+    await sendFromPalette(page, 'vlan');
+    const dialog = page.getByRole('dialog', { name: 'Vlan' });
+    await dialog.getByRole('button', { name: 'Enviar' }).click();
+    await expect(dialog.getByText('Preencha o campo vlan')).toBeVisible();
+    await dialog.getByLabel('vlan', { exact: true }).fill('100');
+    await dialog.getByRole('button', { name: 'Enviar' }).click();
+    await expect(dialog).toBeHidden();
+    await expectTerminalLine(page, id, '100-100 {x}');
+
+    // Ao abrir de novo, o último valor já vem preenchido.
+    await term(page, id).click();
+    await sendFromPalette(page, 'vlan');
+    await expect(dialog.getByLabel('vlan', { exact: true })).toHaveValue('100');
+    await dialog.getByRole('button', { name: 'Cancelar' }).click();
+    await expect(dialog).toBeHidden();
+  } finally {
+    await app.close();
+  }
+});
+
+test('comando salvo para o grupo inteiro avisa quem estava desconectado (US5)', async () => {
+  const app = await launchApp();
+  const { page } = app;
+  try {
+    await createVault(page);
+    const a = await openCmd(page);
+    const b = await openCmd(page);
+    const c = await openCmd(page);
+    await groupWith(page, 1, 'Agrupar com Prompt de Comando');
+    await groupWith(page, 1, 'Agrupar com Prompt de Comando e mais 1');
+    await expect(page.locator('[data-pane]')).toHaveCount(3);
+    await createSnippet(page, 'Eco', 'echo grp', true);
+
+    // C sai do shell: o painel fica desconectado.
+    await typeIn(page, c, 'exit');
+    await expect(header(page, c).locator('[data-state]')).toHaveAttribute(
+      'data-state',
+      /closed|disconnected/,
+    );
+
+    await pane(page, a).locator('.xterm').click();
+    await sendFromPalette(page, 'eco', true);
+    await expect(page.getByText('1 painel desconectado não recebeu')).toBeVisible();
+    await expectOnly(page, 'grp', [a, b], []);
+  } finally {
+    await app.close();
+  }
+});
+
+test('exporta comandos no arquivo OpenHost e importa em outro cofre (US6)', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'openhost-snippets-'));
+  const file = join(dir, 'com-comandos.openhost');
+  let app = await launchApp();
+  try {
+    const { page } = app;
+    await createVault(page);
+    await addHost(page, {
+      label: 'olt-a',
+      address: '192.0.2.10',
+      port: 22,
+      username: 'noc',
+      method: 'Perguntar ao conectar',
+    });
+    await createSnippet(page, 'Eco', 'echo snip', true);
+    await page.getByRole('button', { name: 'Importar e exportar' }).click();
+    await page.getByRole('button', { name: 'Exportar…' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Exportar hosts' });
+    await expect(dialog.getByRole('checkbox', { name: /Incluir comandos/ })).toBeChecked();
+    await testService(page, 'SetDialogPath', file);
+    await dialog.getByRole('button', { name: 'Exportar' }).click();
+    await expect(page.getByText(`Salvo em ${file}`)).toBeVisible();
+  } finally {
+    await app.close();
+  }
+
+  app = await launchApp();
+  try {
+    const { page } = app;
+    await createVault(page);
+    await page.getByRole('button', { name: 'Importar e exportar' }).click();
+    await testService(page, 'SetDialogPath', file);
+    await page
+      .getByRole('listitem')
+      .filter({ has: page.getByRole('heading', { name: 'Arquivo do OpenHost' }) })
+      .getByRole('button', { name: 'Escolher arquivo…' })
+      .click();
+    await expect(page.getByRole('region', { name: '1 comando salvo' })).toContainText('Eco');
+    await page.getByRole('button', { name: 'Importar 1 host' }).click();
+    await expect(page.getByText('1 comando salvo importado')).toBeVisible();
+    await page.getByRole('button', { name: 'Importar mais' }).click();
+    const settings = page.getByRole('region', { name: 'Configurações' });
+    await settings.getByRole('button', { name: 'Comandos', exact: true }).click();
+    await expect(settings.getByRole('list', { name: 'Lista de comandos' })).toContainText('Eco');
   } finally {
     await app.close();
   }
