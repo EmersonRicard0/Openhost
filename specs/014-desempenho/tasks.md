@@ -50,7 +50,7 @@ regressão do vazamento.
 **Goal**: ≤ 15 MB por aba ociosa (SC-1402), troca < 100 ms.
 **Independent Test**: cenário "20 terminais" ÷ 20 do `memory.spec.ts` + `performance.spec.ts`.
 
-- [ ] T017 [US3] [Claude] `SearchAddon` carregado na primeira busca da aba em `TerminalView.tsx` / `terminalRegistry.ts` / `SearchBar.tsx` (R5)
+- [X] T017 [US3] [Claude] `SearchAddon` carregado na primeira busca da aba em `TerminalView.tsx` / `terminalRegistry.ts` / `SearchBar.tsx` (R5)
 - [X] T018 [US3] [Claude] Medir renderer DOM puro vs WebGL com pool (R2 c) em 20 abas e troca de aba; registrar em `research.md` e adotar o vencedor como padrão (WebGL vira opção em Configurações se o DOM vencer)
 - [X] T019 [US3] [Claude] Meta SC-1402 em `memory.spec.ts` (≤ 15 MB/aba) e rodar `performance.spec.ts` (SC-1405)
 

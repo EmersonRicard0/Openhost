@@ -134,8 +134,15 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
-    const search = new SearchAddon();
-    term.loadAddon(search);
+    // Busca carregada na primeira vez que for aberta nesta aba (specs/014, R5).
+    let search: SearchAddon | null = null;
+    const searchAddon = () => {
+      if (!search) {
+        search = new SearchAddon();
+        term.loadAddon(search);
+      }
+      return search;
+    };
     // Ctrl+clique (⌘-clique no macOS) abre no navegador padrão; o app não faz a requisição (FR-145).
     term.loadAddon(
       new WebLinksAddon((event, uri) => {
@@ -166,7 +173,9 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     const unregisterProbe = registerProbe(sessionId, term);
     const unregisterTerminal = registerTerminal(sessionId, {
       term,
-      search,
+      get search() {
+        return searchAddon();
+      },
       focus: () => {
         if (focusedRef.current) term.focus();
       },
