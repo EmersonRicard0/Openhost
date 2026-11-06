@@ -12,7 +12,7 @@ import (
 
 const (
 	Format  = "openhost-export"
-	Version = 2
+	Version = 3
 )
 
 type OpenHostKDF struct {
@@ -61,11 +61,19 @@ type OpenHostKey struct {
 	Passphrase *string `json:"passphrase"`
 }
 
+type OpenHostSnippet struct {
+	Name    string   `json:"name"`
+	Text    string   `json:"text"`
+	Tags    []string `json:"tags"`
+	Execute bool     `json:"execute"`
+}
+
 type OpenHostData struct {
 	Groups       []model.Group         `json:"groups"`
 	Hosts        []OpenHostHost        `json:"hosts"`
 	ForwardRules []OpenHostForwardRule `json:"forwardRules"`
 	Keys         []OpenHostKey         `json:"keys,omitempty"`
+	Snippets     []OpenHostSnippet     `json:"snippets"`
 }
 
 type OpenHostFile struct {
@@ -80,12 +88,13 @@ type OpenHostFile struct {
 }
 
 type OpenHostOptions struct {
-	Profiles     map[string]*model.TerminalProfile
-	IncludeKeys  bool
-	FilePassword string
-	KDF          func([]byte) vault.KDFParams
-	Now          func() time.Time
-	AppVersion   string
+	Profiles        map[string]*model.TerminalProfile
+	IncludeKeys     bool
+	IncludeSnippets bool
+	FilePassword    string
+	KDF             func([]byte) vault.KDFParams
+	Now             func() time.Time
+	AppVersion      string
 }
 
 func OpenHostAD(format string, version int, kdf OpenHostKDF) []byte {
@@ -97,6 +106,7 @@ func MarshalOpenHost(content *model.Content, options OpenHostOptions) ([]byte, e
 		Groups:       append([]model.Group(nil), content.Groups...),
 		Hosts:        make([]OpenHostHost, 0, len(content.Hosts)),
 		ForwardRules: make([]OpenHostForwardRule, 0, len(content.ForwardRules)),
+		Snippets:     []OpenHostSnippet{},
 	}
 	credentials := make(map[string]model.Credential, len(content.Credentials))
 	for _, credential := range content.Credentials {
@@ -152,6 +162,16 @@ func MarshalOpenHost(content *model.Content, options OpenHostOptions) ([]byte, e
 				data.Keys = append(data.Keys, OpenHostKey{ID: credential.ID, Name: credential.Name,
 					PrivateKey: credential.PrivateKey, Passphrase: clonePtr(credential.Passphrase)})
 			}
+		}
+	}
+	if options.IncludeSnippets {
+		for _, snippet := range content.Snippets {
+			tags := append([]string{}, snippet.Tags...)
+			if tags == nil {
+				tags = []string{}
+			}
+			data.Snippets = append(data.Snippets, OpenHostSnippet{Name: snippet.Name, Text: snippet.Text,
+				Tags: tags, Execute: snippet.Execute})
 		}
 	}
 	file := OpenHostFile{Format: Format, Version: Version}

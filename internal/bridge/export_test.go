@@ -39,6 +39,9 @@ func seedExportContent(t *testing.T, services *Services) (string, string, string
 			return err
 		}
 		rootID, childID, looseHostID = root.ID, child.ID, two.ID
+		if _, err := domain.CreateSnippet(content, domain.SnippetInput{Name: "Versão", Text: "show version"}, domain.Now()); err != nil {
+			return err
+		}
 		_ = one
 		return nil
 	}); err != nil {
@@ -54,15 +57,15 @@ func TestExportServiceCountScopes(t *testing.T) {
 	}
 	rootID, _, looseHostID := seedExportContent(t, services)
 	for _, tc := range []struct {
-		scope               ExportScope
-		hosts, groups, keys int
+		scope                         ExportScope
+		hosts, groups, keys, snippets int
 	}{
-		{ExportScope{Kind: ExportScopeAll}, 2, 2, 1},
-		{ExportScope{Kind: ExportScopeGroup, GroupID: rootID}, 1, 2, 1},
-		{ExportScope{Kind: ExportScopeHosts, HostIDs: []string{looseHostID}}, 1, 0, 0},
+		{ExportScope{Kind: ExportScopeAll}, 2, 2, 1, 1},
+		{ExportScope{Kind: ExportScopeGroup, GroupID: rootID}, 1, 2, 1, 1},
+		{ExportScope{Kind: ExportScopeHosts, HostIDs: []string{looseHostID}}, 1, 0, 0, 1},
 	} {
 		got, err := services.exportService.Count(tc.scope)
-		if err != nil || got.Hosts != tc.hosts || got.Groups != tc.groups || got.Keys != tc.keys {
+		if err != nil || got.Hosts != tc.hosts || got.Groups != tc.groups || got.Keys != tc.keys || got.Snippets != tc.snippets {
 			t.Fatalf("Count(%+v) = %+v, %v", tc.scope, got, err)
 		}
 	}
@@ -75,7 +78,7 @@ func TestExportServiceValidatesPasswordsAndSavesOpenHost(t *testing.T) {
 	}
 	seedExportContent(t, services)
 	services.exportService.kdf = vault.TestKDF
-	request := ExportRequest{Format: ExportFormatOpenHost, Scope: ExportScope{Kind: ExportScopeAll}, IncludeKeys: true, MasterPassword: "errada-123", FilePassword: "senha-arquivo"}
+	request := ExportRequest{Format: ExportFormatOpenHost, Scope: ExportScope{Kind: ExportScopeAll}, IncludeKeys: true, IncludeSnippets: true, MasterPassword: "errada-123", FilePassword: "senha-arquivo"}
 	if _, err := services.exportService.Export(request); apperr.CodeOf(err) != apperr.VaultBadPassword {
 		t.Fatalf("senha mestra errada = %v", err)
 	}
@@ -111,7 +114,7 @@ func TestExportServiceValidatesPasswordsAndSavesOpenHost(t *testing.T) {
 		t.Fatalf("nova tentativa = %v", err)
 	}
 	view, err := services.importService.Preview(importer.SourceOpenHost, PreviewOptions{FilePassword: &password})
-	if err != nil || view == nil || len(view.Rows) != 2 || picks != 1 {
+	if err != nil || view == nil || len(view.Rows) != 2 || len(view.Snippets) != 1 || picks != 1 {
 		t.Fatalf("reuso do arquivo = %+v, picks=%d, err=%v", view, picks, err)
 	}
 }

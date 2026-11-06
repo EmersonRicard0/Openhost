@@ -12,10 +12,12 @@ import { DisconnectedIcon, ErrorIcon, ExitedIcon, RefreshIcon, TerminalIcon } fr
 import { ShellIcon } from '../../ui/ShellIcon';
 import { ConflictDialog } from '../sftp/ConflictDialog';
 import { SettingsPage } from '../settings/SettingsPage';
+import { SnippetDialogs } from '../snippets/SnippetDialogs';
 import { SftpView } from '../sftp/SftpView';
 import { MAX_ATTEMPTS, stopAutoReconnect, useAutoReconnect } from './autoReconnect';
 import { runShortcut } from './commands';
 import { useDrag } from './dragState';
+import { BroadcastConfirm } from './BroadcastConfirm';
 import { Divider } from './Divider';
 import { DropLayer } from './DropLayer';
 import { HostKeyDialog } from './HostKeyDialog';
@@ -248,6 +250,8 @@ export function Workspace() {
       <PromptDialog />
       <PasteConfirmDialog />
       <CloseTabConfirm />
+      <BroadcastConfirm />
+      <SnippetDialogs />
       <ConflictDialog />
     </>
   );

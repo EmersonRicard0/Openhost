@@ -249,6 +249,37 @@ func previewOpenHost(sourceLabel string, data exporter.OpenHostData, content *mo
 		preview.Groups = append(preview.Groups, PreviewGroup{Path: path, Name: group.Name})
 		preview.groupSortOrders[strings.Join(path, "\x00")] = group.SortOrder
 	}
+	if len(data.Snippets) > domain.MaxSnippets {
+		preview.Zero()
+		return nil, apperr.New(apperr.ImportTooLarge)
+	}
+	existingSnippets := make(map[string]string, len(content.Snippets))
+	for _, snippet := range content.Snippets {
+		existingSnippets[strings.ToLower(snippet.Name)] = snippet.Name
+	}
+	seenSnippets := make(map[string]struct{}, len(data.Snippets))
+	for _, source := range data.Snippets {
+		validated, validationErr := domain.ValidateSnippet(model.EmptyContent(), model.Snippet{
+			Name: source.Name, Text: source.Text, Tags: source.Tags, Execute: source.Execute,
+		})
+		if validationErr != nil {
+			preview.Zero()
+			return nil, apperr.New(apperr.ImportUnreadable)
+		}
+		key := strings.ToLower(validated.Name)
+		if _, duplicate := seenSnippets[key]; duplicate {
+			preview.Zero()
+			return nil, apperr.New(apperr.ImportUnreadable)
+		}
+		seenSnippets[key] = struct{}{}
+		item := PreviewSnippet{Name: validated.Name, Action: SnippetCopy}
+		if existing, duplicate := existingSnippets[key]; duplicate {
+			item.DuplicateOf = model.Ptr(existing)
+			item.Action = SnippetSkip
+		}
+		preview.Snippets = append(preview.Snippets, item)
+		preview.snippetData[key] = validated
+	}
 	for _, credential := range content.Credentials {
 		if credential.Kind == model.CredentialKey && credential.Fingerprint != "" {
 			preview.credentialByFingerprint[credential.Fingerprint] = credential.ID

@@ -73,6 +73,24 @@ func TestMergeExpiresTombstonesAfter180Days(t *testing.T) {
 	}
 }
 
+func TestMergeAcceptsUnknownItemType(t *testing.T) {
+	unknown := version("futuro:1", `{"future":true}`, VersionVector{deviceA: 1})
+	result, err := Merge(nil, []ItemVersion{unknown}, time.Now())
+	if err != nil || len(result.Items) != 1 || !reflect.DeepEqual(result.Items[0], unknown) {
+		t.Fatalf("tipo desconhecido = %+v, %v", result, err)
+	}
+}
+
+func TestMergeKeepsSnippetConflictPerItem(t *testing.T) {
+	id := "88888888-9999-4aaa-8bbb-cccccccccccc"
+	local := version("snippet:"+id, `{"id":"88888888-9999-4aaa-8bbb-cccccccccccc","name":"Versão","text":"show version","tags":[],"execute":false,"createdAt":"2026-10-30T12:00:00Z","updatedAt":"2026-10-30T12:01:00Z"}`, VersionVector{deviceA: 2})
+	remote := version("snippet:"+id, `{"id":"88888888-9999-4aaa-8bbb-cccccccccccc","name":"Versão","text":"display version","tags":[],"execute":false,"createdAt":"2026-10-30T12:00:00Z","updatedAt":"2026-10-30T12:02:00Z"}`, VersionVector{deviceB: 2})
+	result, err := Merge([]ItemVersion{local}, []ItemVersion{remote}, time.Now())
+	if err != nil || len(result.Conflicts) != 1 || result.Conflicts[0].Key != "snippet:"+id {
+		t.Fatalf("conflito de snippet = %+v, %v", result, err)
+	}
+}
+
 func TestMergeRepairsDependencies(t *testing.T) {
 	now := time.Date(2026, 10, 27, 12, 0, 0, 0, time.UTC)
 	groupID := "11111111-2222-4333-8444-555555555555"

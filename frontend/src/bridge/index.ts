@@ -81,6 +81,7 @@ export const EVENT_NAMES = [
   'forwards:status',
   'profiles:changed',
   'hosts:changed',
+  'snippets:changed',
   'app:appearance',
   'app:close-requested',
   'updates:state',
@@ -116,6 +117,7 @@ const ev =
 function createApi(): ShellVaultApi {
   const V = 'VaultService';
   const H = 'HostService';
+  const N = 'SnippetService';
   const C = 'CredentialService';
   const S = 'SessionService';
   const F = 'SftpService';
@@ -155,6 +157,14 @@ function createApi(): ShellVaultApi {
       rename: (id, name) => call(H, 'RenameGroup', id, name),
       move: (id, parentId) => call(H, 'MoveGroup', id, parentId),
       remove: (id) => call(H, 'RemoveGroup', id),
+    },
+    snippets: {
+      list: () => call(N, 'List'),
+      create: (input) => call(N, 'Create', input),
+      update: (id, input) => call(N, 'Update', id, input),
+      remove: (id) => call(N, 'Remove', id),
+      duplicate: (id) => call(N, 'Duplicate', id),
+      onChanged: ev('snippets:changed'),
     },
     credentials: {
       list: () => call(C, 'List'),
@@ -230,6 +240,8 @@ function createApi(): ShellVaultApi {
       selectAll: (previewId, selected, groupPath) =>
         call(I, 'SelectAll', previewId, selected, groupPath),
       setDuplicateAction: (previewId, action) => call(I, 'SetDuplicateAction', previewId, action),
+      setSnippetAction: (previewId, name, action) =>
+        call(I, 'SetSnippetAction', previewId, name, action),
       unlockKey: (previewId, keyRef, passphrase) =>
         call(I, 'UnlockKey', previewId, keyRef, passphrase),
       skipKey: (previewId, keyRef) => call(I, 'SkipKey', previewId, keyRef),

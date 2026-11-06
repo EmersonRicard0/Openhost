@@ -36,8 +36,28 @@ func openHostFixture(t *testing.T) (*model.Content, map[string]*model.TerminalPr
 		{ID: passwordHostID, Label: "Servidor", Address: "srv.example", Port: 22, Username: "root", AuthMethod: model.AuthPassword, CredentialID: model.Ptr(password.ID), GroupID: model.Ptr(rootID), OSIcon: model.OSIconAuto},
 	}
 	content.ForwardRules = []model.ForwardRule{{ID: domain.NewID(), HostID: keyHostID, Label: model.Ptr("Banco"), BindAddress: "127.0.0.1", BindPort: 15432, DestHost: "db.internal", DestPort: 5432}}
+	content.Snippets = []model.Snippet{{ID: domain.NewID(), Name: "Versão", Text: "show version", Tags: []string{"huawei"}, Execute: true, CreatedAt: domain.Now(), UpdatedAt: domain.Now()}}
 	profile := model.TerminalProfile{ID: domain.NewID(), Name: "NOC", FontFamily: "JetBrains Mono", FontSize: 15, FontWeight: 400, FontWeightBold: 700, LineHeight: 1.3, Ligatures: true, CursorStyle: model.CursorBar, CursorBlink: true, Scrollback: 20000, BackgroundOpacity: .9, Blur: 4, Padding: 10, ColorSchemeID: vault.BrandSchemeID}
 	return content, map[string]*model.TerminalProfile{keyHostID: &profile}, key.PrivateKey
+}
+
+func TestMarshalOpenHostVersionThreeIncludesSnippetsOnlyWhenRequested(t *testing.T) {
+	content, profiles, _ := openHostFixture(t)
+	withSnippets, err := MarshalOpenHost(content, OpenHostOptions{Profiles: profiles, IncludeSnippets: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Contains(withSnippets, []byte(`"version":3`)) ||
+		!bytes.Contains(withSnippets, []byte(`"snippets":[{"name":"Versão","text":"show version","tags":["huawei"],"execute":true}]`)) {
+		t.Fatalf("OpenHost v3 sem comandos: %s", withSnippets)
+	}
+	withoutSnippets, err := MarshalOpenHost(content, OpenHostOptions{Profiles: profiles})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(withoutSnippets, []byte("show version")) || !bytes.Contains(withoutSnippets, []byte(`"snippets":[]`)) {
+		t.Fatalf("OpenHost sem comandos = %s", withoutSnippets)
+	}
 }
 
 func TestMarshalOpenHostWithoutKeysHasPlainDataAndNoSecrets(t *testing.T) {
@@ -76,11 +96,11 @@ func TestMarshalOpenHostWithoutKeysHasPlainDataAndNoSecrets(t *testing.T) {
 
 func TestMarshalOpenHostWithKeysEncryptsAllData(t *testing.T) {
 	content, profiles, privateKey := openHostFixture(t)
-	raw, err := MarshalOpenHost(content, OpenHostOptions{Profiles: profiles, IncludeKeys: true, FilePassword: "senha-arquivo", KDF: vault.TestKDF})
+	raw, err := MarshalOpenHost(content, OpenHostOptions{Profiles: profiles, IncludeKeys: true, IncludeSnippets: true, FilePassword: "senha-arquivo", KDF: vault.TestKDF})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if bytes.Contains(raw, []byte(privateKey)) || bytes.Contains(raw, []byte("frase-chave")) || bytes.Contains(raw, []byte("OLT Norte")) {
+	if bytes.Contains(raw, []byte(privateKey)) || bytes.Contains(raw, []byte("frase-chave")) || bytes.Contains(raw, []byte("OLT Norte")) || bytes.Contains(raw, []byte("show version")) {
 		t.Fatal("arquivo cifrado expôs dados")
 	}
 	var file struct {

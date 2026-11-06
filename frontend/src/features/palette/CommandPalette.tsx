@@ -7,6 +7,7 @@ import { useShells } from '../../stores/shells';
 import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
 import {
+  BroadcastIcon,
   ChevronDownIcon,
   ChevronIcon,
   ChevronLeftIcon,
@@ -18,17 +19,27 @@ import {
   SearchIcon,
   ServerIcon,
   SettingsIcon,
+  SnippetIcon,
   ThemeIcon,
 } from '../../ui/icons';
 import { connectHost } from '../hosts/connect';
 import { openSftp } from '../sftp/openSftp';
-import { activeTerminalId, focusDir, openSearch, toggleTheme } from '../terminal/commands';
+import {
+  activeTerminalId,
+  focusDir,
+  openSearch,
+  toggleBroadcast,
+  toggleTheme,
+} from '../terminal/commands';
 import { groupOf, useSessions } from '../../stores/sessions';
 import { checkNow, useUpdates } from '../../stores/updates';
 import { toastError, toastInfo } from '../../ui/Toast';
 import { openLocal } from '../terminal/openLocal';
 import { useShortcutLabel } from '../../app/useShortcuts';
 import { ShellIcon } from '../../ui/ShellIcon';
+import { useSnippets } from '../../stores/snippets';
+import { rankSnippets } from '../snippets/rank';
+import { groupSize, startSend } from '../snippets/sendSnippet';
 import { filterCommands, type Command } from './palette';
 import s from './palette.module.css';
 
@@ -50,6 +61,7 @@ function useCommands(): Entry[] {
   const focusRightKey = useShortcutLabel('focusRight') ?? '';
   const focusUpKey = useShortcutLabel('focusUp') ?? '';
   const focusDownKey = useShortcutLabel('focusDown') ?? '';
+  const broadcastKey = useShortcutLabel('broadcast') ?? '';
 
   return useMemo(() => {
     const p = t.palette;
@@ -72,7 +84,19 @@ function useCommands(): Entry[] {
       });
     // Grupo ativo: mover o foco entre painéis (specs/006, contracts/ui.md).
     const { groups, activeId } = useSessions.getState();
-    if (activeId && groupOf(groups, activeId)) {
+    const activeGroup = activeId ? groupOf(groups, activeId) : undefined;
+    if (activeGroup) {
+      // Digitar no grupo (specs/012, FR-1201).
+      actions.push({
+        id: 'broadcast',
+        label: activeGroup.broadcast ? t.terminal.broadcast.off : t.terminal.broadcast.on,
+        hint: broadcastKey,
+        group: 'action',
+        icon: <BroadcastIcon />,
+        run: () => {
+          toggleBroadcast(activeGroup.id);
+        },
+      });
       const names = t.settings.shortcutActions;
       actions.push(
         ...(
@@ -180,10 +204,46 @@ function useCommands(): Entry[] {
     powershellKey,
     searchKey,
     focusLeftKey,
+    broadcastKey,
     focusRightKey,
     focusUpKey,
     focusDownKey,
   ]);
+}
+
+/** Comandos salvos na ordem do fabricante do host ativo (specs/012, T017/T020/T021). */
+function useSnippetEntries(query: string): Entry[] {
+  const snippets = useSnippets((x) => x.snippets);
+  const hosts = useHosts((h) => h.hosts);
+  const activeId = useSessions((st) => st.activeId);
+  const tabs = useSessions((st) => st.tabs);
+  const groups = useSessions((st) => st.groups);
+  return useMemo(() => {
+    const terminal = activeTerminalId();
+    const hostId = tabs.find((tb) => tb.id === terminal)?.hostId ?? null;
+    const hostTags = hosts.find((h) => h.id === hostId)?.tags ?? [];
+    const inGroup = terminal !== null && groupSize() > 1;
+    return rankSnippets(snippets, hostTags, query).map((snippet) => ({
+      id: `snippet:${snippet.id}`,
+      label: t.palette.snippet(snippet.name),
+      hint: terminal ? (snippet.text.split('\n', 1)[0] ?? '') : t.palette.snippetNoTerminal,
+      group: 'snippet' as const,
+      icon: <SnippetIcon />,
+      disabled: terminal === null,
+      run: () => {
+        startSend(snippet, 'pane');
+      },
+      ...(inGroup
+        ? {
+            runGroup: () => {
+              startSend(snippet, 'group');
+            },
+          }
+        : {}),
+    }));
+    // activeId e groups entram para recalcular quando a sessão ativa ou o grupo mudam.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snippets, hosts, tabs, activeId, groups, query]);
 }
 
 export function CommandPalette() {
@@ -201,9 +261,19 @@ function Palette() {
   const listRef = useRef<HTMLUListElement>(null);
   const previous = useRef<HTMLElement | null>(null);
 
-  const matches = useMemo(() => filterCommands(commands, query), [commands, query]);
+  const snippetEntries = useSnippetEntries(query);
+  const matches = useMemo(() => {
+    // Ações, depois os comandos salvos (já ordenados pelo fabricante do host), depois os hosts.
+    const found = filterCommands(commands, query);
+    return [
+      ...found.filter((c) => c.group === 'action'),
+      ...snippetEntries,
+      ...found.filter((c) => c.group !== 'action'),
+    ];
+  }, [commands, query, snippetEntries]);
   const shown = matches.slice(0, LIMIT);
   const current = Math.min(selected, Math.max(0, shown.length - 1));
+  const groupCount = shown[current]?.runGroup ? groupSize() : 0;
 
   useEffect(() => {
     previous.current = document.activeElement as HTMLElement | null;
@@ -224,12 +294,13 @@ function Palette() {
     setOpen(false);
   }
 
-  function run(command: Command | undefined) {
-    if (!command) return;
+  function run(command: Command | undefined, toGroup = false) {
+    if (!command || command.disabled) return;
     // O comando decide o foco (nova aba foca o terminal), não o elemento anterior.
     previous.current = null;
     close();
-    command.run();
+    if (toGroup && command.runGroup) command.runGroup();
+    else command.run();
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -238,7 +309,7 @@ function Palette() {
     else if (e.key === 'ArrowUp' && n > 0) setSelected((current - 1 + n) % n);
     else if (e.key === 'PageDown' && n > 0) setSelected(Math.min(n - 1, current + 8));
     else if (e.key === 'PageUp' && n > 0) setSelected(Math.max(0, current - 8));
-    else if (e.key === 'Enter') run(shown[current]);
+    else if (e.key === 'Enter') run(shown[current], e.shiftKey);
     else if (e.key === 'Escape') close();
     else if (e.key === 'Tab') {
       // Foco preso no campo: a lista é navegada pelas setas.
@@ -297,14 +368,16 @@ function Palette() {
                 id={`${listId}-${String(i)}`}
                 role="option"
                 aria-selected={i === current}
+                aria-disabled={command.disabled ? true : undefined}
                 data-index={i}
+                data-group={command.group}
                 className={s.item}
                 onMouseMove={() => {
                   if (i !== current) setSelected(i);
                 }}
                 onMouseDown={(e) => {
                   e.preventDefault();
-                  run(command);
+                  run(command, e.shiftKey);
                 }}
               >
                 <span className={s.itemIcon}>{(command as Entry).icon}</span>
@@ -319,9 +392,20 @@ function Palette() {
             <kbd className={s.kbd}>↑</kbd>
             <kbd className={s.kbd}>↓</kbd> {t.palette.navigate}
           </span>
-          <span>
-            <kbd className={s.kbd}>Enter</kbd> {t.palette.run}
-          </span>
+          {groupCount > 1 ? (
+            <>
+              <span>
+                <kbd className={s.kbd}>Enter</kbd> {t.palette.sendPane}
+              </span>
+              <span>
+                <kbd className={s.kbd}>Shift+Enter</kbd> {t.palette.sendGroup(groupCount)}
+              </span>
+            </>
+          ) : (
+            <span>
+              <kbd className={s.kbd}>Enter</kbd> {t.palette.run}
+            </span>
+          )}
           <span className={s.footerCount}>{t.palette.results(matches.length)}</span>
         </div>
       </div>

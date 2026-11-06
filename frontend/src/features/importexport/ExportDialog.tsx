@@ -36,6 +36,8 @@ export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDi
   const [group, setGroup] = useState<string>(groupId ?? groups[0]?.id ?? '');
   const [count, setCount] = useState<ExportCount | null>(null);
   const [includeKeys, setIncludeKeys] = useState(false);
+  // Comandos salvos vão junto por padrão no OpenHost (specs/012, US6).
+  const [includeSnippets, setIncludeSnippets] = useState(true);
   const [master, setMaster] = useState('');
   const [filePassword, setFilePassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -85,6 +87,7 @@ export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDi
       format,
       scope,
       includeKeys: withKeys,
+      includeSnippets: format === 'openhost' && includeSnippets,
       ...(withKeys ? { masterPassword: master, filePassword } : {}),
       ...(format === 'openssh' ? { sshConfigMode: sshMode } : {}),
     });
@@ -149,6 +152,15 @@ export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDi
       {format === 'openhost' && (
         <>
           <Checkbox
+            label={ex.includeSnippets}
+            hint={count?.snippets ? ex.includeSnippetsHint(count.snippets) : undefined}
+            checked={includeSnippets}
+            disabled={!count?.snippets}
+            onChange={(e) => {
+              setIncludeSnippets(e.target.checked);
+            }}
+          />
+          <Checkbox
             label={ex.includeKeys}
             hint={count && count.keys > 0 ? ex.includeKeysHint(count.keys) : undefined}
             checked={includeKeys}
@@ -201,7 +213,9 @@ export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDi
               />
             </div>
           ) : (
-            <p className={s.notice}>{ex.plainWarning}</p>
+            <p className={s.notice}>
+              {ex.plainWarning(includeSnippets && (count?.snippets ?? 0) > 0)}
+            </p>
           )}
         </>
       )}

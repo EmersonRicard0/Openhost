@@ -552,3 +552,52 @@
   font-size: 11px;
   line-height: 16px;
 }
+
+/* Digitar no grupo (specs/012, FR-1204): o cabeçalho vira a faixa de aviso, sem mudar a altura
+   do painel (nenhum terminal é redimensionado ao ligar), e o painel ganha contorno. */
+.paneHeader[data-broadcast] {
+  border-bottom-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}
+
+.pane:has(.paneHeader[data-broadcast])::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border: 2px dashed var(--accent);
+  pointer-events: none;
+}
+
+.paneHeader[data-broadcast='send'] {
+  background: var(--accent);
+  color: var(--accent-text);
+}
+
+.broadcastLabel {
+  flex: none;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.broadcastToggle {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+.broadcastToggle input {
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.tabBroadcast[aria-pressed='true'] {
+  color: var(--accent);
+  opacity: 1;
+}

@@ -84,6 +84,8 @@ type Store struct {
 	pending         []Status
 	changeListeners []func()
 	pendingChange   bool
+	applyListeners  []func()
+	pendingApply    bool
 }
 
 // Open abre (ou cria) o banco em dir. kdf define o custo do Argon2id para cofres novos e trocas
@@ -184,6 +186,16 @@ func (s *Store) OnChange(fn func()) {
 
 func (s *Store) markChanged() { s.pendingChange = true }
 
+// OnApply registra um ouvinte para conteúdo remoto aplicado com sucesso. Assim como OnChange,
+// o callback roda depois de liberar o lock e pode chamar o Store novamente.
+func (s *Store) OnApply(fn func()) {
+	s.mu.Lock()
+	defer s.unlockAndNotify()
+	s.applyListeners = append(s.applyListeners, fn)
+}
+
+func (s *Store) markApplied() { s.pendingApply = true }
+
 func (s *Store) setStatus(st Status) {
 	s.status = st
 	s.pending = append(s.pending, st)
@@ -193,8 +205,10 @@ func (s *Store) setStatus(st Status) {
 func (s *Store) unlockAndNotify() {
 	pending, listeners := s.pending, append([]func(Status){}, s.listeners...)
 	changed, changeListeners := s.pendingChange, append([]func(){}, s.changeListeners...)
+	applied, applyListeners := s.pendingApply, append([]func(){}, s.applyListeners...)
 	s.pending = nil
 	s.pendingChange = false
+	s.pendingApply = false
 	s.mu.Unlock()
 	for _, st := range pending {
 		for _, l := range listeners {
@@ -203,6 +217,11 @@ func (s *Store) unlockAndNotify() {
 	}
 	if changed {
 		for _, listener := range changeListeners {
+			listener()
+		}
+	}
+	if applied {
+		for _, listener := range applyListeners {
 			listener()
 		}
 	}
@@ -449,7 +468,7 @@ func (s *Store) Erase() error {
 	if err != nil {
 		return err
 	}
-	for _, t := range []string{"sync_state", "forward_rules", "hosts", "known_hosts", "credentials", "groups", "vault_settings", "vault_meta"} {
+	for _, t := range []string{"sync_state", "forward_rules", "hosts", "known_hosts", "credentials", "groups", "snippets", "vault_settings", "vault_meta"} {
 		if _, err := tx.Exec(`DELETE FROM ` + t); err != nil {
 			_ = tx.Rollback()
 			return err
@@ -539,6 +558,7 @@ func (s *Store) Apply(content *model.Content) error {
 		return err
 	}
 	s.content, s.sigs = draft, sigs
+	s.markApplied()
 	return nil
 }
 

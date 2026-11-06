@@ -1,0 +1,10 @@
+[
+  {"text":"show vlan {vlan}","fields":["vlan"]},
+  {"text":"interface {interface}\n description {desc}","fields":["interface","desc"]},
+  {"text":"echo {vlan}-{vlan}","fields":["vlan"]},
+  {"text":"echo {{literal}} {real}","fields":["real"]},
+  {"text":"echo }} {{ {ok}","fields":["ok"]},
+  {"text":"echo {open {bad name} {}","fields":[]},
+  {"text":"echo {abcdefghijklmnopqrstuvwxyz123456}","fields":["abcdefghijklmnopqrstuvwxyz123456"]},
+  {"text":"echo {abcdefghijklmnopqrstuvwxyz1234567}","fields":[]}
+]

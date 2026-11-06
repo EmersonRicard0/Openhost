@@ -65,6 +65,15 @@ type forwardPlain struct {
 	DestPort         int     `json:"destPort"`
 }
 
+type snippetPlain struct {
+	Name      string   `json:"name"`
+	Text      string   `json:"text"`
+	Tags      []string `json:"tags"`
+	Execute   bool     `json:"execute"`
+	CreatedAt string   `json:"createdAt"`
+	UpdatedAt string   `json:"updatedAt"`
+}
+
 type table struct {
 	name string
 	cols []string
@@ -77,6 +86,7 @@ var tables = []table{
 	{"hosts", []string{"group_id", "sort_order", "created_at", "updated_at"}},
 	{"known_hosts", nil},
 	{"forward_rules", []string{"host_id"}},
+	{"snippets", nil},
 	{"vault_settings", nil},
 }
 
@@ -144,6 +154,17 @@ func encodeContent(c *model.Content) (map[string]map[string]row, error) {
 	for _, r := range c.ForwardRules {
 		p := forwardPlain{r.Label, r.BindAddress, r.AllowNonLoopback, r.BindPort, r.DestHost, r.DestPort}
 		if err := put("forward_rules", r.ID, []any{r.HostID}, p); err != nil {
+			return nil, err
+		}
+	}
+	for _, snippet := range c.Snippets {
+		tags := snippet.Tags
+		if tags == nil {
+			tags = []string{}
+		}
+		p := snippetPlain{Name: snippet.Name, Text: snippet.Text, Tags: tags,
+			Execute: snippet.Execute, CreatedAt: snippet.CreatedAt, UpdatedAt: snippet.UpdatedAt}
+		if err := put("snippets", snippet.ID, nil, p); err != nil {
 			return nil, err
 		}
 	}
@@ -382,6 +403,14 @@ func decodeRow(c *model.Content, t, id string, cols []any, plain []byte) error {
 		c.ForwardRules = append(c.ForwardRules, model.ForwardRule{ID: id, HostID: str(cols[0]),
 			Label: p.Label, BindAddress: p.BindAddress, AllowNonLoopback: p.AllowNonLoopback,
 			BindPort: p.BindPort, DestHost: p.DestHost, DestPort: p.DestPort})
+	case "snippets":
+		var p snippetPlain
+		if err := json.Unmarshal(plain, &p); err != nil {
+			return err
+		}
+		c.Snippets = append(c.Snippets, model.Snippet{ID: id, Name: p.Name, Text: p.Text,
+			Tags: append([]string{}, p.Tags...), Execute: p.Execute, CreatedAt: p.CreatedAt,
+			UpdatedAt: p.UpdatedAt})
 	case "vault_settings":
 		var p model.VaultSettings
 		if err := json.Unmarshal(plain, &p); err != nil {

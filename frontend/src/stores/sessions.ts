@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import type { LocalShell, SessionKind, SessionState } from '@shared/model/types';
 import { forget } from '../features/terminal/dataBus';
+import { drop } from '../features/terminal/writer';
 import {
   insert,
   leaf,
@@ -40,6 +41,8 @@ export interface Group {
   root: LayoutNode;
   /** Painel que recebe o foco quando a aba do grupo é ativada. */
   focusId: string;
+  /** "Digitar no grupo" ligado (specs/012); ausente = desligado. */
+  broadcast?: { excluded: string[] };
 }
 
 /** Item da barra de abas: sessão avulsa ou grupo, na posição do seu primeiro membro. */
@@ -78,6 +81,10 @@ interface SessionsState {
   join: (dragId: string, targetId: string, side: Side) => void;
   /** Tira a sessão do grupo e a devolve a uma aba logo depois dele. */
   splitOut: (id: string) => void;
+  /** Liga ou desliga "Digitar no grupo"; ligar marca todos os painéis (FR-1203). */
+  setBroadcast: (groupId: string, on: boolean) => void;
+  /** Marca ou desmarca um painel para receber a transmissão do grupo. */
+  setReceiving: (groupId: string, sessionId: string, on: boolean) => void;
   /** Troca a árvore de um grupo (proporções das divisórias). */
   setLayout: (groupId: string, root: LayoutNode) => void;
 }
@@ -127,6 +134,10 @@ function withoutMember(groups: Record<string, Group>, id: string): Record<string
       ...group,
       root,
       focusId: rest.includes(group.focusId) ? group.focusId : (rest[0] ?? ''),
+      // Quem sai do grupo nunca mais recebe dele (FR-1205).
+      ...(group.broadcast && {
+        broadcast: { excluded: group.broadcast.excluded.filter((m) => m !== id) },
+      }),
     },
   };
 }
@@ -256,7 +267,15 @@ export const useSessions = create<SessionsState>((set, get) => ({
     const base = withoutMember(groups, dragId);
     const current = targetGroup ? (base[targetGroup.id] ?? targetGroup) : undefined;
     const group: Group = current
-      ? { ...current, root: insert(current.root, targetId, side, dragId), focusId: dragId }
+      ? {
+          ...current,
+          root: insert(current.root, targetId, side, dragId),
+          focusId: dragId,
+          // Num grupo transmitindo, quem chega só recebe depois de marcado à mão.
+          ...(current.broadcast && {
+            broadcast: { excluded: [...current.broadcast.excluded, dragId] },
+          }),
+        }
       : {
           id: `g${String(++nextGroup)}`,
           root: insert(leaf(targetId), targetId, side, dragId),
@@ -275,6 +294,23 @@ export const useSessions = create<SessionsState>((set, get) => ({
     if (!group) return;
     const members = leaves(group.root).filter((m) => m !== id);
     set({ tabs: placeAfter(tabs, id, members), groups: withoutMember(groups, id), activeId: id });
+  },
+  setBroadcast(groupId, on) {
+    const { groups } = get();
+    const group = groups[groupId];
+    if (!group || Boolean(group.broadcast) === on) return;
+    const next: Group = { ...group };
+    if (on) next.broadcast = { excluded: [] };
+    else delete next.broadcast;
+    set({ groups: { ...groups, [groupId]: next } });
+  },
+  setReceiving(groupId, sessionId, on) {
+    const { groups } = get();
+    const group = groups[groupId];
+    if (!group?.broadcast || !leaves(group.root).includes(sessionId)) return;
+    const others = group.broadcast.excluded.filter((m) => m !== sessionId);
+    const excluded = on ? others : [...others, sessionId];
+    set({ groups: { ...groups, [groupId]: { ...group, broadcast: { excluded } } } });
   },
   setLayout(groupId, root) {
     const { groups } = get();
@@ -304,6 +340,7 @@ export async function closeTab(id: string): Promise<void> {
   useSessions.getState().close(id);
   dropInteractions(id);
   forget(id);
+  drop(id);
   await window.shellvault.sessions.close(id);
 }
 
