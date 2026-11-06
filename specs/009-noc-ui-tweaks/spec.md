@@ -233,7 +233,8 @@ valor e digita a porta nova.
 **Configurações como aba (US2)**
 
 - **FR-908**: Abrir as Configurações (botão, atalho ou paleta) MUST abrir uma aba "Configurações"
-  com ícone, ou ativar a existente; nunca MUST existir mais de uma.
+  (sem ícone na aba; a engrenagem fica só na barra superior — decisão do usuário em 2026-11-06),
+  ou ativar a existente; nunca MUST existir mais de uma.
 - **FR-909**: Com a aba "Configurações" ativa, nenhuma outra aba MUST aparecer como ativa.
 - **FR-910**: Ativar outra aba MUST mostrar aquela aba sem fechar as Configurações nem perder o
   estado das sessões.
