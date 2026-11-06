@@ -60,7 +60,7 @@ test('Configurações abrem como aba própria e fecham voltando à sessão (US2)
   }
 });
 
-test('porta é um campo simples e o host selecionado ganha a barra de destaque (US6, US3)', async () => {
+test('porta é um campo simples e o host selecionado ganha seleção neutra (US6, US3)', async () => {
   const app = await launchApp();
   const { page } = app;
   try {
@@ -85,16 +85,20 @@ test('porta é um campo simples e o host selecionado ganha a barra de destaque (
 
     await hostItem(page, 'porta-host').click();
     await expect(hostItem(page, 'porta-host')).toHaveAttribute('aria-selected', 'true');
-    // Barra na cor de destaque desenhada pelo indicador da lista (FR-913).
-    const bar = await page
+    // Seleção neutra, sem barra colorida na borda (FR-913 revisto, 78-UIFIX).
+    const look = await page
       .locator('[data-indicator]')
       .filter({ has: hostItem(page, 'porta-host') })
       .evaluate((list) => {
+        const before = getComputedStyle(list, '::before');
         const after = getComputedStyle(list, '::after');
-        return { width: after.width, color: after.backgroundColor };
+        return { fill: before.backgroundColor, bar: after.content };
       });
-    expect(bar.width).toBe('3px');
-    expect(bar.color).not.toBe('rgba(0, 0, 0, 0)');
+    expect(look.fill).not.toBe('rgba(0, 0, 0, 0)');
+    expect(look.bar).toBe('none');
+    // Nome inteiro na primeira linha; as tags ficam na linha do endereço.
+    const label = hostItem(page, 'porta-host').locator('[class*="itemLabel"]').first();
+    expect(await label.evaluate((el) => el.scrollWidth <= el.clientWidth)).toBe(true);
   } finally {
     await app.close();
   }

@@ -245,8 +245,10 @@ valor e digita a porta nova.
 
 **Lista de hosts (US3)**
 
-- **FR-913**: O host selecionado na lista lateral MUST mostrar uma barra vertical na cor de destaque
-  da marca na borda esquerda, além do fundo de seleção atual.
+- **FR-913** (revisto em 2026-11-06, pedido do usuário): O host selecionado na lista lateral MUST
+  ter um fundo neutro um tom acima do fundo da lista, com borda fina, sem barra colorida na borda
+  esquerda e sem tingir de laranja. O nome do host ocupa a primeira linha inteira; endereço e tags
+  ficam na segunda, com as tags cortadas no fim.
 - **FR-914**: Usuários MUST poder escolher a densidade da lista entre "Confortável" (padrão, como
   hoje) e "Compacta" (uma linha por host); a escolha MUST ser guardada entre execuções.
 - **FR-915**: Na densidade compacta, cada host MUST ocupar no máximo metade da altura que ocupa na

@@ -397,6 +397,15 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
                 {t.hosts.legacyBadge}
               </span>
             )}
+          </span>
+          {/* Nome com a linha toda; endereço (diferencia hosts com o mesmo nome; na busca, o
+              caminho do grupo) e tags embaixo, as tags cortadas no fim (78-UIFIX). */}
+          <span className={s.itemSubRow}>
+            <span className={s.itemSub}>
+              {path ? `${path} · ` : ''}
+              {host.username}@{host.address}
+              {host.port !== 22 ? `:${String(host.port)}` : ''}
+            </span>
             {tags.length > 0 && (
               <span className={s.tags}>
                 {shownTags.map((tag) => (
@@ -411,12 +420,6 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
                 )}
               </span>
             )}
-          </span>
-          {/* Endereço diferencia hosts com o mesmo nome; na busca, o caminho do grupo. */}
-          <span className={s.itemSub}>
-            {path ? `${path} · ` : ''}
-            {host.username}@{host.address}
-            {host.port !== 22 ? `:${String(host.port)}` : ''}
           </span>
         </span>
       </li>

@@ -23,6 +23,9 @@
 }
 
 .list {
+  /* Seleção neutra, um tom acima do fundo (78-UIFIX): o laranja translúcido virava marrom. */
+  --host-selected: color-mix(in srgb, var(--text-primary) 9%, transparent);
+  --host-selected-edge: color-mix(in srgb, var(--text-primary) 10%, transparent);
   position: relative;
   flex: 1;
   min-height: 0;
@@ -41,25 +44,8 @@
   right: 8px;
   height: var(--indicator-size);
   border-radius: 9px;
-  background: var(--selected);
-  box-shadow: var(--inset-accent-soft);
-  transform: translateY(var(--indicator-offset));
-  transition:
-    transform var(--motion-base) var(--ease-emphasized),
-    height var(--motion-base) var(--ease-emphasized);
-  pointer-events: none;
-}
-
-/* Barra na cor de destaque na borda esquerda da linha selecionada (specs/009, FR-913). */
-.list[data-indicator]::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 8px;
-  width: 3px;
-  height: var(--indicator-size);
-  border-radius: 9px 0 0 9px;
-  background: var(--accent);
+  background: var(--host-selected);
+  box-shadow: inset 0 0 0 1px var(--host-selected-edge);
   transform: translateY(var(--indicator-offset));
   transition:
     transform var(--motion-base) var(--ease-emphasized),
@@ -91,10 +77,13 @@
 }
 
 .item[aria-selected='true'] {
-  background: var(--selected);
-  box-shadow:
-    inset 3px 0 0 var(--accent),
-    var(--inset-accent-soft);
+  background: var(--host-selected);
+  box-shadow: inset 0 0 0 1px var(--host-selected-edge);
+}
+
+.item:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
 }
 
 .itemIcon {
@@ -121,8 +110,21 @@
 }
 
 .itemSub {
+  flex: 0 1 auto;
+  min-width: 0;
   font-size: 11.5px;
   color: var(--text-secondary);
+}
+
+.itemSubRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.itemSubRow .tags {
+  flex: 1 1 0;
 }
 
 .empty {
@@ -484,7 +486,7 @@
   min-width: 0;
 }
 
-.list[data-density='compact'] .itemSub {
+.list[data-density='compact'] .itemSubRow {
   flex: 1 1 0;
   min-width: 0;
 }
