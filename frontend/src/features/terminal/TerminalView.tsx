@@ -259,6 +259,12 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       }, 50);
     });
     observer.observe(container);
+    // Fonte que termina de carregar depois (negrito, reserva de um glifo) muda a célula sem mudar o
+    // contêiner: o ResizeObserver não vê, então o ajuste refaz aqui (specs/014).
+    const onFonts = () => {
+      requestAnimationFrame(fitAndResize);
+    };
+    document.fonts.addEventListener('loadingdone', onFonts);
 
     // Troca de monitor com outra escala: o tamanho em CSS pode não mudar, mas a célula muda.
     let stopDpr: () => void = () => undefined;
@@ -278,6 +284,7 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     return () => {
       if (timer) clearTimeout(timer);
       observer.disconnect();
+      document.fonts.removeEventListener('loadingdone', onFonts);
       stopDpr();
       if (copyTimer) clearTimeout(copyTimer);
       onSelection.dispose();
@@ -340,7 +347,11 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     let alive = true;
     void applyProfile(term, profile, scheme, fontSizeOf(tab.id, profile.fontSize, zoom)).then(
       () => {
-        if (alive && visibleRef.current) fitNowRef.current();
+        // O renderer DOM só aplica a medida nova da célula no quadro seguinte; ajustar agora usaria
+        // a largura da fonte de reserva e deixaria uma coluna a menos (specs/014).
+        requestAnimationFrame(() => {
+          if (alive && visibleRef.current) fitNowRef.current();
+        });
       },
     );
     return () => {

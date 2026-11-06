@@ -74,6 +74,9 @@ async function fakeClipboard(page: Page, text: string) {
         readText: () => Promise.resolve(value),
       },
     });
+    // O terminal cola pela área de transferência nativa do runtime do Wails.
+    const runtime = (window as unknown as { runtime?: Record<string, unknown> }).runtime;
+    if (runtime) runtime.ClipboardGetText = () => Promise.resolve(value);
   }, text);
 }
 

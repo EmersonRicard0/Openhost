@@ -44,8 +44,9 @@ test('cores, Unicode, copiar/colar e 10.000 linhas de histórico', async () => {
       PS,
       'Write-Host ("W:" + [char]0x6F22 + [char]0x5B57 + [char]::ConvertFromUtf32(0x1F600) + "|fim")\r',
     );
-    await expect.poll(async () => (await terminalText(page, id)).includes('|fim')).toBe(true);
-    const wide = await terminalCells(page, id, '|fim');
+    // A linha do comando digitado também tem "|fim"; só a saída tem o 漢.
+    await expect.poll(async () => (await terminalText(page, id)).includes('W:漢')).toBe(true);
+    const wide = await terminalCells(page, id, '漢');
     expect(wide.find((c) => c.chars === '漢')?.width).toBe(2);
     expect(wide.find((c) => c.chars === '字')?.width).toBe(2);
     expect(wide.find((c) => c.chars === '😀')?.width).toBe(2);
