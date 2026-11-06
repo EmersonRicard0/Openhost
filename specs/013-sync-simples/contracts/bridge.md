@@ -3,7 +3,7 @@
 | Método | Entrada | Saída | Notas |
 |---|---|---|---|
 | `FolderCandidates()` | — | `FolderCandidate[]` | sem rede; ordem Google Drive, OneDrive, Dropbox; vazio se nada encontrado |
-| `ConnectFolder(kind, path)` | `kind` ∈ candidatos ou `"custom"`; `path` só com `"custom"` | `{label, cloudHasVault, willMerge}` | prepara como o `Connect`; `custom` exige caminho absoluto, existente, diretório e gravável ⇒ senão `INVALID_INPUT` (`field: "path"`) |
+| `ConnectFolder(kind, path)` | `kind` ∈ candidatos ou `"custom"`; `path` sempre `""` vindo da interface | `{label, cloudHasVault, willMerge}` ou `null` | prepara como o `Connect`; com `custom` o **Go abre o seletor de pasta do sistema** (o caminho nunca sai do JavaScript); cancelado ⇒ `null`; pasta escolhida precisa ser absoluta, existente, diretório e gravável ⇒ senão `INVALID_INPUT` (`field: "path"`). `path` não vazio só em testes do Go |
 | `Connect()` | — | `{email, cloudHasVault, willMerge}` | igual à 008 + `willMerge`; chave órfã ⇒ `cloudHasVault: false` |
 | `Start(mode, cloudPassword)` | `"auto" \| "upload" \| "replace" \| "merge"` | `SyncInfo` | `auto` decide no Go (data-model, CloudState); senha obrigatória só se a nuvem tem cofre |
 | `Info()` | — | `SyncInfo` | ganha `place`, `folderLabel` (sem caminho) |
