@@ -15,6 +15,7 @@ import (
 	"golang.org/x/sys/windows/registry"
 
 	"shellvault/internal/apperr"
+	"shellvault/internal/winproc"
 )
 
 func systemShellReaders() shellReaders {
@@ -28,7 +29,7 @@ func systemShellReaders() shellReaders {
 		glob:         filepath.Glob,
 		registryDirs: gitRegistryDirs,
 		output: func(name string, args ...string) ([]byte, error) {
-			return exec.Command(name, args...).Output()
+			return winproc.Command(name, args...).Output()
 		},
 	}
 }

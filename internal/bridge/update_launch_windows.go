@@ -14,5 +14,6 @@ func launchUpdateHelper(helper, manifest string) error {
 }
 
 func openUpdateFolder(path string) error {
+	// Explorer é programa de janela (não abre console); HideWindow esconderia a própria pasta.
 	return exec.Command("explorer.exe", path).Start()
 }

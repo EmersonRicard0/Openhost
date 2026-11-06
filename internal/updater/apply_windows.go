@@ -6,13 +6,15 @@ import (
 	"errors"
 	"os/exec"
 	"syscall"
+
+	"shellvault/internal/winproc"
 )
 
 func applyPlatform(manifest ApplyManifest) error {
 	if manifest.Install != InstallNSIS {
 		return ErrUnsafeManifest
 	}
-	return exec.Command(manifest.PackagePath, "/S").Run()
+	return winproc.Command(manifest.PackagePath, "/S").Run()
 }
 
 func waitForProcess(pid int) error {
