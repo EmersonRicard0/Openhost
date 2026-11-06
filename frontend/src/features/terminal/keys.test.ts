@@ -20,6 +20,23 @@ describe('copiar e colar no terminal', () => {
     }
   });
 
+  it('Windows: Ctrl+C copia só com seleção; Ctrl+V cola', () => {
+    expect(terminalKeyAction(key('KeyC', { ctrlKey: true }), 'windows', true)).toBe('copy');
+    expect(terminalKeyAction(key('KeyC', { ctrlKey: true }), 'windows', false)).toBe('terminal');
+    expect(terminalKeyAction(key('KeyV', { ctrlKey: true }), 'windows')).toBe('paste');
+    // No Linux, Ctrl+C e Ctrl+V continuam com o programa.
+    expect(terminalKeyAction(key('KeyC', { ctrlKey: true }), 'linux', true)).toBe('terminal');
+    expect(terminalKeyAction(key('KeyV', { ctrlKey: true }), 'linux')).toBe('terminal');
+  });
+
+  it('Windows e Linux: Ctrl+Insert copia, Shift+Insert cola', () => {
+    for (const p of ['windows', 'linux'] as const) {
+      expect(terminalKeyAction(key('Insert', { ctrlKey: true }), p)).toBe('copy');
+      expect(terminalKeyAction(key('Insert', { shiftKey: true }), p)).toBe('paste');
+      expect(terminalKeyAction(key('Insert'), p)).toBe('terminal');
+    }
+  });
+
   it('macOS: ⌘C/⌘V; ⌃C, ⌃V e ⌃⇧C seguem para o programa', () => {
     expect(terminalKeyAction(key('KeyC', { metaKey: true }), 'darwin')).toBe('copy');
     expect(terminalKeyAction(key('KeyV', { metaKey: true }), 'darwin')).toBe('paste');

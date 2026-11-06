@@ -1,5 +1,9 @@
-// Teclas de copiar e colar do terminal por sistema (FR-143, specs/004 FR-409): Ctrl+Shift+C/V no
-// Windows e no Linux; ⌘C/⌘V no macOS, onde toda combinação com ⌃ segue para o programa.
+// Teclas de copiar e colar do terminal por sistema (FR-143, specs/004 FR-409):
+// - Windows: Ctrl+Shift+C/V; Ctrl+C copia só com texto selecionado (sem seleção vai o ^C para o
+//   programa); Ctrl+V cola, como no Terminal do Windows.
+// - Linux: Ctrl+Shift+C/V.
+// - Windows e Linux: Ctrl+Insert copia e Shift+Insert cola.
+// - macOS: ⌘C/⌘V, e toda combinação com ⌃ segue para o programa.
 import type { Platform } from '@shared/model/types';
 
 export interface TerminalKey {
@@ -12,20 +16,39 @@ export interface TerminalKey {
 }
 
 /**
- * `copy`: o app copia a seleção; `paste`: o xterm ignora e a colagem nativa chega pelo evento
- * `paste` (que passa pela confirmação); `terminal`: segue para o xterm.
+ * `copy`: o app copia a seleção; `paste`: o app lê a área de transferência e cola (passando pela
+ * confirmação de várias linhas); `terminal`: segue para o xterm.
  */
 export type TerminalKeyAction = 'copy' | 'paste' | 'terminal';
 
-export function terminalKeyAction(e: TerminalKey, platform: Platform): TerminalKeyAction {
+export function terminalKeyAction(
+  e: TerminalKey,
+  platform: Platform,
+  hasSelection = false,
+): TerminalKeyAction {
   if (e.type !== 'keydown') return 'terminal';
-  const mac = platform === 'darwin';
-  const chord = mac
-    ? e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey
-    : e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey;
-  if (!chord) return 'terminal';
-  if (e.code === 'KeyC') return 'copy';
-  if (e.code === 'KeyV') return 'paste';
+  if (platform === 'darwin') {
+    if (!(e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey)) return 'terminal';
+    if (e.code === 'KeyC') return 'copy';
+    if (e.code === 'KeyV') return 'paste';
+    return 'terminal';
+  }
+  if (e.altKey || e.metaKey) return 'terminal';
+  if (e.code === 'Insert') {
+    if (e.ctrlKey && !e.shiftKey) return 'copy';
+    if (e.shiftKey && !e.ctrlKey) return 'paste';
+    return 'terminal';
+  }
+  if (!e.ctrlKey) return 'terminal';
+  if (e.shiftKey) {
+    if (e.code === 'KeyC') return 'copy';
+    if (e.code === 'KeyV') return 'paste';
+    return 'terminal';
+  }
+  if (platform === 'windows') {
+    if (e.code === 'KeyC' && hasSelection) return 'copy';
+    if (e.code === 'KeyV') return 'paste';
+  }
   return 'terminal';
 }
 

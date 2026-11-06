@@ -58,16 +58,21 @@ async function fakeClipboard(page: Page, toPaste: string) {
   await page.evaluate((text) => {
     const w = window as unknown as { __copied: string[] };
     w.__copied = [];
+    const writeText = (value: string) => {
+      w.__copied.push(value);
+      return Promise.resolve(true);
+    };
+    const readText = () => Promise.resolve(text);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
-      value: {
-        writeText: (value: string) => {
-          w.__copied.push(value);
-          return Promise.resolve();
-        },
-        readText: () => Promise.resolve(text),
-      },
+      value: { writeText, readText },
     });
+    // O terminal usa a área de transferência nativa pelo runtime do Wails.
+    const runtime = (window as unknown as { runtime?: Record<string, unknown> }).runtime;
+    if (runtime) {
+      runtime.ClipboardSetText = writeText;
+      runtime.ClipboardGetText = readText;
+    }
   }, toPaste);
 }
 

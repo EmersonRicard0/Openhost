@@ -12,6 +12,7 @@ import { useUi } from '../../stores/ui';
 import { useVault } from '../../stores/vault';
 import { fontSizeOf, useWorkspace } from '../../stores/workspace';
 import { ringBell } from './bell';
+import { readClipboard, writeClipboard } from './clipboard';
 import { attach } from './dataBus';
 import { opensLink, terminalKeyAction } from './keys';
 import { environmentColor } from '../../theme/environments';
@@ -27,9 +28,9 @@ import s from './terminal.module.css';
 async function copySelection(term: Terminal): Promise<boolean> {
   const text = term.getSelection();
   if (!text) return false;
-  await navigator.clipboard.writeText(text);
-  term.clearSelection();
-  return true;
+  const ok = await writeClipboard(text);
+  if (ok) term.clearSelection();
+  return ok;
 }
 
 /** Cola; várias linhas passam antes pela confirmação (FR-144). */
@@ -165,13 +166,16 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     });
 
     term.attachCustomKeyEventHandler((e) => {
-      const action = terminalKeyAction(e, useUi.getState().platform);
-      if (action === 'copy') {
-        void copySelection(term);
-        return false;
-      }
-      // Colar (Ctrl+Shift+V, ⌘V): o xterm não trata a tecla; a colagem chega pelo evento `paste`.
-      return action !== 'paste';
+      const action = terminalKeyAction(e, useUi.getState().platform, term.hasSelection());
+      if (action === 'terminal') return true;
+      // A tecla não vira o evento `paste` nativo (colaria duas vezes): o app lê e cola.
+      e.preventDefault();
+      if (action === 'copy') void copySelection(term);
+      else
+        void readClipboard().then((text) => {
+          pasteText(sessionId, term, text);
+        });
+      return false;
     });
     // Opções de FR-177 lidas na hora do evento: mudar nas configurações vale sem recriar o xterm.
     const behavior = () => useUi.getState().settings;
@@ -182,13 +186,13 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       if (!(behavior()?.copyOnSelect ?? false)) return;
       copyTimer = setTimeout(() => {
         const text = term.getSelection();
-        if (text) void navigator.clipboard.writeText(text);
+        if (text) void writeClipboard(text);
       }, 120);
     });
     const onContextMenu = (e: MouseEvent) => {
       e.preventDefault();
       if (!(behavior()?.rightClickPaste ?? true)) return;
-      void navigator.clipboard.readText().then((text) => {
+      void readClipboard().then((text) => {
         pasteText(sessionId, term, text);
       });
     };

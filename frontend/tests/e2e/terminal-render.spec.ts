@@ -1,7 +1,7 @@
 // US4 — renderização do terminal: cores, largura Unicode, copiar/colar e histórico (T041; da 001 T079).
 import { expect, test } from '@playwright/test';
 import { launchApp } from './helpers/launch';
-import { readClipboard } from './helpers/system';
+import { readClipboard, writeClipboard } from './helpers/system';
 import {
   createVault,
   expectTerminalLine,
@@ -63,6 +63,21 @@ test('cores, Unicode, copiar/colar e 10.000 linhas de histórico', async () => {
       )
       .toBe(true);
     await page.keyboard.press('Escape');
+
+    // Como no Terminal do Windows: Ctrl+C com seleção copia; Ctrl+V cola (78-UIFIX).
+    writeClipboard(['nada']);
+    await selectInTerminal(page, id, 'COPIA-123');
+    await page.keyboard.press('Control+C');
+    await expect.poll(() => readClipboard()).toBe('COPIA-123');
+    writeClipboard(['Write-Host COLA-CTRL-V']);
+    await page.keyboard.press('Control+V');
+    await page.keyboard.press('Enter');
+    await expectTerminalLine(page, id, 'COLA-CTRL-V');
+    // Shift+Insert também cola.
+    writeClipboard(['Write-Host COLA-SHIFT-INS']);
+    await page.keyboard.press('Shift+Insert');
+    await page.keyboard.press('Enter');
+    await expectTerminalLine(page, id, 'COLA-SHIFT-INS');
 
     // 15.000 linhas: o histórico guarda pelo menos 10.000 (FR-015).
     await typeInTerminal(page, PS, '1..15000 | ForEach-Object { "linha $_" }\r');
