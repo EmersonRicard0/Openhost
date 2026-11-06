@@ -12,7 +12,7 @@ regressão do vazamento.
 ## Phase 1: Setup
 
 - [X] T001 [Claude] Transformar o protótipo `frontend/tests/e2e/zz-mem-baseline.spec.ts` em `frontend/tests/e2e/memory.spec.ts` (sem metas ainda): mede árvore de processos por `--type` (formato invariante), heap JS com `HeapProfiler.collectGarbage`, grava `test-results/memory.md`; apagar o protótipo
-- [ ] T002 [Claude] Rodar T001 três vezes e registrar a variação entre execuções em `specs/014-desempenho/baseline.md` (margem de ruído das metas)
+- [X] T002 [Claude] Rodar T001 três vezes e registrar a variação entre execuções em `specs/014-desempenho/baseline.md` (margem de ruído das metas)
 
 ## Phase 2: Foundational
 
