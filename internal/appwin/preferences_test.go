@@ -15,6 +15,7 @@ func TestValidateShortcuts(t *testing.T) {
 		{"closeTab": "Ctrl+Shift+W", "palette": ""},
 		{"newTab": "Ctrl+Alt+T", "nextTab": "Ctrl+Tab", "search": "F5"},
 		{"zoomIn": "Alt+Equal", "zoomOut": "Ctrl+Minus", "zoomReset": "Ctrl+Digit0"},
+		{"broadcast": "Ctrl+Shift+G"},
 		{
 			"openSettings": "Ctrl+Comma",
 			"focusLeft":    "Alt+ArrowLeft",

@@ -3,6 +3,7 @@ import type {
   ActiveForward,
   CsvMapping,
   DuplicateAction,
+  SnippetAction,
   ExportCount,
   ExportRequest,
   ExportResult,
@@ -30,6 +31,8 @@ import type {
   HostInput,
   HostKeyEvent,
   HostView,
+  Snippet,
+  SnippetInput,
   LocalShell,
   LocalShellInfo,
   SendKeysCombo,
@@ -95,6 +98,14 @@ export interface ShellVaultApi {
     rename: (id: string, name: string) => R<Group>;
     move: (id: string, parentId: string | null) => R<void>;
     remove: (id: string) => R<void>;
+  };
+  snippets: {
+    list: () => R<Snippet[]>;
+    create: (input: SnippetInput) => R<Snippet>;
+    update: (id: string, input: Partial<SnippetInput>) => R<Snippet>;
+    remove: (id: string) => R<void>;
+    duplicate: (id: string) => R<Snippet>;
+    onChanged: On<void>;
   };
   credentials: {
     list: () => R<CredentialSummary[]>;
@@ -173,6 +184,7 @@ export interface ShellVaultApi {
     updateRow: (previewId: string, rowId: string, patch: RowPatch) => R<PreviewView>;
     selectAll: (previewId: string, selected: boolean, groupPath: string[] | null) => R<PreviewView>;
     setDuplicateAction: (previewId: string, action: DuplicateAction) => R<PreviewView>;
+    setSnippetAction: (previewId: string, name: string, action: SnippetAction) => R<PreviewView>;
     unlockKey: (previewId: string, keyRef: string, passphrase: string) => R<PreviewKey>;
     skipKey: (previewId: string, keyRef: string) => R<PreviewKey>;
     commit: (previewId: string, targetGroupId: string | null) => R<ImportResult>;
@@ -270,6 +282,10 @@ export const API_SHAPE = {
     events: ['onChanged'],
   },
   groups: { invoke: ['list', 'create', 'rename', 'move', 'remove'], events: [] },
+  snippets: {
+    invoke: ['list', 'create', 'update', 'remove', 'duplicate'],
+    events: ['onChanged'],
+  },
   credentials: {
     invoke: [
       'list',
@@ -341,6 +357,7 @@ export const API_SHAPE = {
       'updateRow',
       'selectAll',
       'setDuplicateAction',
+      'setSnippetAction',
       'unlockKey',
       'skipKey',
       'commit',

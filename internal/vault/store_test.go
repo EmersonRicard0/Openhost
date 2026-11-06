@@ -156,6 +156,42 @@ func TestHostMetadataSurvivesReopen(t *testing.T) {
 	}
 }
 
+func TestSnippetSurvivesReopenAndStaysSealed(t *testing.T) {
+	dir := t.TempDir()
+	s := openTest(t, dir)
+	if err := s.Create(pw, pw); err != nil {
+		t.Fatal(err)
+	}
+	snippet := model.Snippet{
+		ID: "9a5ad95d-74ea-4fa4-a282-1eebc2f6cf74", Name: "Diagnóstico",
+		Text: "show segredo-nao-vazar", Tags: []string{"huawei"}, Execute: true,
+		CreatedAt: "2026-10-30T12:00:00.000Z", UpdatedAt: "2026-10-30T12:00:00.000Z",
+	}
+	if err := s.Mutate(func(c *model.Content) error {
+		c.Snippets = append(c.Snippets, snippet)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	var sealed []byte
+	if err := s.db.QueryRow(`SELECT sealed FROM snippets WHERE id = ?`, snippet.ID).Scan(&sealed); err != nil {
+		t.Fatal(err)
+	}
+	if bytes.Contains(sealed, []byte(snippet.Text)) || bytes.Contains(sealed, []byte(snippet.Name)) {
+		t.Fatal("snippet contém nome ou texto em claro")
+	}
+	_ = s.Close()
+
+	s = openTest(t, dir)
+	if err := s.Unlock(pw); err != nil {
+		t.Fatal(err)
+	}
+	content, err := s.Read()
+	if err != nil || len(content.Snippets) != 1 || !reflect.DeepEqual(content.Snippets[0], snippet) {
+		t.Fatalf("snippet após reabrir = %+v, %v", content.Snippets, err)
+	}
+}
+
 func TestOlderVaultGetsDefaultEnvironmentsAndEmptyListStaysEmpty(t *testing.T) {
 	dir := t.TempDir()
 	s := openTest(t, dir)
@@ -397,6 +433,41 @@ func TestNewerSchemaIsUnsupported(t *testing.T) {
 	unreadable("ApplyLegacyTerminalFont", s2.ApplyLegacyTerminalFont("Cascadia Mono", 14))
 	_, err = s2.Preference("x", new(string))
 	unreadable("Preference", err)
+}
+
+func TestSchemaThreeIsRejectedByVersionTwoWithoutChangingFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, DBFile)
+	s := openTest(t, dir)
+	if err := s.Create(pw, pw); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db, err := sql.Open("sqlite", filepath.ToSlash(path))
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = migrateTo(db, 2, migrations[:2])
+	if closeErr := db.Close(); closeErr != nil {
+		t.Fatal(closeErr)
+	}
+	var newer errNewerSchema
+	if !errors.As(err, &newer) || newer.version != 3 || newer.supported != 2 {
+		t.Fatalf("versão 2 abrindo esquema 3 = %v", err)
+	}
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(before, after) {
+		t.Fatal("leitor da versão 2 alterou o arquivo de esquema 3")
+	}
 }
 
 func TestNoopMutateAfterReloadWritesNothing(t *testing.T) {

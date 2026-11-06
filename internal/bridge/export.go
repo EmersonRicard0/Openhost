@@ -55,18 +55,20 @@ type ExportScope struct {
 }
 
 type ExportRequest struct {
-	Format         ExportFormat `json:"format"`
-	Scope          ExportScope  `json:"scope"`
-	IncludeKeys    bool         `json:"includeKeys"`
-	MasterPassword string       `json:"masterPassword,omitempty"`
-	FilePassword   string       `json:"filePassword,omitempty"`
-	SSHConfigMode  string       `json:"sshConfigMode,omitempty"`
+	Format          ExportFormat `json:"format"`
+	Scope           ExportScope  `json:"scope"`
+	IncludeKeys     bool         `json:"includeKeys"`
+	IncludeSnippets bool         `json:"includeSnippets"`
+	MasterPassword  string       `json:"masterPassword,omitempty"`
+	FilePassword    string       `json:"filePassword,omitempty"`
+	SSHConfigMode   string       `json:"sshConfigMode,omitempty"`
 }
 
 type ExportCount struct {
-	Hosts  int `json:"hosts"`
-	Groups int `json:"groups"`
-	Keys   int `json:"keys"`
+	Hosts    int `json:"hosts"`
+	Groups   int `json:"groups"`
+	Keys     int `json:"keys"`
+	Snippets int `json:"snippets"`
 }
 
 type ExportResult struct {
@@ -183,7 +185,8 @@ func (s *ExportService) Export(request ExportRequest) (*ExportResult, error) {
 	}
 	raw, err := exporter.MarshalOpenHost(selected, exporter.OpenHostOptions{
 		Profiles: profiles, IncludeKeys: request.IncludeKeys,
-		FilePassword: request.FilePassword, KDF: s.kdf,
+		IncludeSnippets: request.IncludeSnippets,
+		FilePassword:    request.FilePassword, KDF: s.kdf,
 	})
 	if err != nil {
 		return nil, clean(err)
@@ -311,6 +314,7 @@ func selectExportContent(content *model.Content, scope ExportScope) (*model.Cont
 	}
 	selected := model.EmptyContent()
 	selected.Settings = content.Settings
+	selected.Snippets = append([]model.Snippet{}, content.Snippets...)
 	for _, group := range content.Groups {
 		if groupIDs[group.ID] {
 			selected.Groups = append(selected.Groups, group)
@@ -345,5 +349,5 @@ func countExport(content *model.Content) ExportCount {
 			keys++
 		}
 	}
-	return ExportCount{Hosts: len(content.Hosts), Groups: len(content.Groups), Keys: keys}
+	return ExportCount{Hosts: len(content.Hosts), Groups: len(content.Groups), Keys: keys, Snippets: len(content.Snippets)}
 }

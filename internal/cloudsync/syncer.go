@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -568,6 +569,12 @@ func (s *Syncer) localVersions(state *persistentSyncState) ([]ItemVersion, bool,
 		}
 		if old.Deleted {
 			versions = append(versions, ItemVersion{Key: key, VV: vv, Deleted: true, DeletedAt: old.DeletedAt})
+			continue
+		}
+		kind, _, hasKind := strings.Cut(key, ":")
+		if known && hasKind && !knownItemKind(kind) {
+			// O binário atual não sabe materializar este tipo no cofre. Omiti-lo da visão local
+			// deixa a versão do snapshot remoto sobreviver à mesclagem, em vez de criar uma lápide.
 			continue
 		}
 		vv[state.DeviceID] = max(vv[state.DeviceID]+1, counter)

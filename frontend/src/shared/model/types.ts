@@ -114,6 +114,25 @@ export interface HostView extends Host {
   credentialName: string | null;
 }
 
+// --- Biblioteca de comandos (specs/012) -----------------------------------
+
+export interface Snippet {
+  id: string;
+  name: string;
+  text: string;
+  tags: string[];
+  execute: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SnippetInput {
+  name: string;
+  text: string;
+  tags: string[];
+  execute: boolean;
+}
+
 export type CredentialKind = 'password' | 'key';
 
 export type KeyType =
@@ -445,6 +464,13 @@ export interface ImportWarning {
 
 export type RowState = 'ok' | 'invalid' | 'duplicate';
 export type DuplicateAction = 'skip' | 'replace' | 'keepBoth';
+export type SnippetAction = 'skip' | 'copy';
+
+export interface PreviewSnippet {
+  name: string;
+  duplicateOf?: string;
+  action: SnippetAction;
+}
 
 export interface PreviewRow {
   rowId: string;
@@ -482,6 +508,7 @@ export interface PreviewView {
   sourceLabel: string;
   rows: PreviewRow[];
   keys: PreviewKey[];
+  snippets?: PreviewSnippet[];
   ignored: { name: string; reason: string }[];
   fileWarnings: ImportWarning[];
   csv: { columns: string[]; mapping: CsvMapping; needsMapping: boolean } | null;
@@ -506,6 +533,7 @@ export interface ImportResult {
   keysReused: number;
   /** Hosts sem chave que vão pedir a senha na primeira conexão. */
   askPassword: number;
+  snippets?: number;
 }
 
 export interface UndoResult {
@@ -523,6 +551,7 @@ export interface ExportRequest {
   format: ExportFormat;
   scope: ExportScope;
   includeKeys: boolean;
+  includeSnippets?: boolean;
   masterPassword?: string;
   filePassword?: string;
   sshConfigMode?: 'newFile' | 'append';
@@ -532,6 +561,7 @@ export interface ExportCount {
   hosts: number;
   groups: number;
   keys: number;
+  snippets?: number;
 }
 
 export interface ExportResult {

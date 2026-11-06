@@ -23,6 +23,7 @@ var shortcutActions = map[string]struct{}{
 	"newTab": {}, "newPowerShell": {}, "closeTab": {}, "nextTab": {}, "prevTab": {},
 	"search": {}, "palette": {}, "zoomIn": {}, "zoomOut": {}, "zoomReset": {},
 	"toggleSidebar": {}, "openSettings": {},
+	"broadcast": {},
 	"focusLeft": {}, "focusRight": {}, "focusUp": {}, "focusDown": {},
 }
 

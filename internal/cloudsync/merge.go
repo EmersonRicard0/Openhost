@@ -131,7 +131,7 @@ func indexVersions(items []ItemVersion) (map[string]ItemVersion, error) {
 
 func validMergeVersion(item ItemVersion) bool {
 	kind, id, ok := strings.Cut(item.Key, ":")
-	if !ok || id == "" || len(item.Key) > 512 || !knownItemKind(kind) || len(item.VV) == 0 {
+	if !ok || kind == "" || id == "" || len(item.Key) > 512 || len(item.VV) == 0 {
 		return false
 	}
 	for device, counter := range item.VV {
@@ -151,7 +151,7 @@ func validMergeVersion(item ItemVersion) bool {
 
 func knownItemKind(kind string) bool {
 	switch kind {
-	case "group", "host", "credential", "knownHost", "forward", "settings", "profile", "scheme", "prefs":
+	case "group", "host", "credential", "knownHost", "forward", "snippet", "settings", "profile", "scheme", "prefs":
 		return true
 	default:
 		return false
