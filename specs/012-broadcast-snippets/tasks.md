@@ -114,8 +114,8 @@ numa pasta temporária.
 ## Phase 9: Polish & Cross-Cutting
 
 - [X] T023 E2e `frontend/tests/e2e/broadcast-snippets.spec.ts` com os sete cenários do quickstart (produção contra o servidor SSH de teste); rodar também `split`, `sync`, `import-export`, `noc-ui` e `daily-use`.
-- [ ] T024 Revisão de segurança (plano, Princípio II): validação do `SnippetService` na ponte, texto de comando e valores de campo fora de logs, erros e disco; nenhum caminho de `send` para sessão fora do grupo, desmarcada ou de produção sem confirmação; leitor tolerante da nuvem não aceita item inválido de tipo conhecido.
-- [ ] T025 Lint, typecheck, `npm test`, `go test ./...`; `specs/012-broadcast-snippets/validation.md` com o resultado de cada cenário e SC (medir SC-1202 e SC-1205); nota de versão sobre o esquema 3 do cofre (versões antigas mostram o aviso de cofre mais novo).
+- [X] T024 Revisão de segurança (plano, Princípio II): validação do `SnippetService` na ponte, texto de comando e valores de campo fora de logs, erros e disco; nenhum caminho de `send` para sessão fora do grupo, desmarcada ou de produção sem confirmação; leitor tolerante da nuvem não aceita item inválido de tipo conhecido.
+- [X] T025 Lint, typecheck, `npm test`, `go test ./...`; `specs/012-broadcast-snippets/validation.md` com o resultado de cada cenário e SC (medir SC-1202 e SC-1205); nota de versão sobre o esquema 3 do cofre (versões antigas mostram o aviso de cofre mais novo).
 
 ---
 

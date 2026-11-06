@@ -1065,8 +1065,10 @@ export const t = {
       includeKeys: 'Incluir chaves privadas',
       includeKeysHint: (n: number) =>
         `${n === 1 ? '1 chave' : `${count(n)} chaves`}. O arquivo inteiro fica criptografado com uma senha sua.`,
-      plainWarning:
-        'Sem chaves o arquivo não é criptografado: endereços e usuários ficam legíveis. Guarde-o com cuidado.',
+      plainWarning: (withSnippets: boolean) =>
+        withSnippets
+          ? 'Sem chaves o arquivo não é criptografado: endereços, usuários e comandos salvos ficam legíveis. Guarde-o com cuidado.'
+          : 'Sem chaves o arquivo não é criptografado: endereços e usuários ficam legíveis. Guarde-o com cuidado.',
       masterPassword: 'Senha mestra do cofre',
       filePassword: 'Senha do arquivo',
       filePasswordConfirm: 'Repita a senha do arquivo',

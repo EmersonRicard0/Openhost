@@ -213,7 +213,9 @@ export function ExportDialog({ groupId = null, hostIds = [], onClose }: ExportDi
               />
             </div>
           ) : (
-            <p className={s.notice}>{ex.plainWarning}</p>
+            <p className={s.notice}>
+              {ex.plainWarning(includeSnippets && (count?.snippets ?? 0) > 0)}
+            </p>
           )}
         </>
       )}
