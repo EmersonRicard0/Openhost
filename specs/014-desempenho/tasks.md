@@ -11,7 +11,7 @@ regressão do vazamento.
 
 ## Phase 1: Setup
 
-- [ ] T001 [Claude] Transformar o protótipo `frontend/tests/e2e/zz-mem-baseline.spec.ts` em `frontend/tests/e2e/memory.spec.ts` (sem metas ainda): mede árvore de processos por `--type` (formato invariante), heap JS com `HeapProfiler.collectGarbage`, grava `test-results/memory.md`; apagar o protótipo
+- [X] T001 [Claude] Transformar o protótipo `frontend/tests/e2e/zz-mem-baseline.spec.ts` em `frontend/tests/e2e/memory.spec.ts` (sem metas ainda): mede árvore de processos por `--type` (formato invariante), heap JS com `HeapProfiler.collectGarbage`, grava `test-results/memory.md`; apagar o protótipo
 - [ ] T002 [Claude] Rodar T001 três vezes e registrar a variação entre execuções em `specs/014-desempenho/baseline.md` (margem de ruído das metas)
 
 ## Phase 2: Foundational
@@ -38,10 +38,10 @@ regressão do vazamento.
 **Goal**: +30 MB no máximo após abrir e fechar 20 terminais (SC-1403).
 **Independent Test**: cenário de ciclos do `memory.spec.ts`.
 
-- [ ] T011 [P] [US2] [Claude] Vitest em `frontend/src/features/terminal/dataBus.test.ts`: backlog só de sessões abertas, "teto 1 MiB" por sessão descartando os lotes mais antigos, sessão fechada descarta e ignora novos lotes
-- [ ] T012 [US2] [Claude] Implementar T011 em `frontend/src/features/terminal/dataBus.ts` (`push` no lugar de `[...lista, dado]`)
-- [ ] T013 [P] [US2] [Claude] Vitest em `frontend/src/features/terminal/webglPool.test.ts`: no máximo visíveis + 1 recém-escondido com WebGL; liberar chama `loseContext` antes de `dispose`; fechar a aba libera
-- [ ] T014 [US2] [Claude] `frontend/src/features/terminal/webglPool.ts` e uso em `TerminalView.tsx` (efeito de visibilidade e desmontagem) — research R2 (a) e (b)
+- [X] T011 [P] [US2] [Claude] Vitest em `frontend/src/features/terminal/dataBus.test.ts`: backlog só de sessões abertas, "teto 1 MiB" por sessão descartando os lotes mais antigos, sessão fechada descarta e ignora novos lotes
+- [X] T012 [US2] [Claude] Implementar T011 em `frontend/src/features/terminal/dataBus.ts` (`push` no lugar de `[...lista, dado]`)
+- [X] T013 [P] [US2] [Claude] Vitest em `frontend/src/features/terminal/webglPool.test.ts`: no máximo visíveis + 1 recém-escondido com WebGL; liberar chama `loseContext` antes de `dispose`; fechar a aba libera
+- [X] T014 [US2] [Claude] `frontend/src/features/terminal/webglPool.ts` e uso em `TerminalView.tsx` (efeito de visibilidade e desmontagem) — research R2 (a) e (b)
 - [ ] T015 [US2] [Claude] Dois heap snapshots (antes de abrir / depois de fechar 20) via CDP; corrigir cada retenção achada (registro de terminais, sonda de teste, `watchPrompt`, store de sessões, busca) e anotar em `specs/014-desempenho/research.md` R3
 - [ ] T016 [US2] [Claude] Metas SC-1403 em `memory.spec.ts`: +30 MB após fechar 20 em 30 s; 3 ciclos não somam > 15 MB
 
@@ -51,8 +51,8 @@ regressão do vazamento.
 **Independent Test**: cenário "20 terminais" ÷ 20 do `memory.spec.ts` + `performance.spec.ts`.
 
 - [ ] T017 [US3] [Claude] `SearchAddon` carregado na primeira busca da aba em `TerminalView.tsx` / `terminalRegistry.ts` / `SearchBar.tsx` (R5)
-- [ ] T018 [US3] [Claude] Medir renderer DOM puro vs WebGL com pool (R2 c) em 20 abas e troca de aba; registrar em `research.md` e adotar o vencedor como padrão (WebGL vira opção em Configurações se o DOM vencer)
-- [ ] T019 [US3] [Claude] Meta SC-1402 em `memory.spec.ts` (≤ 15 MB/aba) e rodar `performance.spec.ts` (SC-1405)
+- [X] T018 [US3] [Claude] Medir renderer DOM puro vs WebGL com pool (R2 c) em 20 abas e troca de aba; registrar em `research.md` e adotar o vencedor como padrão (WebGL vira opção em Configurações se o DOM vencer)
+- [X] T019 [US3] [Claude] Meta SC-1402 em `memory.spec.ts` (≤ 15 MB/aba) e rodar `performance.spec.ts` (SC-1405)
 
 ## Phase 6: User Story 4 — Saída intensa sem engordar (P2)
 
@@ -66,6 +66,11 @@ regressão do vazamento.
 ## Phase 7: User Story 5 — Medição repetível (P3)
 
 - [ ] T023 [US5] [Claude] `memory.spec.ts` com todas as metas, tolerância da T002 e relatório final em `test-results/memory.md`; documentar como rodar em `specs/014-desempenho/quickstart.md`
+
+## Phase 7b: Opção de GPU (descoberta da T018)
+
+- [ ] T027 [US3] [Codex] Preferência `gpuRendering` (bool, padrão `false`) em `internal/appwin/preferences.go` e no `case` de `internal/bridge/app.go` (mesmo caminho de `boldBright`); não sincroniza (depende da placa de vídeo de cada computador)
+- [ ] T028 [US3] [Claude] Interruptor "Aceleração por GPU" em Configurações → Terminal, com texto dizendo que usa mais memória; trocar vale para as abas que aparecerem depois
 
 ## Phase 8: Polish
 

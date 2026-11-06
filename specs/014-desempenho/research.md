@@ -81,3 +81,9 @@ fica +165 MB depois de fechar todas.
   `performance.memory` + `HeapProfiler.collectGarbage` (CDP). Grava `test-results/memory.md` e
   falha acima das metas SC-1401..SC-1404. Usa só terminais locais (FR-1410).
 - **Rationale**: o protótipo usado na linha de base já funciona; vira teste com metas.
+
+## Resultado da T018 (2026-11-06)
+
+Mesma bateria (memory.spec.ts), por aba ociosa na tela embutida: WebGL sem pool **25 MB**; WebGL com pool + loseContext **11 MB** (GPU devolve devagar: ciclos rápidos deixam +100 MB por minutos); **renderer DOM 3,7 MB**, ciclos estáveis (+5 MB), troca de aba p95 ~40 ms (SC-1405 ok), heap estável com saída contínua (24 → 24 MB). Decisão: DOM é o padrão; WebGL vira opção `gpuRendering` (T027/T028), ainda com o pool.
+
+R3: com o dataBus corrigido o heap JS depois de fechar volta a 8 MB (início 6); nenhuma outra retenção relevante achada — T015 fica só como conferência final.

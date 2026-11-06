@@ -19,6 +19,7 @@ import { environmentColor } from '../../theme/environments';
 import { useHostEnvironment } from '../hosts/environment';
 import { needsConfirm } from './paste';
 import { watchPrompt } from './promptTitle';
+import { createWebglPool } from './webglPool';
 import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from './profile';
 import { SearchBar } from './SearchBar';
 import { registerTerminal } from './terminalRegistry';
@@ -31,6 +32,46 @@ async function copySelection(term: Terminal): Promise<boolean> {
   const ok = await writeClipboard(text);
   if (ok) term.clearSelection();
   return ok;
+}
+
+interface WebglHandle {
+  addon: WebglAddon;
+  contexts: WebGL2RenderingContext[];
+}
+
+// O addon não perde o contexto no `dispose` e o Chromium só o solta quando o canvas é coletado:
+// perder explicitamente devolve a memória do processo de GPU na hora (specs/014, R2).
+const webglPool = createWebglPool<WebglHandle>({
+  keepHidden: 1,
+  release: (_id, { addon, contexts }) => {
+    for (const gl of contexts) gl.getExtension('WEBGL_lose_context')?.loseContext();
+    addon.dispose();
+  },
+});
+
+function attachWebgl(term: Terminal, id: string): WebglHandle | null {
+  // Renderer DOM por padrão (specs/014, T018): 3,9 MB por aba contra 11 MB com WebGL, sem sobra no
+  // processo de GPU, troca de aba p95 ~40 ms. WebGL só com "Aceleração por GPU" ligada.
+  if (!(useUi.getState().settings?.gpuRendering ?? false)) return null;
+  const before = new Set(term.element?.querySelectorAll('canvas'));
+  try {
+    const addon = new WebglAddon();
+    addon.onContextLoss(() => {
+      webglPool.forget(id);
+      addon.dispose();
+    });
+    term.loadAddon(addon);
+    const contexts: WebGL2RenderingContext[] = [];
+    // Só canvas criados pelo addon: getContext num canvas sem contexto criaria um novo.
+    for (const canvas of term.element?.querySelectorAll('canvas') ?? []) {
+      if (before.has(canvas)) continue;
+      const gl = canvas.getContext('webgl2');
+      if (gl) contexts.push(gl);
+    }
+    return { addon, contexts };
+  } catch {
+    return null;
+  }
 }
 
 /** Cola; várias linhas passam antes pela confirmação (FR-144). */
@@ -244,36 +285,29 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       detach();
       prompt?.dispose();
       unregisterProbe();
+      webglPool.remove(sessionId);
       term.dispose();
       termRef.current = null;
       fitNowRef.current = () => undefined;
     };
   }, [tab.id, tab.hostId, tab.kind]);
 
-  // WebGL só nos terminais visíveis (limite de contextos do Chromium; research R4): no máximo os
-  // quatro painéis de um grupo.
+  // WebGL nos terminais visíveis e no recém-escondido (specs/014, R2); os outros são liberados de
+  // verdade pelo pool. Sem WebGL fica o renderer DOM.
   useEffect(() => {
     const term = termRef.current;
-    if (!term || !visible) return;
-    let webgl: WebglAddon | null = null;
-    try {
-      webgl = new WebglAddon();
-      webgl.onContextLoss(() => {
-        webgl?.dispose();
-        webgl = null;
-      });
-      term.loadAddon(webgl);
-    } catch {
-      webgl = null; // Sem WebGL: fica o renderer DOM.
-    }
-    requestAnimationFrame(() => {
+    if (!term) return;
+    const id = tab.id;
+    webglPool.setVisible(id, visible, () => attachWebgl(term, id));
+    if (!visible) return;
+    const frame = requestAnimationFrame(() => {
       fitNowRef.current();
       if (focusedRef.current) term.focus();
     });
     return () => {
-      webgl?.dispose();
+      cancelAnimationFrame(frame);
     };
-  }, [visible]);
+  }, [visible, tab.id]);
 
   useEffect(() => {
     if (!focused || !visibleRef.current) return;

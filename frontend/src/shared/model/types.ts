@@ -208,6 +208,8 @@ export interface Settings {
   bell: BellMode;
   boldBright: boolean;
   autoReconnect: boolean;
+  /** Desenho do terminal por GPU (WebGL) (specs/014); ausente vale `false` (renderer DOM). */
+  gpuRendering?: boolean;
   /** Densidade da lista de hosts (specs/009); ausente até o Go gravar. */
   hostDensity?: HostDensity;
   /** Nome da aba pelo prompt do equipamento (specs/009); ausente vale `true`. */
