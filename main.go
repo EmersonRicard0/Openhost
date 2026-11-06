@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"sync/atomic"
 
 	"github.com/wailsapp/wails/v2"
@@ -38,6 +39,9 @@ var (
 )
 
 func main() {
+	// Limite suave: mantém o heap do processo principal perto da meta sem reduzir os 256 MiB
+	// usados intencionalmente pelo Argon2id (spec 014, research R1).
+	debug.SetMemoryLimit(256 << 20)
 	if len(os.Args) > 1 && os.Args[1] == "--apply-update" {
 		if len(os.Args) != 3 {
 			fmt.Fprintln(os.Stderr, "OpenHost não pôde aplicar a atualização: manifesto ausente")

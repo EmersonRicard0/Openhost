@@ -42,7 +42,10 @@ const (
 	EventClosed  = "term:closed"
 )
 
-const pendingInputLimit = 64 * 1024
+const (
+	pendingInputLimit  = 64 * 1024
+	defaultPauseExpiry = 30 * time.Second
+)
 
 // opening diz se a sessão está a caminho de conectar (entrada digitada fica guardada).
 func (st State) opening() bool {
@@ -165,6 +168,14 @@ type Session struct {
 
 	emitMu sync.Mutex
 	closed bool
+
+	pauseMu         sync.Mutex
+	paused          bool
+	pausedAt        time.Time
+	pauseChanged    chan struct{}
+	pauseTimer      *time.Timer
+	pauseGeneration uint64
+	pauseTimeout    time.Duration
 }
 
 type Manager struct {
@@ -173,10 +184,14 @@ type Manager struct {
 	mu           sync.Mutex
 	sessions     map[string]*Session
 	interactions map[string]*interaction
+	pauseTimeout time.Duration
 }
 
 func NewManager(emit Emitter) *Manager {
-	return &Manager{emit: emit, sessions: map[string]*Session{}, interactions: map[string]*interaction{}}
+	return &Manager{
+		emit: emit, sessions: map[string]*Session{}, interactions: map[string]*interaction{},
+		pauseTimeout: defaultPauseExpiry,
+	}
 }
 
 func newID() string { return domain.NewID() }
@@ -190,9 +205,13 @@ func (m *Manager) Open(kind Kind, hostID *string, dial Dialer) string {
 // apenas depois de concluir uma conexão interativa (como SFTP) usam este caminho.
 func (m *Manager) OpenID(id string, kind Kind, hostID *string, dial Dialer) string {
 	ctx, cancel := context.WithCancel(context.Background())
+	pauseTimeout := m.pauseTimeout
+	if pauseTimeout <= 0 {
+		pauseTimeout = defaultPauseExpiry
+	}
 	s := &Session{ID: id, Kind: kind, HostID: hostID, m: m, ctx: ctx, cancel: cancel,
 		state: StateConnecting, sized: make(chan struct{}), reconnect: make(chan Dialer, 1),
-		hostKey: make(chan bool, 1), prompt: make(chan []string, 1)}
+		hostKey: make(chan bool, 1), prompt: make(chan []string, 1), pauseTimeout: pauseTimeout}
 	s.out = NewBatcher(func(data string) { s.emit(EventData, DataEvent{SessionID: s.ID, Data: data}) })
 	m.mu.Lock()
 	m.sessions[s.ID] = s
@@ -241,6 +260,32 @@ func (m *Manager) Write(id, data string) error {
 	conn := s.conn
 	s.mu.Unlock()
 	return conn.Write([]byte(data))
+}
+
+// Pause interrompe apenas a leitura da saída. A entrada continua indo diretamente à conexão.
+// Chamadas tardias para uma sessão já removida são tratadas como sucesso para simplificar o
+// controle de fluxo da interface.
+func (m *Manager) Pause(id string) error {
+	m.mu.Lock()
+	s := m.sessions[id]
+	m.mu.Unlock()
+	if s == nil || s.State() == StateClosed {
+		return nil
+	}
+	s.pauseOutput()
+	return nil
+}
+
+// Resume libera o leitor pausado. É idempotente, inclusive depois que a sessão foi removida.
+func (m *Manager) Resume(id string) error {
+	m.mu.Lock()
+	s := m.sessions[id]
+	m.mu.Unlock()
+	if s == nil {
+		return nil
+	}
+	s.resumeOutput(0)
+	return nil
 }
 
 // Resize guarda o tamanho; o primeiro válido libera o pedido do PTY. Repetir o último tamanho
@@ -431,12 +476,71 @@ func (s *Session) emit(event string, payload any) {
 
 func (s *Session) shutdown() {
 	s.cancel()
+	s.resumeOutput(0)
 	s.wg.Wait()
 	s.out.Close()
 	s.emitMu.Lock()
 	defer s.emitMu.Unlock()
 	s.closed = true
 	s.m.emit(EventClosed, ClosedEvent{SessionID: s.ID})
+}
+
+func (s *Session) pauseOutput() {
+	s.pauseMu.Lock()
+	defer s.pauseMu.Unlock()
+	if s.paused || s.ctx.Err() != nil {
+		return
+	}
+	s.paused = true
+	s.pausedAt = time.Now()
+	s.pauseChanged = make(chan struct{})
+	s.pauseGeneration++
+	generation := s.pauseGeneration
+	s.pauseTimer = time.AfterFunc(s.pauseTimeout, func() { s.resumeOutput(generation) })
+}
+
+// generation zero é uma retomada explícita; as expirações só liberam a pausa que as criou.
+func (s *Session) resumeOutput(generation uint64) {
+	s.pauseMu.Lock()
+	defer s.pauseMu.Unlock()
+	if !s.paused || generation != 0 && generation != s.pauseGeneration {
+		return
+	}
+	s.paused = false
+	s.pausedAt = time.Time{}
+	s.pauseGeneration++
+	if s.pauseTimer != nil {
+		s.pauseTimer.Stop()
+		s.pauseTimer = nil
+	}
+	close(s.pauseChanged)
+	s.pauseChanged = nil
+}
+
+type pausableOutput struct{ session *Session }
+
+func (w pausableOutput) Write(data []byte) (int, error) {
+	for {
+		w.session.pauseMu.Lock()
+		if !w.session.paused {
+			select {
+			case <-w.session.ctx.Done():
+				w.session.pauseMu.Unlock()
+				return 0, w.session.ctx.Err()
+			default:
+			}
+			n, err := w.session.out.Write(data)
+			w.session.pauseMu.Unlock()
+			return n, err
+		}
+		changed := w.session.pauseChanged
+		w.session.pauseMu.Unlock()
+		select {
+		case <-changed:
+		case <-w.session.ctx.Done():
+			return 0, w.session.ctx.Err()
+		}
+	}
 }
 
 // SetState implementa Interactor. A saída pendente sai antes da mudança de estado.
@@ -580,7 +684,7 @@ func (s *Session) connect(dial Dialer) {
 	s.mu.Lock()
 	first := s.size
 	s.mu.Unlock()
-	if err := conn.Start(first.cols, first.rows, s.out); err != nil {
+	if err := conn.Start(first.cols, first.rows, pausableOutput{session: s}); err != nil {
 		if s.ctx.Err() == nil {
 			s.setState(StateError, err, nil)
 		}

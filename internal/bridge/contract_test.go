@@ -16,7 +16,7 @@ var contract = map[string][]string{
 	"SnippetService": {"List", "Create", "Update", "Remove", "Duplicate"},
 	"CredentialService": {"List", "CreatePassword", "PickKeyFile", "ImportKey", "GenerateEd25519",
 		"CopyPublicKey", "Rename", "Remove"},
-	"SessionService": {"OpenSsh", "OpenLocal", "Write", "Resize", "Reconnect", "Close",
+	"SessionService": {"OpenSsh", "OpenLocal", "Write", "Pause", "Resume", "Resize", "Reconnect", "Close",
 		"AnswerHostKey", "AnswerPrompt", "ActiveSummary", "SendKeys"},
 	"SftpService": {"Open", "List", "Mkdir", "Rename", "Remove", "Upload", "Download",
 		"ResolveConflict", "Cancel"},

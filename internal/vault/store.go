@@ -86,6 +86,8 @@ type Store struct {
 	pendingChange   bool
 	applyListeners  []func()
 	pendingApply    bool
+	releaseMemory   func()
+	pendingRelease  bool
 }
 
 // Open abre (ou cria) o banco em dir. kdf define o custo do Argon2id para cofres novos e trocas
@@ -94,7 +96,7 @@ func Open(dir string, kdf func(salt []byte) KDFParams) (*Store, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
 	}
-	s := &Store{dir: dir, kdf: kdf, now: nowISO}
+	s := &Store{dir: dir, kdf: kdf, now: nowISO, releaseMemory: freeDerivedMemory}
 	db, err := openDB(filepath.Join(dir, DBFile))
 	if err != nil {
 		var newer errNewerSchema
@@ -206,10 +208,15 @@ func (s *Store) unlockAndNotify() {
 	pending, listeners := s.pending, append([]func(Status){}, s.listeners...)
 	changed, changeListeners := s.pendingChange, append([]func(){}, s.changeListeners...)
 	applied, applyListeners := s.pendingApply, append([]func(){}, s.applyListeners...)
+	release, releaseMemory := s.pendingRelease, s.releaseMemory
 	s.pending = nil
 	s.pendingChange = false
 	s.pendingApply = false
+	s.pendingRelease = false
 	s.mu.Unlock()
+	if release && releaseMemory != nil {
+		go releaseMemory()
+	}
 	for _, st := range pending {
 		for _, l := range listeners {
 			l(st)
@@ -227,6 +234,8 @@ func (s *Store) unlockAndNotify() {
 	}
 }
 
+func (s *Store) requestMemoryRelease() { s.pendingRelease = true }
+
 func validateNewPassword(password, confirmation string) error {
 	n := utf8.RuneCountInString(password)
 	if n < MinPasswordLength {
@@ -242,6 +251,7 @@ func (s *Store) newMeta(password string, dek []byte, createdAt string) (*meta, [
 	p := s.kdf(RandomSalt())
 	m := &meta{time: p.Time, memoryKiB: p.MemoryKiB, salt: p.Salt, createdAt: createdAt}
 	kek := DeriveKEK([]byte(password), p)
+	s.requestMemoryRelease()
 	wrapped, err := Seal(kek, dek, m.wrapAD())
 	if err != nil {
 		Zero(kek)
@@ -357,6 +367,7 @@ func (s *Store) Unlock(password string) error {
 		return s.corrupted()
 	}
 	dek, kek, err := unwrapKeyMaterial(password, m)
+	s.requestMemoryRelease()
 	if err != nil {
 		return err
 	}
@@ -379,6 +390,7 @@ func (s *Store) VerifyPassword(password string) error {
 		return apperr.New(apperr.VaultLocked)
 	}
 	check, err := unwrap(password, s.meta)
+	s.requestMemoryRelease()
 	if err != nil {
 		return err
 	}
@@ -420,6 +432,7 @@ func (s *Store) ChangePassword(current, next, confirmation string) error {
 		return apperr.New(apperr.VaultLocked)
 	}
 	check, err := unwrap(current, s.meta)
+	s.requestMemoryRelease()
 	if err != nil {
 		return err
 	}

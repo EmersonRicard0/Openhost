@@ -65,6 +65,7 @@ type Preferences struct {
 	Bell               string            `json:"bell"`
 	BoldBright         bool              `json:"boldBright"`
 	AutoReconnect      bool              `json:"autoReconnect"`
+	GpuRendering       bool              `json:"gpuRendering"`
 	HostDensity        string            `json:"hostDensity"`
 	PromptTitle        bool              `json:"promptTitle"`
 	Updates            UpdatePrefs       `json:"updates"`
@@ -87,6 +88,7 @@ func DefaultPreferences() Preferences {
 		Bell:               "visual",
 		BoldBright:         true,
 		AutoReconnect:      false,
+		GpuRendering:       false,
 		HostDensity:        "comfortable",
 		PromptTitle:        true,
 		Updates:            UpdatePrefs{Auto: true},
