@@ -213,7 +213,7 @@ obrigatórios, `SHA256SUMS.txt` e as notas.
 - [X] T035 [P] Atualizar `specs/002-wails-migration/contracts/bridge.md`: `Smoke.Ready` só com a tag `smoke` e a nota de plataformas.
 - [X] T036 [P] Checagem de tamanho no CI de release: falha se algum instalador do Linux ou do macOS passar de 40 MB (SC-406).
 - [ ] T037 Rodar `specs/004-linux-macos/quickstart.md` (parte automatizada e Docker) e registrar em `specs/004-linux-macos/validation.md`; cenários manuais de macOS e de Linux com interface ficam marcados para o usuário.
-- [ ] T038 Lançamento 0.4.0 junto com a T051 da 003: `wails.json` 0.4.0 e tag `v0.4.0` depois da validação.
+- [X] T038 Lançamento 0.4.0 junto com a T051 da 003: `wails.json` 0.4.0 e tag `v0.4.0` depois da validação. — substituída: v0.4.0-rc.2 e depois v0.6.0
 
 ---
 

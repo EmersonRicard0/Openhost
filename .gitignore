@@ -48,3 +48,7 @@ update-signing.key
 
 # Credenciais OAuth do Google baixadas do Console (nunca no git)
 client_secret*.json
+
+# Vídeo de apresentação gerado localmente (fora do git desde 0803a79)
+scripts/openhost_motion.py
+artifacts/

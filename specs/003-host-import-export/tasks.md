@@ -137,7 +137,7 @@ antes do código, falhando primeiro.
 - [X] T048 Atualizar `specs/002-wails-migration/contracts/bridge.md` (lista de serviços ligados inclui `ImportService` e `ExportService`, códigos de erro novos) e o README (seção "Importar e exportar")
 - [X] T049 Polimento visual com capturas via E2E (tema claro e escuro, 1.000 linhas, estados vazios "Nenhum host encontrado", erros) e revisão de acessibilidade por teclado
 - [ ] T050 Rodar `specs/003-host-import-export/quickstart.md` e registrar em `specs/003-host-import-export/validation.md`
-- [ ] T051 Versão nova em `wails.json` (0.4.0), notas de versão e publicação da release pela tag `v0.4.0` (workflow `release.yml`)
+- [X] T051 Versão nova em `wails.json` (0.4.0), notas de versão e publicação da release pela tag `v0.4.0` (workflow `release.yml`) — substituída: saiu como v0.4.0-rc.1/rc.2 e entrou na v0.6.0, a primeira versão final
 
 ---
 
