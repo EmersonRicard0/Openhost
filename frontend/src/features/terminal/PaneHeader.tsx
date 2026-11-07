@@ -8,19 +8,34 @@ import { CloseIcon, DetachIcon } from '../../ui/icons';
 import { closeSession } from './commands';
 import { endDrag, startDrag } from './dragState';
 import { StateIcon } from './StateIcon';
+import { useBroadcastRole, type BroadcastRole } from './useBroadcast';
 import s from './terminal.module.css';
 
 /**
  * Cabeçalho de um painel do grupo (FR-610): estado, título, separar e fechar. Arrastá-lo leva o
  * painel para outro lugar do grupo ou, solto na barra de abas, o separa (FR-612, FR-615).
  */
+/** Texto da faixa de transmissão; `null` quando o painel não participa. */
+function broadcastLabel(role: BroadcastRole): string | null {
+  const b = t.terminal.broadcast;
+  if (role.kind === 'send') return b.sending(role.count);
+  if (role.kind !== 'receive' || !role.marked) return null;
+  if (!role.connected) return b.disconnected;
+  return role.production ? `${b.receiving} · ${b.production}` : b.receiving;
+}
+
 export function PaneHeader({ tab }: { tab: Tab }) {
   const environment = useHostEnvironment(tab.hostId);
   const dark = useUi((u) => u.dark);
+  const role = useBroadcastRole(tab.id);
+  const label = broadcastLabel(role);
   return (
     <div
       className={s.paneHeader}
       data-pane-header
+      data-broadcast={
+        role.kind === 'send' ? 'send' : role.kind === 'receive' && role.marked ? 'receive' : undefined
+      }
       draggable
       onClick={() => {
         useSessions.getState().activate(tab.id);
@@ -34,6 +49,29 @@ export function PaneHeader({ tab }: { tab: Tab }) {
     >
       <StateIcon state={tab.state} />
       <span className={s.paneTitle}>{tab.title}</span>
+      {label && (
+        <span className={s.broadcastLabel} role="status">
+          {label}
+        </span>
+      )}
+      {role.kind === 'receive' && (
+        <label
+          className={s.broadcastToggle}
+          title={t.terminal.broadcast.receive}
+          onClick={(e) => {
+            e.stopPropagation();
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={role.marked}
+            aria-label={t.terminal.broadcast.receive}
+            onChange={(e) => {
+              useSessions.getState().setReceiving(role.groupId, tab.id, e.currentTarget.checked);
+            }}
+          />
+        </label>
+      )}
       {environment && (
         <span
           className={s.environmentLabel}

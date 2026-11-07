@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { describePaste, needsConfirm } from './paste';
+import { describePaste, needsConfirm, needsBroadcastConfirm } from './paste';
 
 describe('colagem (FR-144)', () => {
   it('uma linha, com ou sem quebra no fim, não pede confirmação', () => {
@@ -32,5 +32,15 @@ describe('colagem (FR-144)', () => {
     expect(preview.split('\n')).toHaveLength(9);
     expect(preview.split('\n')[8]).toBe('…');
     expect(truncated).toBe(true);
+  });
+});
+
+describe('colagem com "Digitar no grupo" (012, FR-1210)', () => {
+  it('pede confirmação com 2 linhas ou mais, ou com mais de 200 caracteres', () => {
+    expect(needsBroadcastConfirm('show version')).toBe(false);
+    expect(needsBroadcastConfirm('show version\n')).toBe(false);
+    expect(needsBroadcastConfirm('a\nb')).toBe(true);
+    expect(needsBroadcastConfirm('x'.repeat(200))).toBe(false);
+    expect(needsBroadcastConfirm('x'.repeat(201))).toBe(true);
   });
 });

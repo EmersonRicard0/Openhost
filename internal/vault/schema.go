@@ -7,7 +7,7 @@ import (
 
 // SchemaVersion é o PRAGMA user_version que esta versão sabe ler. Toda mudança de esquema
 // ganha uma migração numerada com teste (Princípio III).
-const SchemaVersion = 2
+const SchemaVersion = 3
 
 // migrations[i] leva o banco da versão i para i+1.
 var migrations = []string{
@@ -81,29 +81,45 @@ CREATE TABLE sync_state (
 	sealed BLOB NOT NULL
 );
 `,
+	// 2 → 3 (biblioteca de comandos, R5)
+	`
+CREATE TABLE snippets (
+	id     TEXT PRIMARY KEY,
+	sealed BLOB NOT NULL
+);
+`,
 }
 
 // errNewerSchema: banco criado por uma versão mais nova do app.
-type errNewerSchema struct{ version int }
+type errNewerSchema struct {
+	version   int
+	supported int
+}
 
 func (e errNewerSchema) Error() string {
-	return fmt.Sprintf("esquema %d é mais novo que o suportado (%d)", e.version, SchemaVersion)
+	return fmt.Sprintf("esquema %d é mais novo que o suportado (%d)", e.version, e.supported)
 }
 
 func migrate(db *sql.DB) error {
+	return migrateTo(db, SchemaVersion, migrations)
+}
+
+// migrateTo recebe a versão suportada para que o teste de compatibilidade possa simular um
+// binário antigo sem manter uma segunda cópia da implementação de migração.
+func migrateTo(db *sql.DB, supported int, migrationScripts []string) error {
 	var version int
 	if err := db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
 		return err
 	}
-	if version > SchemaVersion {
-		return errNewerSchema{version}
+	if version > supported {
+		return errNewerSchema{version: version, supported: supported}
 	}
-	for v := version; v < SchemaVersion; v++ {
+	for v := version; v < supported; v++ {
 		tx, err := db.Begin()
 		if err != nil {
 			return err
 		}
-		if _, err := tx.Exec(migrations[v]); err != nil {
+		if _, err := tx.Exec(migrationScripts[v]); err != nil {
 			_ = tx.Rollback()
 			return err
 		}

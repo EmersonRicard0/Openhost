@@ -12,10 +12,12 @@ import type {
   PreviewRow,
   PreviewView,
   RowPatch,
+  SnippetAction,
   SourceKind,
   UndoResult,
 } from '@shared/model/types';
 import { useHosts } from './hosts';
+import { useSnippets } from './snippets';
 
 export type ImportStep = 'sources' | 'preview' | 'summary';
 export type RowFilter = 'all' | 'attention';
@@ -78,6 +80,8 @@ interface ImportExportState {
   updateRow: (rowId: string, patch: RowPatch) => Promise<void>;
   selectAll: (selected: boolean, groupPath?: string[]) => Promise<void>;
   setDuplicateAction: (action: DuplicateAction) => Promise<void>;
+  /** Comando salvo repetido no arquivo OpenHost: pular ou importar como cópia (specs/012, US6). */
+  setSnippetAction: (name: string, action: SnippetAction) => Promise<void>;
   unlockKey: (keyRef: string, passphrase: string) => Promise<AppError | null>;
   skipKey: (keyRef: string) => Promise<void>;
   setTarget: (groupId: string | null) => void;
@@ -99,6 +103,14 @@ const initial = {
   result: null,
   resultKind: null,
 };
+
+/** O lote mexe em hosts e, vindo de um arquivo OpenHost, em comandos salvos (specs/012, US6). */
+async function reloadAfterBatch(snippets: number): Promise<void> {
+  await Promise.all([
+    useHosts.getState().reload(),
+    snippets > 0 ? useSnippets.getState().reload() : Promise.resolve(),
+  ]);
+}
 
 function replaceKey(preview: PreviewView, key: PreviewKey): PreviewView {
   return { ...preview, keys: preview.keys.map((k) => (k.ref === key.ref ? key : k)) };
@@ -163,6 +175,15 @@ export const useImportExport = create<ImportExportState>((set, get) => ({
     set(res.ok ? { preview: res.value, error: null } : { error: res.error });
   },
 
+  async setSnippetAction(name, action) {
+    const preview = get().preview;
+    if (!preview) return;
+    const res = await window.shellvault.imports.setSnippetAction(preview.id, name, action);
+    const current = get().preview;
+    if (!current || current.id !== preview.id) return;
+    set(res.ok ? { preview: res.value, error: null } : { error: res.error });
+  },
+
   async selectAll(selected, groupPath) {
     const preview = get().preview;
     if (!preview) return;
@@ -221,7 +242,7 @@ export const useImportExport = create<ImportExportState>((set, get) => ({
       resultKind: preview.kind,
       undoable: res.value.batchId,
     });
-    await useHosts.getState().reload();
+    await reloadAfterBatch(res.value.snippets ?? 0);
     return true;
   },
 
@@ -231,7 +252,7 @@ export const useImportExport = create<ImportExportState>((set, get) => ({
     set({ busy: true, error: null });
     const res = await window.shellvault.imports.undo(batchId);
     set({ busy: false, undoable: null, ...(res.ok ? {} : { error: res.error }) });
-    await useHosts.getState().reload();
+    await reloadAfterBatch(get().result?.snippets ?? 0);
     return res.ok ? res.value : null;
   },
 

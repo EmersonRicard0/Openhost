@@ -1,7 +1,14 @@
 // Etapas da importação depois de escolher a origem: prévia (FR-302 a FR-306) e resumo
 // (FR-309, FR-310). A gravação só acontece em "Importar".
 import { useState } from 'react';
-import type { CsvField, CsvMapping, PreviewView, SourceKind } from '@shared/model/types';
+import type {
+  CsvField,
+  CsvMapping,
+  PreviewSnippet,
+  PreviewView,
+  SnippetAction,
+  SourceKind,
+} from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
 import {
@@ -93,6 +100,39 @@ function Notes({ preview }: { preview: PreviewView }) {
         </details>
       )}
     </div>
+  );
+}
+
+/** Comandos salvos do arquivo OpenHost; os repetidos pedem pular ou cópia (specs/012, US6). */
+function SnippetsPreview({ snippets }: { snippets: PreviewSnippet[] }) {
+  const setAction = useImportExport((x) => x.setSnippetAction);
+  return (
+    <section className={s.snippets} aria-label={ie.snippetsTitle(snippets.length)}>
+      <h4 className={s.blockTitle}>{ie.snippetsTitle(snippets.length)}</h4>
+      <ul className={s.snippetList}>
+        {snippets.map((item) => (
+          <li key={item.name} className={s.snippetRow}>
+            <span className={s.snippetName}>{item.name}</span>
+            {item.duplicateOf !== undefined && (
+              <>
+                <span className={s.hint} data-tone="warning">
+                  {ie.snippetDuplicate(item.duplicateOf)}
+                </span>
+                <Segmented<SnippetAction>
+                  label={ie.snippetDuplicate(item.duplicateOf)}
+                  value={item.action}
+                  options={(['skip', 'copy'] as const).map((value) => ({
+                    value,
+                    label: ie.snippetActions[value],
+                  }))}
+                  onChange={(action) => void setAction(item.name, action)}
+                />
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -197,6 +237,9 @@ export function PreviewStep({ preview }: { preview: PreviewView }) {
             emptyText={st.filter === 'all' ? ie.empty : ie.emptyAttention}
             onUpdate={(rowId, patch) => void st.updateRow(rowId, patch)}
           />
+          {preview.snippets && preview.snippets.length > 0 && (
+            <SnippetsPreview snippets={preview.snippets} />
+          )}
         </>
       )}
 
@@ -273,6 +316,7 @@ export function SummaryStep() {
         {result.replaced > 0 && <li>{sm.replaced(result.replaced)}</li>}
         {result.skipped > 0 && <li>{sm.skipped(result.skipped)}</li>}
         {result.ignored > 0 && <li>{sm.ignored(result.ignored)}</li>}
+        {(result.snippets ?? 0) > 0 && <li>{sm.snippets(result.snippets ?? 0)}</li>}
         {result.keysStored + result.keysReused > 0 && (
           <li>{sm.keys(result.keysStored, result.keysReused)}</li>
         )}

@@ -74,7 +74,7 @@ func EncodeItems(data SyncData) ([]PlainItem, error) {
 	if data.Content == nil {
 		return nil, apperr.New(apperr.InvalidInput)
 	}
-	items := make([]PlainItem, 0, len(data.Content.Groups)+len(data.Content.Hosts)+len(data.Content.Credentials)+len(data.Content.KnownHosts)+len(data.Content.ForwardRules)+len(data.Profiles)+len(data.Schemes)+2)
+	items := make([]PlainItem, 0, len(data.Content.Groups)+len(data.Content.Hosts)+len(data.Content.Credentials)+len(data.Content.KnownHosts)+len(data.Content.ForwardRules)+len(data.Content.Snippets)+len(data.Profiles)+len(data.Schemes)+2)
 	add := func(key string, value any) error {
 		raw, err := json.Marshal(value)
 		if err != nil {
@@ -105,6 +105,11 @@ func EncodeItems(data SyncData) ([]PlainItem, error) {
 	}
 	for _, item := range data.Content.ForwardRules {
 		if err := add("forward:"+item.ID, item); err != nil {
+			return nil, err
+		}
+	}
+	for _, item := range data.Content.Snippets {
+		if err := add("snippet:"+item.ID, item); err != nil {
 			return nil, err
 		}
 	}
@@ -143,7 +148,14 @@ func DecodeItems(items []PlainItem) (SyncData, []string, error) {
 		}
 		seen[item.Key] = struct{}{}
 		kind, id, ok := strings.Cut(item.Key, ":")
-		if !ok || id == "" || !decodeOneItem(&result, kind, id, item.Data) {
+		if !ok || kind == "" || id == "" {
+			rejected = append(rejected, item.Key)
+			continue
+		}
+		if !knownItemKind(kind) {
+			continue
+		}
+		if !decodeOneItem(&result, kind, id, item.Data) {
 			rejected = append(rejected, item.Key)
 		}
 	}
@@ -188,6 +200,17 @@ func decodeOneItem(result *SyncData, kind, id string, raw []byte) bool {
 			return false
 		}
 		result.Content.ForwardRules = append(result.Content.ForwardRules, item)
+	case "snippet":
+		var item model.Snippet
+		if decodeStrict(raw, &item) != nil || item.ID != id || validate.UUID(item.ID) != nil ||
+			!validTime(item.CreatedAt) || !validTime(item.UpdatedAt) {
+			return false
+		}
+		validated, err := domain.ValidateSnippet(result.Content, item)
+		if err != nil {
+			return false
+		}
+		result.Content.Snippets = append(result.Content.Snippets, validated)
 	case "settings":
 		var item model.VaultSettings
 		if id != "1" || decodeStrict(raw, &item) != nil {

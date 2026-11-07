@@ -97,6 +97,7 @@ func (s *Store) ValidatePasswordChange(current, next, confirmation string) error
 		return apperr.New(apperr.VaultLocked)
 	}
 	check, err := unwrap(current, s.meta)
+	s.requestMemoryRelease()
 	if err != nil {
 		return err
 	}

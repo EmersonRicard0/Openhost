@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"path/filepath"
+	"reflect"
 	"testing"
 
 	"shellvault/internal/apperr"
@@ -36,8 +37,45 @@ func TestMigratesVersionOneDatabaseToSyncState(t *testing.T) {
 	if err := store.db.QueryRow(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name='sync_state'`).Scan(&tableCount); err != nil {
 		t.Fatal(err)
 	}
-	if version != 2 || tableCount != 1 {
+	if version != SchemaVersion || tableCount != 1 {
 		t.Fatalf("migração 1→2 incompleta: version=%d sync_state=%d", version, tableCount)
+	}
+}
+
+func TestMigratesVersionTwoWithoutLosingHosts(t *testing.T) {
+	dir := t.TempDir()
+	store := openTest(t, dir)
+	if err := store.Create(pw, pw); err != nil {
+		t.Fatal(err)
+	}
+	addHosts(t, store, hostA)
+	if _, err := store.db.Exec(`DROP TABLE snippets`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.db.Exec(`PRAGMA user_version = 2`); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	store = openTest(t, dir)
+	if err := store.Unlock(pw); err != nil {
+		t.Fatal(err)
+	}
+	content, err := store.Read()
+	if err != nil || len(content.Hosts) != 1 || !reflect.DeepEqual(content.Hosts[0], sampleHost(hostA)) {
+		t.Fatalf("host depois da migração 2→3 = %+v, %v", content.Hosts, err)
+	}
+	var version, snippetsTable int
+	if err := store.db.QueryRow(`PRAGMA user_version`).Scan(&version); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.db.QueryRow(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name='snippets'`).Scan(&snippetsTable); err != nil {
+		t.Fatal(err)
+	}
+	if version != 3 || snippetsTable != 1 {
+		t.Fatalf("migração 2→3 incompleta: version=%d snippets=%d", version, snippetsTable)
 	}
 }
 

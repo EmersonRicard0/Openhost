@@ -48,6 +48,7 @@ type Keyring struct {
 func SealKeyring(password string, params vault.KDFParams, epoch int, keys map[int][]byte) ([]byte, error) {
 	kek := vault.DeriveKEK([]byte(password), params)
 	defer vault.Zero(kek)
+	defer vault.ReleaseDerivedMemory()
 	return SealKeyringWithKEK(kek, params, epoch, keys)
 }
 
@@ -101,6 +102,7 @@ func OpenKeyring(password string, data []byte) (map[int][]byte, Keyring, error) 
 	}
 	kek := vault.DeriveKEK([]byte(password), params)
 	defer vault.Zero(kek)
+	defer vault.ReleaseDerivedMemory()
 	plain, err := vault.Unseal(kek, sealed, keyringAD(keyring.Epoch))
 	if err != nil {
 		return nil, keyring, apperr.New(apperr.VaultBadPassword)

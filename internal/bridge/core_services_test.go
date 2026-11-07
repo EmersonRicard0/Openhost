@@ -35,7 +35,7 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 
 	preferences, err := app.GetPreferences()
 	if err != nil || preferences.DefaultShell != localpty.DefaultShellID() || !preferences.GlassEnabled || preferences.SidebarCollapsed ||
-		preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect {
+		preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect || preferences.GpuRendering {
 		t.Fatalf("preferências %+v, %v", preferences, err)
 	}
 	alternative := testAlternativeLocalShell()
@@ -54,13 +54,14 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		"bell":             "sound",
 		"boldBright":       false,
 		"autoReconnect":    true,
+		"gpuRendering":     true,
 	})
 	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != alternative.ID || len(updated.CollapsedGroups) != 1 || updated.Shortcuts["closeTab"] != "Ctrl+Alt+W" ||
-		!updated.CopyOnSelect || updated.RightClickPaste || updated.Bell != "sound" || updated.BoldBright || !updated.AutoReconnect {
+		!updated.CopyOnSelect || updated.RightClickPaste || updated.Bell != "sound" || updated.BoldBright || !updated.AutoReconnect || !updated.GpuRendering {
 		t.Fatalf("preferências atualizadas %+v, %v", updated, err)
 	}
 	persisted, err := app.GetPreferences()
-	if err != nil || !persisted.SidebarCollapsed {
+	if err != nil || !persisted.SidebarCollapsed || !persisted.GpuRendering {
 		t.Fatalf("sidebarCollapsed não persistiu: %+v, %v", persisted, err)
 	}
 	if len(persisted.Shortcuts) != 2 || persisted.Shortcuts["palette"] != "" {

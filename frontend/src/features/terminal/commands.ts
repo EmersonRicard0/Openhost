@@ -9,10 +9,12 @@ import {
   useSessions,
   type Tab,
 } from '../../stores/sessions';
+import { useHosts } from '../../stores/hosts';
 import { useShells } from '../../stores/shells';
 import { useUi } from '../../stores/ui';
 import { useWorkspace } from '../../stores/workspace';
 import { toastError } from '../../ui/Toast';
+import { productionPanes } from './broadcast';
 import { leaves, neighbor, type Side } from './layout';
 import { openLocal } from './openLocal';
 
@@ -122,6 +124,31 @@ export function toggleSidebar(): void {
   });
 }
 
+/** Grupo da sessão ativa (fora das Configurações). */
+export function activeGroupId(): string | null {
+  const tab = activeTab();
+  if (!tab) return null;
+  return groupOf(useSessions.getState().groups, tab.id)?.id ?? null;
+}
+
+/**
+ * Liga ou desliga "Digitar no grupo" (specs/012, FR-1201). Com painel de produção, ligar passa
+ * antes pela confirmação (FR-1208).
+ */
+export function toggleBroadcast(groupId: string | null = activeGroupId()): void {
+  const { groups, tabs, setBroadcast } = useSessions.getState();
+  const group = groupId ? groups[groupId] : undefined;
+  if (!group) return;
+  if (group.broadcast) {
+    setBroadcast(group.id, false);
+    return;
+  }
+  const members = tabs.filter((tb) => leaves(group.root).includes(tb.id));
+  if (productionPanes(members, useHosts.getState().hosts).length > 0)
+    useWorkspace.getState().setConfirmBroadcast(group.id);
+  else setBroadcast(group.id, true);
+}
+
 /** Algum diálogo (que não a paleta) está aberto: atalhos ficam parados. */
 function dialogOpen(): boolean {
   return document.querySelector('[role="dialog"][aria-modal="true"]:not([data-palette])') !== null;
@@ -198,6 +225,9 @@ export function runShortcut(action: ShortcutAction, repeat: boolean): void {
       break;
     case 'focusDown':
       focusDir('bottom');
+      break;
+    case 'broadcast':
+      if (!repeat) toggleBroadcast();
       break;
   }
 }

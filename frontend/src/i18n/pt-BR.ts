@@ -133,6 +133,7 @@ export const t = {
       shortcuts: 'Atalhos',
       importExport: 'Importar e exportar',
       sync: 'Sincronização',
+      snippets: 'Comandos',
       about: 'Sobre',
     },
     defaultShell: 'Shell da nova aba',
@@ -179,6 +180,9 @@ export const t = {
     bellOptions: { off: 'Desligado', sound: 'Som', visual: 'Piscar a tela' },
     boldBright: 'Negrito em cores claras',
     boldBrightHint: 'Texto em negrito usa a versão clara da cor, como nos terminais clássicos.',
+    gpuRendering: 'Aceleração por GPU',
+    gpuRenderingHint:
+      'Desenha o terminal pela placa de vídeo: rolagem mais leve com muita saída, mas usa mais memória. Vale para as abas abertas depois de mudar.',
     hostDensity: 'Densidade da lista de hosts',
     hostDensityOptions: { comfortable: 'Confortável', compact: 'Compacta' },
     hostDensityHint: 'Compacta mostra uma linha por host, com nome e endereço lado a lado.',
@@ -212,6 +216,7 @@ export const t = {
       focusUp: 'Focar painel acima',
       focusDown: 'Focar painel abaixo',
       focusQuickConnect: 'Conexão rápida (na tela inicial)',
+      broadcast: 'Digitar no grupo (ligar / desligar)',
     },
     shortcutDisabled: 'Desativado',
     shortcutChange: (action: string) => `Trocar o atalho de "${action}"`,
@@ -396,6 +401,33 @@ export const t = {
       preview: 'Início do conteúdo',
     },
     sendKeys: (combo: string) => `Enviar ${combo} ao terminal`,
+    broadcast: {
+      toggle: 'Digitar no grupo',
+      on: 'Digitar no grupo: ligar',
+      off: 'Digitar no grupo: desligar',
+      tabSuffix: 'digitando no grupo',
+      sending: (n: number) =>
+        n === 1 ? 'Transmitindo para 1 painel' : `Transmitindo para ${String(n)} painéis`,
+      receiving: 'Recebendo do grupo',
+      production: 'Produção',
+      disconnected: 'Desconectado — não recebe',
+      receive: 'Receber do grupo',
+      prodTitle: 'Digitar em produção?',
+      prodMessage: (n: number) =>
+        n === 1
+          ? 'Este painel é de um host de Produção e vai receber tudo o que você digitar:'
+          : `Estes ${String(n)} painéis são de hosts de Produção e vão receber tudo o que você digitar:`,
+      prodConfirm: 'Transmitir mesmo assim',
+      becameProduction: (label: string) =>
+        `${label} agora é Produção e saiu da transmissão. Marque "Receber do grupo" para incluí-lo.`,
+      pasteTitle: 'Colar no grupo?',
+      pasteMessage: (lines: number, panes: number) =>
+        `${lines === 1 ? 'O texto vai' : `As ${String(lines)} linhas vão`} para este painel e para ${
+          panes === 1 ? 'mais 1 painel' : `mais ${String(panes)} painéis`
+        }.`,
+      pasteTo: (panes: number) => `Vai para ${String(panes + 1)} painéis`,
+      pasteConfirm: 'Colar em todos',
+    },
     group: {
       label: (title: string, more: number) => `${title} e mais ${String(more)}`,
       splitOut: 'Separar em nova aba',
@@ -717,6 +749,38 @@ export const t = {
     lockTitle: 'Clique para bloquear o cofre',
     unlockTitle: 'Clique para desbloquear o cofre',
   },
+  snippets: {
+    title: 'Comandos',
+    hint: 'Comandos que você usa sempre. Envie pela paleta (Ctrl+Shift+P) para a sessão ativa ou para o grupo. Use {nome} para um campo a preencher.',
+    list: 'Lista de comandos',
+    empty: 'Nenhum comando salvo ainda.',
+    new: 'Novo comando',
+    newName: (n: number) => (n === 1 ? 'Novo comando' : `Novo comando (${String(n)})`),
+    duplicate: 'Duplicar',
+    remove: 'Apagar',
+    save: 'Salvar',
+    saved: 'Comando salvo',
+    name: 'Nome',
+    text: 'Comando',
+    textHint:
+      'Uma linha por comando. {interface} vira um campo a preencher; {{ e }} são chaves de verdade.',
+    tags: 'Tags',
+    tagsHint:
+      'Com as tags do host (huawei, olt…) o comando aparece primeiro na paleta nas sessões dele.',
+    execute: 'Executar ao enviar',
+    executeHint: 'Desmarcado, o comando só é escrito na linha para você conferir.',
+    fieldsCount: (n: number) =>
+      n === 1 ? '1 campo a preencher' : `${String(n)} campos a preencher`,
+    removeTitle: 'Apagar comando?',
+    removeMessage: (name: string) =>
+      `O comando "${name}" sai deste computador e, com a sincronização ligada, dos outros.`,
+    fieldsTitle: (name: string) => name,
+    send: 'Enviar',
+    notSent: (n: number) =>
+      n === 1
+        ? '1 painel desconectado não recebeu'
+        : `${String(n)} painéis desconectados não receberam`,
+  },
   palette: {
     label: 'Paleta de comandos',
     placeholder: 'Digite uma ação ou o nome de um host',
@@ -731,6 +795,10 @@ export const t = {
     toggleTheme: 'Alternar tema claro/escuro',
     search: 'Buscar no terminal',
     hostGroup: 'Host',
+    snippet: (name: string) => `Comando: ${name}`,
+    snippetNoTerminal: 'Abra um terminal para enviar',
+    sendPane: 'Enviar ao painel',
+    sendGroup: (n: number) => `Enviar ao grupo (${String(n)})`,
     navigate: 'navegar',
     run: 'executar',
   },
@@ -907,6 +975,9 @@ export const t = {
     filterAttention: 'Precisam de atenção',
     selectAll: 'Marcar todos',
     selectNone: 'Desmarcar todos',
+    snippetsTitle: (n: number) => (n === 1 ? '1 comando salvo' : `${count(n)} comandos salvos`),
+    snippetDuplicate: (name: string) => `Já existe "${name}"`,
+    snippetActions: { skip: 'Pular', copy: 'Importar como cópia' },
     duplicatesAll: 'Duplicados',
     duplicateActions: {
       skip: 'Pular',
@@ -981,6 +1052,8 @@ export const t = {
       replaced: (n: number) => (n === 1 ? '1 substituído' : `${count(n)} substituídos`),
       skipped: (n: number) => (n === 1 ? '1 pulado' : `${count(n)} pulados`),
       ignored: (n: number) => (n === 1 ? '1 ignorado' : `${count(n)} ignorados`),
+      snippets: (n: number) =>
+        n === 1 ? '1 comando salvo importado' : `${count(n)} comandos salvos importados`,
       keys: (stored: number, reused: number) =>
         `${count(stored)} ${stored === 1 ? 'chave guardada' : 'chaves guardadas'} no cofre` +
         (reused > 0 ? `, ${count(reused)} já existia${reused === 1 ? '' : 'm'}` : ''),
@@ -1020,11 +1093,16 @@ export const t = {
         const h = `${count(hosts)} ${hosts === 1 ? 'host' : 'hosts'}`;
         return groups === 0 ? h : `${h} em ${count(groups)} ${groups === 1 ? 'grupo' : 'grupos'}`;
       },
+      includeSnippets: 'Incluir comandos',
+      includeSnippetsHint: (n: number) =>
+        n === 1 ? '1 comando salvo' : `${count(n)} comandos salvos`,
       includeKeys: 'Incluir chaves privadas',
       includeKeysHint: (n: number) =>
         `${n === 1 ? '1 chave' : `${count(n)} chaves`}. O arquivo inteiro fica criptografado com uma senha sua.`,
-      plainWarning:
-        'Sem chaves o arquivo não é criptografado: endereços e usuários ficam legíveis. Guarde-o com cuidado.',
+      plainWarning: (withSnippets: boolean) =>
+        withSnippets
+          ? 'Sem chaves o arquivo não é criptografado: endereços, usuários e comandos salvos ficam legíveis. Guarde-o com cuidado.'
+          : 'Sem chaves o arquivo não é criptografado: endereços e usuários ficam legíveis. Guarde-o com cuidado.',
       masterPassword: 'Senha mestra do cofre',
       filePassword: 'Senha do arquivo',
       filePasswordConfirm: 'Repita a senha do arquivo',

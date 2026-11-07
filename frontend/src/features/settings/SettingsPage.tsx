@@ -29,6 +29,7 @@ import {
   InfoIcon,
   KeyboardIcon,
   NetworkIcon,
+  SnippetIcon,
   PaletteIcon,
   ShieldIcon,
   TerminalIcon,
@@ -45,6 +46,7 @@ import { EraseVaultDialog } from '../vault/EraseVaultDialog';
 import { ImportExportPage } from '../importexport/ImportExportPage';
 import { SyncSection } from '../sync/SyncSettings';
 import { ShortcutsEditor } from './ShortcutsEditor';
+import { SnippetsSettings } from '../snippets/SnippetsSettings';
 import { EnvironmentsEditor } from './EnvironmentsEditor';
 import { Group } from './Group';
 import { GlobalTerminalSettings } from './TerminalSettings';
@@ -57,6 +59,7 @@ const SECTIONS: { id: Section; icon: ReactNode }[] = [
   { id: 'appearance', icon: <PaletteIcon /> },
   { id: 'terminal', icon: <TerminalIcon /> },
   { id: 'connection', icon: <NetworkIcon /> },
+  { id: 'snippets', icon: <SnippetIcon /> },
   { id: 'vault', icon: <ShieldIcon /> },
   { id: 'shortcuts', icon: <KeyboardIcon /> },
   { id: 'importExport', icon: <ImportExportIcon /> },
@@ -152,9 +155,9 @@ function GeneralSection({ settings }: { settings: Settings }) {
   );
 }
 
-const DENSITIES: { value: HostDensity; label: string }[] = (['comfortable', 'compact'] as const).map(
-  (value) => ({ value, label: t.settings.hostDensityOptions[value] }),
-);
+const DENSITIES: { value: HostDensity; label: string }[] = (
+  ['comfortable', 'compact'] as const
+).map((value) => ({ value, label: t.settings.hostDensityOptions[value] }));
 
 const BELLS: { value: BellMode; label: string }[] = (['visual', 'sound', 'off'] as const).map(
   (value) => ({ value, label: t.settings.bellOptions[value] }),
@@ -180,6 +183,12 @@ function TerminalBehavior({ settings }: { settings: Settings }) {
         hint={t.settings.boldBrightHint}
         checked={settings.boldBright}
         onChange={(e) => void saveUi({ boldBright: e.target.checked })}
+      />
+      <Checkbox
+        label={t.settings.gpuRendering}
+        hint={t.settings.gpuRenderingHint}
+        checked={settings.gpuRendering ?? false}
+        onChange={(e) => void saveUi({ gpuRendering: e.target.checked })}
       />
       <Checkbox
         label={t.settings.autoReconnect}
@@ -463,6 +472,12 @@ function ConnectionFields({
   );
 }
 
+function SnippetsSection() {
+  const unlocked = useVault((v) => v.status?.state === 'unlocked');
+  if (!unlocked) return <p className={s.notice}>{t.settings.vaultLocked}</p>;
+  return <SnippetsSettings />;
+}
+
 function ShortcutsSection() {
   return (
     <Group>
@@ -679,7 +694,7 @@ export function SettingsPage() {
           ))}
         </nav>
         <div
-          className={`${s.content} ${section === 'terminal' ? s.wide : section === 'importExport' ? s.full : section === 'shortcuts' ? s.medium : ''}`}
+          className={`${s.content} ${section === 'terminal' ? s.wide : section === 'importExport' ? s.full : section === 'shortcuts' || section === 'snippets' ? s.medium : ''}`}
           key={section}
         >
           <h2 className={s.sectionTitle}>{t.settings.sections[section]}</h2>
@@ -697,6 +712,7 @@ export function SettingsPage() {
             </>
           )}
           {section === 'connection' && <ConnectionSection />}
+          {section === 'snippets' && <SnippetsSection />}
           {section === 'vault' && <VaultSection />}
           {section === 'shortcuts' && <ShortcutsSection />}
           {section === 'importExport' && <ImportExportSection />}

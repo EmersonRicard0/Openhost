@@ -250,6 +250,16 @@ func (s *ImportService) SetDuplicateAction(previewID string, action importer.Dup
 	}
 	return p.View(), nil
 }
+func (s *ImportService) SetSnippetAction(previewID, name string, action importer.SnippetAction) (importer.PreviewView, error) {
+	p, err := s.coordinator.Preview(previewID)
+	if err != nil {
+		return importer.PreviewView{}, clean(err)
+	}
+	if err = p.SetSnippetAction(name, action); err != nil {
+		return importer.PreviewView{}, clean(err)
+	}
+	return p.View(), nil
+}
 func (s *ImportService) UnlockKey(previewID, keyRef, passphrase string) (importer.PreviewKey, error) {
 	p, err := s.coordinator.Preview(previewID)
 	if err != nil {

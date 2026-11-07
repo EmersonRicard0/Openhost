@@ -6,8 +6,12 @@ export interface Command {
   label: string;
   /** Texto secundário (endereço do host, atalho); também entra na busca. */
   hint: string;
-  group: 'action' | 'host';
+  group: 'action' | 'host' | 'snippet';
   run: () => void;
+  /** Sem efeito (comando salvo sem terminal ativo); `hint` explica. */
+  disabled?: boolean;
+  /** Shift+Enter: comando salvo para o grupo inteiro (specs/012, US5). */
+  runGroup?: () => void;
 }
 
 /** Substring sem caixa nem acento; quem começa com o texto vem primeiro, mantendo a ordem. */
