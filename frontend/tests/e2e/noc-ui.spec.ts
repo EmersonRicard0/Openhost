@@ -277,6 +277,19 @@ test('densidade compacta deixa cada host numa linha de 28 px (US3)', async () =>
     await page.keyboard.press('Control+Shift+W');
     await expect(hostItem(page, 'sw-compacto')).toBeVisible();
     expect(await height()).toBe(28);
+
+    // O destaque do selecionado acompanha a troca de densidade nos dois sentidos.
+    const indicatorSize = () =>
+      page
+        .getByRole('tree', { name: 'Hosts' })
+        .evaluate((el) => parseFloat(getComputedStyle(el).getPropertyValue('--indicator-size')));
+    await hostItem(page, 'sw-compacto').click();
+    await expect.poll(indicatorSize).toBe(28);
+    const again = await openSettingsSection(page, 'Aparência');
+    await again.getByRole('radio', { name: 'Confortável' }).click();
+    await page.keyboard.press('Control+Shift+W');
+    await expect.poll(height).toBe(44);
+    await expect.poll(indicatorSize).toBe(44);
   } finally {
     await app.close();
   }

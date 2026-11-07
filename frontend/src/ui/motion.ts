@@ -98,6 +98,9 @@ export function useSlidingIndicator(
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(container);
+    // O item ativo pode mudar de tamanho sem o contêiner mudar (densidade, fonte, conteúdo).
+    const active = container.querySelector<HTMLElement>(selector);
+    if (active) observer.observe(active);
     return () => {
       observer.disconnect();
     };
