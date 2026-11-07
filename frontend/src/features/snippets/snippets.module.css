@@ -69,7 +69,7 @@
 /* Mesma seleção neutra da lista de hosts (78-UIFIX). */
 .item[aria-current='true'] {
   background: color-mix(in srgb, var(--text-primary) 9%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text-primary) 10%, transparent);
+  box-shadow: var(--selected-neutral-ring);
 }
 
 .item:focus-visible {
