@@ -261,6 +261,18 @@
   overflow: hidden;
 }
 
+/* Painel recém-chegado no grupo (specs/015, FR-1511). */
+.pane[data-entering] {
+  animation: pane-in var(--motion-base) var(--ease-emphasized);
+}
+
+@keyframes pane-in {
+  from {
+    opacity: 0;
+    transform: scale(calc(1 - 0.04 * var(--motion-shift)));
+  }
+}
+
 /* Painel ativo destacado na cor de destaque (FR-606). */
 .pane[data-focused]::after {
   content: '';

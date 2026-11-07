@@ -2,6 +2,7 @@
 import { create } from 'zustand';
 import type { LocalShell, QuickTarget, SessionKind, SessionState } from '@shared/model/types';
 import { forget } from '../features/terminal/dataBus';
+import { markPaneEntering } from '../features/terminal/paneEnter';
 import { drop } from '../features/terminal/writer';
 import {
   insert,
@@ -284,6 +285,7 @@ export const useSessions = create<SessionsState>((set, get) => ({
           focusId: dragId,
         };
     const members = leaves(group.root).filter((m) => m !== dragId);
+    markPaneEntering(dragId);
     set({
       tabs: placeAfter(tabs, dragId, members),
       groups: { ...base, [group.id]: group },
