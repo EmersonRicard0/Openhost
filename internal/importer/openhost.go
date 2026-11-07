@@ -223,6 +223,7 @@ func previewOpenHost(sourceLabel string, data exporter.OpenHostData, content *mo
 			"profile":          nil,
 			"tags":             tags,
 			"notes":            host.Notes,
+			"favorite":         host.Favorite,
 			"environment":      environment,
 		}
 		if host.Profile != nil {

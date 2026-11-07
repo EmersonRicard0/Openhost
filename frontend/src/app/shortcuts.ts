@@ -21,7 +21,8 @@ export type ShortcutAction =
   | 'focusLeft'
   | 'focusRight'
   | 'focusUp'
-  | 'focusDown';
+  | 'focusDown'
+  | 'focusQuickConnect';
 
 export interface KeyLike {
   code: string;
@@ -54,7 +55,14 @@ export const ACTIONS: readonly ShortcutAction[] = [
   'focusRight',
   'focusUp',
   'focusDown',
+  'focusQuickConnect',
 ];
+
+/**
+ * Ações que só valem num contexto (specs/010): fora dele a tecla segue para o terminal, como o
+ * Ctrl+L, que no shell limpa a tela e só foca a conexão rápida com a tela inicial à frente.
+ */
+export const CONTEXTUAL_ACTIONS: ReadonlySet<ShortcutAction> = new Set(['focusQuickConnect']);
 
 /** Ações que existem no sistema: "Novo terminal PowerShell" só no Windows. */
 export function actionsFor(platform: Platform = 'windows'): readonly ShortcutAction[] {
@@ -81,6 +89,7 @@ export const DEFAULT_SHORTCUTS: Record<ShortcutAction, readonly Combo[]> = {
   focusRight: ['Ctrl+Alt+ArrowRight'],
   focusUp: ['Ctrl+Alt+ArrowUp'],
   focusDown: ['Ctrl+Alt+ArrowDown'],
+  focusQuickConnect: ['Ctrl+L'],
 };
 
 /** Padrões do macOS (contracts/platform.md): ⌘ no lugar de Ctrl+Shift; ⌃Tab continua. */
@@ -101,6 +110,7 @@ export const MAC_DEFAULT_SHORTCUTS: Record<ShortcutAction, readonly Combo[]> = {
   focusRight: ['Alt+Meta+ArrowRight'],
   focusUp: ['Alt+Meta+ArrowUp'],
   focusDown: ['Alt+Meta+ArrowDown'],
+  focusQuickConnect: ['Meta+L'],
 };
 
 export function defaultShortcuts(platform: Platform = 'windows') {
@@ -223,12 +233,13 @@ export function comboLabel(combo: Combo, platform: Platform = 'windows'): string
 export function installShortcuts(
   run: (action: ShortcutAction, repeat: boolean) => void,
   keymap: () => Map<Combo, ShortcutAction> = () => buildKeymap(),
+  active: (action: ShortcutAction) => boolean = () => true,
 ) {
   const onKeyDown = (e: KeyboardEvent) => {
     // Gravando um atalho nas configurações: a tecla é para o gravador.
     if (e.target instanceof Element && e.target.closest('[data-shortcut-recorder]')) return;
     const action = matchShortcut(e, keymap());
-    if (!action) return;
+    if (!action || !active(action)) return;
     e.preventDefault();
     e.stopPropagation();
     run(action, e.repeat);

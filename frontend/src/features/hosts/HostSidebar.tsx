@@ -21,6 +21,8 @@ export function HostSidebar() {
   const [query, setQuery] = useState('');
   const openSettings = useWorkspace((w) => w.openSettings);
   const listRef = useRef<HTMLUListElement>(null);
+  const hostDraft = useWorkspace((w) => w.hostDraft);
+
 
   // Montado só com o cofre desbloqueado; ao bloquear, os dados saem da interface.
   useEffect(() => {
@@ -99,6 +101,21 @@ export function HostSidebar() {
           setOpen({ kind: 'form', host: null });
         }}
       />
+      {hostDraft && (
+        // "Salvar como host" na aba de uma sessão rápida (specs/010, FR-1006).
+        <HostForm
+          key={`${hostDraft.username}@${hostDraft.address}:${String(hostDraft.port)}`}
+          host={null}
+          draft={hostDraft}
+          onClose={() => {
+            useWorkspace.getState().setHostDraft(null);
+          }}
+          onManageCredentials={() => {
+            useWorkspace.getState().setHostDraft(null);
+            setOpen({ kind: 'credentials' });
+          }}
+        />
+      )}
       {open?.kind === 'form' && (
         <HostForm
           host={open.host}

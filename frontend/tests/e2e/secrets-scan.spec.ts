@@ -116,6 +116,38 @@ test('nenhum segredo legível no diretório de dados após o fluxo completo', as
   }
 });
 
+test('senha da conexão rápida não aparece nos dados locais', async () => {
+  test.setTimeout(90_000);
+  const app = await launchApp();
+  const { dataDir } = app;
+  try {
+    const { page } = app;
+    await createVault(page);
+    const target = `pwuser@${SSHD.host}:${String(SSHD.port)}`;
+    const quick = page.getByRole('combobox', { name: 'Conectar a um host' });
+    await quick.fill(target);
+    await quick.press('Enter');
+    await acceptHostKey(page);
+    const prompt = page.getByRole('dialog');
+    await prompt.getByRole('textbox').fill(HOST_PASSWORD);
+    await prompt.getByRole('button', { name: 'Enviar' }).click();
+    await waitConnected(page, target);
+
+    await app.close();
+    await waitWebViewGone(dataDir);
+    const files = filesUnder(dataDir);
+    expect(files.some((file) => /\.db$/.test(file))).toBe(true);
+    expect(
+      scan(files, dataDir, {
+        'senha mestra': MASTER_PASSWORD,
+        'senha da conexão rápida': HOST_PASSWORD,
+      }),
+    ).toEqual([]);
+  } finally {
+    await app.close();
+  }
+});
+
 test('nenhum segredo legível após importar nem nos arquivos exportados sem chaves', async () => {
   test.setTimeout(120_000);
   const keyPath = join(KEYS_DIR, 'ed25519-passphrase');

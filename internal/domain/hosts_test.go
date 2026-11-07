@@ -373,3 +373,34 @@ func TestDuplicateAndViewPreserveHostMetadata(t *testing.T) {
 		t.Fatalf("view antiga não normalizada: %+v", view)
 	}
 }
+
+func TestFavoriteUpdatePreservesWhenOmittedAndDuplicateCopies(t *testing.T) {
+	c := testContent()
+	in := baseInput()
+	in.Favorite = true
+	host, err := CreateHost(c, in, t0)
+	mustOK(t, err)
+	if !host.Favorite {
+		t.Fatal("favorite não foi criado")
+	}
+
+	var omitted HostInput
+	err = json.Unmarshal([]byte(`{"label":"Servidor","address":"srv.example.com","port":22,"username":"deploy","authMethod":"password","credentialId":"00000000-0000-4000-8000-0000000000a1","groupId":null,"osIcon":"auto"}`), &omitted)
+	mustOK(t, err)
+	updated, err := UpdateHost(c, host.ID, omitted, t1)
+	mustOK(t, err)
+	if !updated.Favorite {
+		t.Fatal("Update sem favorite apagou o valor salvo")
+	}
+
+	duplicate, err := DuplicateHost(c, host.ID, t1)
+	mustOK(t, err)
+	if !duplicate.Favorite {
+		t.Fatal("Duplicate não copiou favorite")
+	}
+
+	view := ToHostView(c, duplicate)
+	if !view.Favorite {
+		t.Fatal("HostView não expôs favorite")
+	}
+}

@@ -38,7 +38,7 @@ func encryptedOpenHost(t *testing.T) ([]byte, *model.Content, string, string) {
 	content.Settings.Environments = append(content.Settings.Environments,
 		model.Environment{ID: "noc", Name: "Operação", Color: model.EnvironmentBlue})
 	content.Hosts = []model.Host{
-		{ID: keyHostID, Label: "Com chave", Address: "key.example", Port: 22, Username: "ops", AuthMethod: model.AuthKey, CredentialID: model.Ptr(key.ID), GroupID: model.Ptr(groupID), EnvironmentID: model.Ptr("noc"), Tags: []string{"olt", "cliente-x"}, Notes: "VLAN 100", LegacyAlgorithms: true, OSIcon: "huawei"},
+		{ID: keyHostID, Label: "Com chave", Address: "key.example", Port: 22, Username: "ops", AuthMethod: model.AuthKey, CredentialID: model.Ptr(key.ID), GroupID: model.Ptr(groupID), EnvironmentID: model.Ptr("noc"), Tags: []string{"olt", "cliente-x"}, Notes: "VLAN 100", Favorite: true, LegacyAlgorithms: true, OSIcon: "huawei"},
 		{ID: passwordHostID, Label: "Com senha", Address: "password.example", Port: 2200, Username: "root", AuthMethod: model.AuthPassword, CredentialID: model.Ptr(password.ID), OSIcon: model.OSIconAuto},
 	}
 	content.ForwardRules = []model.ForwardRule{{ID: domain.NewID(), HostID: keyHostID, BindAddress: "127.0.0.1", BindPort: 10022, DestHost: "target", DestPort: 22}}
@@ -84,7 +84,7 @@ func TestLoadOpenHostRoundTripUsesNewIDsAndPreservesExtra(t *testing.T) {
 	if passwordRow.KeyRef != nil || keyRow.KeyRef == nil || preview.Keys[0].Status != importer.KeyReady {
 		t.Fatalf("credenciais incorretas: key=%+v password=%+v", keyRow, passwordRow)
 	}
-	if keyRow.Extra["legacyAlgorithms"] != true || keyRow.Extra["osIcon"] != "huawei" || keyRow.Extra["profile"] == nil || keyRow.Extra["forwardRules"] == nil {
+	if keyRow.Extra["legacyAlgorithms"] != true || keyRow.Extra["favorite"] != true || keyRow.Extra["osIcon"] != "huawei" || keyRow.Extra["profile"] == nil || keyRow.Extra["forwardRules"] == nil {
 		t.Fatalf("extra incompleto: %#v", keyRow.Extra)
 	}
 	if passwordRow.Extra["authMethod"] != string(model.AuthPassword) {
@@ -179,7 +179,7 @@ func TestCommitOpenHostRestoresProfilesRulesAndCreatesFreshEntityIDs(t *testing.
 	if keyHost == nil || passwordHost == nil || keyHost.ID == oldHostID || keyHost.CredentialID == nil || *keyHost.CredentialID == oldKeyID {
 		t.Fatalf("hosts/ids importados = %+v", imported.Hosts)
 	}
-	if !keyHost.LegacyAlgorithms || keyHost.OSIcon != "huawei" || keyHost.ProfileID == nil || passwordHost.CredentialID != nil ||
+	if !keyHost.Favorite || !keyHost.LegacyAlgorithms || keyHost.OSIcon != "huawei" || keyHost.ProfileID == nil || passwordHost.CredentialID != nil ||
 		keyHost.EnvironmentID == nil || len(keyHost.Tags) != 2 || keyHost.Notes != "VLAN 100" {
 		t.Fatalf("campos importados = key:%+v password:%+v", keyHost, passwordHost)
 	}

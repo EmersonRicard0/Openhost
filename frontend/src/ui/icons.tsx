@@ -45,6 +45,7 @@ import {
   Search,
   Server,
   Settings,
+  Star,
   Square,
   SquareTerminal,
   TriangleAlert,
@@ -73,6 +74,7 @@ export const KeyIcon = icon(KeyRound);
 export const ForwardIcon = icon(ArrowLeftRight);
 export const ImportExportIcon = icon(ArrowDownUp);
 export const SettingsIcon = icon(Settings);
+export const StarIcon = icon(Star);
 export const WarningIcon = icon(TriangleAlert);
 export const RefreshIcon = icon(RefreshCw);
 

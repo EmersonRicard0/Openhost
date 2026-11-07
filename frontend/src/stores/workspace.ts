@@ -1,5 +1,6 @@
 // Estado de interface do espaço de trabalho que atalhos, paleta e terminais compartilham.
 import { create } from 'zustand';
+import type { QuickTarget } from '@shared/model/types';
 
 export const FONT_MIN = 8;
 export const FONT_MAX = 32;
@@ -28,6 +29,9 @@ interface WorkspaceState {
   pendingPaste: PendingPaste | null;
   /** Aba esperando confirmação para fechar (Ctrl+W com conexão ativa). */
   confirmClose: string | null;
+  /** "Salvar como host" de uma sessão rápida: a lateral abre o editor preenchido (specs/010). */
+  hostDraft: QuickTarget | null;
+  setHostDraft: (draft: QuickTarget | null) => void;
   zoomBy: (sessionId: string, delta: number, base: number) => void;
   zoomReset: (sessionId: string) => void;
   setSearchFor: (sessionId: string | null) => void;
@@ -51,6 +55,10 @@ export const useWorkspace = create<WorkspaceState>((set, get) => ({
   settingsSection: null,
   pendingPaste: null,
   confirmClose: null,
+  hostDraft: null,
+  setHostDraft(hostDraft) {
+    set({ hostDraft });
+  },
   zoomBy(sessionId, delta, base) {
     const current = get().zoom[sessionId] ?? 0;
     const size = Math.min(FONT_MAX, Math.max(FONT_MIN, base + current + delta));

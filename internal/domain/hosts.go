@@ -32,6 +32,7 @@ type HostInput struct {
 	EnvironmentID        *string          `json:"environmentId"`
 	Tags                 []string         `json:"tags"`
 	Notes                string           `json:"notes"`
+	Favorite             bool             `json:"favorite"`
 	LegacyAlgorithms     bool             `json:"legacyAlgorithms"`
 	OSIcon               string           `json:"osIcon"`
 	legacySpecified      bool
@@ -39,6 +40,7 @@ type HostInput struct {
 	environmentSpecified bool
 	tagsSpecified        bool
 	notesSpecified       bool
+	favoriteSpecified    bool
 }
 
 func (in *HostInput) UnmarshalJSON(data []byte) error {
@@ -53,6 +55,7 @@ func (in *HostInput) UnmarshalJSON(data []byte) error {
 		EnvironmentID    *string          `json:"environmentId"`
 		Tags             []string         `json:"tags"`
 		Notes            string           `json:"notes"`
+		Favorite         *bool            `json:"favorite"`
 		LegacyAlgorithms *bool            `json:"legacyAlgorithms"`
 		OSIcon           *string          `json:"osIcon"`
 	}
@@ -64,6 +67,10 @@ func (in *HostInput) UnmarshalJSON(data []byte) error {
 		Label: wire.Label, Address: wire.Address, Port: wire.Port, Username: wire.Username,
 		AuthMethod: wire.AuthMethod, CredentialID: wire.CredentialID, GroupID: wire.GroupID,
 		EnvironmentID: wire.EnvironmentID, Tags: wire.Tags, Notes: wire.Notes,
+	}
+	if wire.Favorite != nil {
+		in.Favorite = *wire.Favorite
+		in.favoriteSpecified = true
 	}
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal(data, &fields); err != nil {
@@ -238,7 +245,7 @@ func FindHost(c *model.Content, id string) (model.Host, error) {
 func fromInput(in HostInput) model.Host {
 	return model.Host{Label: in.Label, Address: in.Address, Port: in.Port, Username: in.Username,
 		AuthMethod: in.AuthMethod, CredentialID: in.CredentialID, GroupID: in.GroupID,
-		EnvironmentID: in.EnvironmentID, Tags: append([]string{}, in.Tags...), Notes: in.Notes,
+		EnvironmentID: in.EnvironmentID, Tags: append([]string{}, in.Tags...), Notes: in.Notes, Favorite: in.Favorite,
 		LegacyAlgorithms: in.LegacyAlgorithms, OSIcon: in.OSIcon}
 }
 
@@ -261,6 +268,9 @@ func UpdateHost(c *model.Content, id string, in HostInput, now string) (model.Ho
 	cur := c.Hosts[i]
 	if !in.osIconSpecified && in.OSIcon == "" {
 		in.OSIcon = cur.OSIcon
+	}
+	if !in.favoriteSpecified && !in.Favorite {
+		in.Favorite = cur.Favorite
 	}
 	if !in.environmentSpecified && in.EnvironmentID == nil {
 		in.EnvironmentID = cur.EnvironmentID

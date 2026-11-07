@@ -1,6 +1,6 @@
 // Criar/editar host (FR-007).
 import { useEffect, useState } from 'react';
-import type { AuthMethod, HostInput, HostView, OsId } from '@shared/model/types';
+import type { AuthMethod, HostInput, HostView, OsId, QuickTarget } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
 import { useProfiles } from '../../stores/profiles';
@@ -34,16 +34,18 @@ const METHODS: { value: AuthMethod; label: string }[] = [
 
 export interface HostFormProps {
   host: HostView | null;
+  /** Host novo já preenchido com o alvo de uma conexão rápida (specs/010). */
+  draft?: QuickTarget | undefined;
   onClose: () => void;
   onManageCredentials: () => void;
 }
 
-export function HostForm({ host, onClose, onManageCredentials }: HostFormProps) {
+export function HostForm({ host, draft, onClose, onManageCredentials }: HostFormProps) {
   const { credentials, reload } = useHosts();
-  const [label, setLabel] = useState(host?.label ?? '');
-  const [address, setAddress] = useState(host?.address ?? '');
-  const [port, setPort] = useState(String(host?.port ?? 22));
-  const [username, setUsername] = useState(host?.username ?? '');
+  const [label, setLabel] = useState(host?.label ?? draft?.address ?? '');
+  const [address, setAddress] = useState(host?.address ?? draft?.address ?? '');
+  const [port, setPort] = useState(String(host?.port ?? draft?.port ?? 22));
+  const [username, setUsername] = useState(host?.username ?? draft?.username ?? '');
   const [method, setMethod] = useState<AuthMethod>(host?.authMethod ?? 'password');
   const [credentialId, setCredentialId] = useState<string>(
     host?.credentialId ?? (host ? NONE : NEW_PASSWORD),

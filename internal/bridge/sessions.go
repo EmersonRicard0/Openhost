@@ -2,6 +2,8 @@ package bridge
 
 import (
 	"context"
+	"strings"
+	"sync"
 	"time"
 	"unicode/utf8"
 
@@ -40,10 +42,69 @@ type SessionService struct {
 	emit          session.Emitter
 	sftpDial      func(sessionID, hostID string) session.Dialer
 	transferCount func() int
+	quickMu       sync.Mutex
+	quickTargets  map[string]QuickTarget
 }
 
 func newSessionService(store *vault.Store, sessions *session.Manager, emit session.Emitter) *SessionService {
-	return &SessionService{store: store, sessions: sessions, emit: emit}
+	return &SessionService{store: store, sessions: sessions, emit: emit, quickTargets: map[string]QuickTarget{}}
+}
+
+type QuickTarget struct {
+	Address  string `json:"address"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+}
+
+func (s *SessionService) OpenQuick(target QuickTarget) (OpenSessionResult, error) {
+	if !validQuickTarget(target.Address, target.Port, target.Username) {
+		return OpenSessionResult{}, quickInvalidField(quickField(target))
+	}
+	target.Address = domain.NormalizeAddress(target.Address)
+	if _, err := s.quickOptions(target); err != nil {
+		return OpenSessionResult{}, clean(err)
+	}
+	id := s.sessions.Open(session.KindSSH, nil, s.dialQuick(target))
+	s.quickMu.Lock()
+	s.quickTargets[id] = target
+	s.quickMu.Unlock()
+	return OpenSessionResult{SessionID: id}, nil
+}
+
+func quickField(target QuickTarget) string {
+	if target.Address == "" || strings.TrimSpace(target.Address) != target.Address || strings.ContainsAny(target.Address, "[]") || !domain.IsValidAddress(target.Address) {
+		return "address"
+	}
+	if target.Port < 1 || target.Port > 65535 {
+		return "port"
+	}
+	return "username"
+}
+
+func quickInvalidField(field string) error {
+	return &apperr.Error{Code: apperr.InvalidInput, Message: apperr.Messages[apperr.InvalidInput], Detail: "field: " + field}
+}
+
+func (s *SessionService) quickOptions(target QuickTarget) (sshx.Options, error) {
+	content, err := s.store.Read()
+	if err != nil {
+		return sshx.Options{}, err
+	}
+	return sshx.Options{Target: sshx.Target{Address: domain.NormalizeAddress(target.Address), Port: target.Port, Username: target.Username}, Auth: sshx.Auth{Method: model.AuthAsk}, AgentFirst: true, ConnectTimeout: time.Duration(content.Settings.ConnectTimeoutSeconds) * time.Second, Keepalive: time.Duration(content.Settings.KeepaliveSeconds) * time.Second, LegacyAlgorithms: content.Settings.LegacyDefault, Term: content.Settings.Term, KnownHosts: storeKnownHosts{s.store}}, nil
+}
+
+func (s *SessionService) dialQuick(target QuickTarget) session.Dialer {
+	return func(ctx context.Context, interactor session.Interactor) (session.Conn, error) {
+		opts, err := s.quickOptions(target)
+		if err != nil {
+			return nil, err
+		}
+		client, err := sshx.Dial(ctx, opts, interactor)
+		if err != nil {
+			return nil, err
+		}
+		return sshx.NewTerminal(client), nil
+	}
 }
 
 func (s *SessionService) OpenSsh(hostID string) (OpenSessionResult, error) {
@@ -95,7 +156,13 @@ func (s *SessionService) Reconnect(sessionID string) error {
 		return clean(err)
 	}
 	if current.HostID == nil {
-		return apperr.New(apperr.InvalidInput)
+		s.quickMu.Lock()
+		target, ok := s.quickTargets[sessionID]
+		s.quickMu.Unlock()
+		if !ok || current.Kind != session.KindSSH {
+			return apperr.New(apperr.InvalidInput)
+		}
+		return clean(s.sessions.Reconnect(sessionID, s.dialQuick(target)))
 	}
 	if _, err := s.optionsForHost(*current.HostID); err != nil {
 		return clean(err)
@@ -119,7 +186,11 @@ func (s *SessionService) Close(sessionID string) error {
 	if err := validate.UUID(sessionID); err != nil {
 		return clean(err)
 	}
-	return clean(s.sessions.Close(sessionID))
+	err := s.sessions.Close(sessionID)
+	s.quickMu.Lock()
+	delete(s.quickTargets, sessionID)
+	s.quickMu.Unlock()
+	return clean(err)
 }
 
 func (s *SessionService) AnswerHostKey(sessionID string, accept bool) error {
