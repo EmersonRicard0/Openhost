@@ -242,6 +242,9 @@ func bridgeOperation() string {
 
 // CodeOf classifica um erro: códigos do app, cancelamento, rede, sistema de arquivos e SSH.
 func CodeOf(err error) Code {
+	if err == nil {
+		return ""
+	}
 	var appErr *Error
 	if errors.As(err, &appErr) {
 		return appErr.Code
