@@ -17,8 +17,8 @@ description: "Tarefas da feature 015 — animações"
 
 ## Phase 2: Foundational (bloqueia todas as histórias)
 
-- [ ] T003 (Codex) Teste em `internal/appwin/preferences_test.go`: `motion` ausente, vazio ou desconhecido → `"system"`; aceita só `system`, `full`, `reduced`, `off`; `SyncPreferencesFrom`/`SyncPreferences` em `internal/cloudsync/items.go` NÃO levam `motion`
-- [ ] T004 (Codex) Campo `Motion string \`json:"motion"\`` em `Preferences` e `UpdatePrefs` de `internal/appwin/preferences.go`, padrão `"system"` em `DefaultPreferences`, normalização em `normalizedPreferences`/`normalizedUpdatePrefs`; regenerar bindings Wails (`frontend/wailsjs`)
+- [x] T003 (Codex) Teste em `internal/appwin/preferences_test.go`: `motion` ausente, vazio ou desconhecido → `"system"`; aceita só `system`, `full`, `reduced`, `off`; `SyncPreferencesFrom`/`SyncPreferences` em `internal/cloudsync/items.go` NÃO levam `motion`
+- [x] T004 (Codex) Campo `Motion string \`json:"motion"\`` em `Preferences` e `UpdatePrefs` de `internal/appwin/preferences.go`, padrão `"system"` em `DefaultPreferences`, normalização em `normalizedPreferences`/`normalizedUpdatePrefs`; regenerar bindings Wails (`frontend/wailsjs`)
 - [x] T005 [P] Teste Vitest de `resolveMotion(pref, systemReduced)` em `frontend/src/ui/motion.test.ts` cobrindo a tabela do data-model (`system`+não→`full`, `system`+sim→`reduced`, `full`/`reduced`/`off` fixos)
 - [x] T006 Implementar `resolveMotion` e `applyMotion(level)` (define `document.documentElement.dataset.motion`) e `watchMotion(getPref)` (escuta `matchMedia('(prefers-reduced-motion: reduce)')`) em `frontend/src/ui/motion.ts`
 - [x] T007 Em `frontend/src/main.tsx`, chamar `applyMotion` com as preferências carregadas antes do `render`, e reaplicar quando `stores/ui.ts` mudar `motion`
