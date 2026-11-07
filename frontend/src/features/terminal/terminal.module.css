@@ -548,7 +548,8 @@
   padding: 0 6px;
   border-radius: 4px;
   color: var(--environment);
-  box-shadow: inset 0 0 0 1px var(--environment);
+  --environment-ring: inset 0 0 0 1px var(--environment);
+  box-shadow: var(--environment-ring);
   font-size: 11px;
   line-height: 16px;
 }

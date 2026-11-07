@@ -96,7 +96,7 @@
 
 .suggestion[aria-selected='true'] {
   background: var(--selected);
-  box-shadow: inset 3px 0 0 var(--accent);
+  box-shadow: var(--inset-accent-bar);
 }
 
 .match {
@@ -143,7 +143,8 @@
 
 /* Cor do ambiente (specs/009) na borda esquerda do card. */
 .card[data-environment] {
-  box-shadow: inset 3px 0 0 var(--environment);
+  --environment-bar: inset 3px 0 0 var(--environment);
+  box-shadow: var(--environment-bar);
 }
 
 .cardMain {

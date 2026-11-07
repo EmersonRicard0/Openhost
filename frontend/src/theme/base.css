@@ -18,6 +18,7 @@
   --inset-accent-soft: inset 0 0 0 1px var(--accent-soft);
   --inset-border: inset 0 0 0 1px var(--border);
   --inset-accent-left: inset 2px 0 0 var(--accent);
+  --inset-accent-bar: inset 3px 0 0 var(--accent);
   /* Borda de amostra de cor: cinza médio, visível sobre qualquer cor e nos dois temas. */
   --inset-swatch: inset 0 0 0 1px rgba(127, 127, 127, 0.25);
 
