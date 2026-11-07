@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { HostView } from '@shared/model/types';
+import { useSessions } from '../../stores/sessions';
 import { connectHost, isConnectPending } from './connect';
 
 const host = { id: 'h1', label: 'web' } as HostView;
@@ -28,5 +29,24 @@ describe('conectar uma vez por pedido (specs/015, FR-1509)', () => {
     resolve({ ok: false, error: { code: 'x', message: 'x' } });
     await first.catch(() => undefined);
     expect(isConnectPending('host:h1')).toBe(false);
+  });
+
+  it('com a sessão do host ainda conectando, só ativa a aba', async () => {
+    useSessions.setState({
+      tabs: [
+        {
+          id: 's1',
+          kind: 'ssh',
+          title: 'web',
+          hostId: 'h1',
+          shell: null,
+          state: 'connecting',
+        } as never,
+      ],
+      activeId: null,
+    });
+    await connectHost(host);
+    expect(openSsh).not.toHaveBeenCalled();
+    expect(useSessions.getState().activeId).toBe('s1');
   });
 });

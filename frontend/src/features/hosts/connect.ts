@@ -27,7 +27,18 @@ async function once(key: string, open: () => Promise<void>): Promise<void> {
 
 export const isConnectPending = (key: string) => usePendingConnect.getState().keys.has(key);
 
+/** Estados em que a conexão pedida ainda não terminou (nem conectou, nem falhou). */
+const OPENING = new Set(['connecting', 'awaitingHostKey', 'authenticating', 'awaitingPrompt']);
+
 export function connectHost(host: HostView): Promise<void> {
+  // Pedido repetido com a sessão desse host ainda abrindo: só traz a aba (FR-1509).
+  const opening = useSessions
+    .getState()
+    .tabs.find((tab) => tab.hostId === host.id && tab.kind === 'ssh' && OPENING.has(tab.state));
+  if (opening) {
+    useSessions.getState().activate(opening.id);
+    return Promise.resolve();
+  }
   return once(`host:${host.id}`, () => openHost(host));
 }
 

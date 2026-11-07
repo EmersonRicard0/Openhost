@@ -159,3 +159,23 @@ func TestUpdatePreferencesReadWhileVaultLocked(t *testing.T) {
 		t.Fatalf("updates com cofre bloqueado = %+v", got.Updates)
 	}
 }
+
+func TestMotionDefaultsAndNormalization(t *testing.T) {
+	if got := DefaultPreferences().Motion; got != "system" {
+		t.Fatalf("padrão de motion = %q", got)
+	}
+	for _, value := range []string{"system", "full", "reduced", "off"} {
+		preferences := DefaultPreferences()
+		preferences.Motion = value
+		if got := normalizedPreferences(preferences).Motion; got != value {
+			t.Errorf("motion %q normalizado para %q", value, got)
+		}
+	}
+	for _, value := range []string{"", "fast", "OFF"} {
+		preferences := DefaultPreferences()
+		preferences.Motion = value
+		if got := normalizedPreferences(preferences).Motion; got != "system" {
+			t.Errorf("motion inválido %q virou %q", value, got)
+		}
+	}
+}

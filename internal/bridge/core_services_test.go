@@ -370,6 +370,19 @@ func TestHostDensityAndPromptTitlePreferences(t *testing.T) {
 	}
 }
 
+func TestMotionPreference(t *testing.T) {
+	services := testServices(t)
+	updated, err := services.appService.UpdatePreferences(PreferencesPatch{"motion": "reduced"})
+	if err != nil || updated.Motion != "reduced" {
+		t.Fatalf("preferências atualizadas = %+v, %v", updated, err)
+	}
+	for _, patch := range []PreferencesPatch{{"motion": "fast"}, {"motion": 1}} {
+		if _, err := services.appService.UpdatePreferences(patch); apperr.CodeOf(err) != apperr.InvalidInput {
+			t.Errorf("valor inválido aceito: %v, erro %v", patch, err)
+		}
+	}
+}
+
 func TestDetectedOSIsPersistedAndEmittedOnce(t *testing.T) {
 	services := testServices(t)
 	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {

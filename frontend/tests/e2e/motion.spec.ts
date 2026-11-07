@@ -111,8 +111,10 @@ test('preferência: Desligadas zera tudo, Reduzidas sem deslocamento, e fica sal
   let app = await launchApp({ motion: true });
   const { dataDir } = app;
   const choose = async (label: string) => {
-    await app.page.getByRole('button', { name: 'Configurações', exact: true }).click();
     const region = app.page.getByRole('region', { name: 'Configurações' });
+    if (!(await region.isVisible())) {
+      await app.page.getByRole('button', { name: 'Configurações', exact: true }).click();
+    }
     await region.getByRole('button', { name: 'Aparência', exact: true }).click();
     await region.getByRole('radio', { name: label, exact: true }).click();
   };

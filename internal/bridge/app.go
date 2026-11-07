@@ -179,6 +179,12 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 					return apperr.New(apperr.InvalidInput)
 				}
 				preferences.HostDensity = value
+			case "motion":
+				value, ok := raw.(string)
+				if !ok || validate.OneOf(value, "system", "full", "reduced", "off") != nil {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.Motion = value
 			case "promptTitle":
 				value, ok := raw.(bool)
 				if !ok {

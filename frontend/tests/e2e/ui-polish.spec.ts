@@ -157,25 +157,25 @@ test('trocar a cor de destaque muda --accent e mantém 4,5:1 (FR-171)', async ()
   }
 });
 
-test('com "reduzir movimento" as durações computadas são 0 (FR-170)', async () => {
+test('"reduzir movimento" do sistema vira Reduzidas: sem deslocamento (FR-170, specs/015)', async () => {
   const app = await launchApp({ motion: true });
   try {
     const { page } = app;
     await createVault(page);
     await openLocalTab(page, 'PowerShell');
-    const durations = () =>
+    const html = page.locator('html');
+    const shift = () =>
       page.evaluate(() =>
-        ['[role="tab"]', '[role="tablist"]'].map((s) => {
-          const el = document.querySelector(s);
-          if (!el) return 'ausente';
-          const st = getComputedStyle(el);
-          const before = getComputedStyle(el, '::before');
-          return `${st.transitionDuration}|${before.transitionDuration}`;
-        }),
+        getComputedStyle(document.documentElement).getPropertyValue('--motion-shift').trim(),
       );
-    expect((await durations()).join()).toMatch(/[1-9]/);
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await expect(html).toHaveAttribute('data-motion', 'full');
+    expect(await shift()).toBe('1');
+    // Com o padrão "Sistema", pedir menos movimento tira todo deslocamento e escala na hora;
+    // cor e opacidade seguem (só "Desligadas" zera as durações, ver motion.spec.ts).
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    for (const d of await durations()) expect(d).toMatch(/^0s(, 0s)*\|0s(, 0s)*$/);
+    await expect(html).toHaveAttribute('data-motion', 'reduced');
+    expect(await shift()).toBe('0');
   } finally {
     await app.close();
   }
