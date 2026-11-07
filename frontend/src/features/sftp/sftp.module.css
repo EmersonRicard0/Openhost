@@ -6,6 +6,18 @@
   min-height: 0;
 }
 
+/* Mesmo padrão de entrada das outras superfícies (specs/015, FR-1515). */
+.view[data-entering] {
+  animation: sftp-in var(--motion-base) var(--ease-emphasized);
+}
+
+@keyframes sftp-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(6px * var(--motion-shift)));
+  }
+}
+
 .hidden {
   display: none;
 }

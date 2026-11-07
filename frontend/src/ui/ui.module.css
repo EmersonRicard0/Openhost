@@ -371,7 +371,7 @@ textarea.input {
   max-height: calc(100vh - 64px);
   overflow: auto;
   padding: 22px 24px;
-  animation: pop-in var(--motion-base) var(--ease-standard);
+  animation: pop-in var(--motion-base) var(--ease-emphasized);
 }
 
 .dialogTitle {
@@ -444,7 +444,7 @@ textarea.input {
   gap: 10px;
   max-width: 380px;
   padding: 12px 14px;
-  animation: slide-in var(--motion-base) var(--ease-standard);
+  animation: slide-in var(--motion-base) var(--ease-emphasized);
 }
 
 /* Sem borda: o erro se distingue pelo ícone. */

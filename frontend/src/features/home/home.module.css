@@ -241,3 +241,48 @@
 .local {
   align-self: flex-start;
 }
+
+/* Entrada em sequência só dos primeiros itens, até ~250 ms no total, sem bloquear clique
+   (specs/015, FR-1516). */
+.grid > * {
+  animation: rise-in var(--motion-fast) var(--ease-emphasized) both;
+}
+
+.grid > *:nth-child(2) {
+  animation-delay: 18ms;
+}
+
+.grid > *:nth-child(3) {
+  animation-delay: 36ms;
+}
+
+.grid > *:nth-child(4) {
+  animation-delay: 54ms;
+}
+
+.grid > *:nth-child(5) {
+  animation-delay: 72ms;
+}
+
+.grid > *:nth-child(6) {
+  animation-delay: 90ms;
+}
+
+.grid > *:nth-child(7) {
+  animation-delay: 108ms;
+}
+
+.grid > *:nth-child(8) {
+  animation-delay: 126ms;
+}
+
+.grid > *:nth-child(n + 9) {
+  animation: none;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(4px * var(--motion-shift)));
+  }
+}

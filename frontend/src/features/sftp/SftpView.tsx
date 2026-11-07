@@ -68,6 +68,8 @@ export function SftpView({ tab, active }: SftpViewProps) {
   const sessionId = tab.id;
   const [path, setPath] = useState(() => homeOf(sessionId));
   const [shown, setShown] = useState(path);
+  // Entrada só na primeira vez: trocar de aba (display: none → visível) não repete (FR-1513).
+  const [entering, setEntering] = useState(true);
   const [reloads, setReloads] = useState(0);
   const [entries, setEntries] = useState<RemoteEntry[]>([]);
   // A lista só é exibida como vazia depois da primeira resposta do servidor.
@@ -280,6 +282,10 @@ export function SftpView({ tab, active }: SftpViewProps) {
   return (
     <div
       className={`${s.view} solid ${active ? '' : s.hidden}`}
+      data-entering={entering ? '' : undefined}
+      onAnimationEnd={(e) => {
+        if (e.target === e.currentTarget) setEntering(false);
+      }}
       role="tabpanel"
       aria-label={tab.title}
       data-session-id={sessionId}

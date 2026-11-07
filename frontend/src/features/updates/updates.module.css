@@ -11,7 +11,7 @@
   max-height: min(70vh, 520px);
   padding: 14px 10px 14px 16px;
   overflow: auto;
-  animation: update-in var(--motion-base) var(--ease-standard);
+  animation: update-in var(--motion-base) var(--ease-emphasized);
 }
 
 @keyframes update-in {

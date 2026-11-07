@@ -74,9 +74,9 @@ description: "Tarefas da feature 015 — animações"
 **Goal**: mesmo padrão de entrada/saída em tudo.
 **Independent Test**: abrir/fechar cada superfície e conferir duração ≤ 250 ms e curvas da marca.
 
-- [ ] T032 [P] [US4] Padronizar entrada/saída (`pop-in`/`pop-out` com `--ease-emphasized`/`--ease-exit`) em `frontend/src/ui/Dialog.tsx` + `ui.module.css`, `ConfirmDialog.tsx`, `Popover.tsx`, `Toast.tsx`
-- [ ] T033 [P] [US4] Aba de Configurações (`frontend/src/features/settings/settings.module.css`), paleta (`palette.module.css`), aviso de atualização (`frontend/src/features/updates`), painel SFTP (`sftp.module.css`, `TransferPanel.tsx`) usando os mesmos keyframes
-- [ ] T034 [US4] Entrada escalonada só dos primeiros itens visíveis (máx. 8, total ≤ 250 ms, `animation-delay` por `--i`) em `frontend/src/features/hosts/HostList.tsx` e `frontend/src/features/home/HomeScreen.tsx`, sem `pointer-events: none` (FR-1516)
+- [x] T032 [P] [US4] Padronizar entrada/saída (`pop-in`/`pop-out` com `--ease-emphasized`/`--ease-exit`) em `frontend/src/ui/Dialog.tsx` + `ui.module.css`, `ConfirmDialog.tsx`, `Popover.tsx`, `Toast.tsx`
+- [x] T033 [P] [US4] Aba de Configurações (`frontend/src/features/settings/settings.module.css`), paleta (`palette.module.css`), aviso de atualização (`frontend/src/features/updates`), painel SFTP (`sftp.module.css`, `TransferPanel.tsx`) usando os mesmos keyframes
+- [x] T034 [US4] (Por `:nth-child` no CSS, 18 ms por item, 8 itens, sem mexer no TSX.) Entrada escalonada só dos primeiros itens visíveis (máx. 8, total ≤ 250 ms, `animation-delay` por `--i`) em `frontend/src/features/hosts/HostList.tsx` e `frontend/src/features/home/HomeScreen.tsx`, sem `pointer-events: none` (FR-1516)
 
 ## Phase 7: User Story 5 — Escolher o quanto de animação (P3)
 
