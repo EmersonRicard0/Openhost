@@ -92,7 +92,7 @@ description: "Tarefas da feature 015 — animações"
 - [x] T038 Parar animações com a janela oculta: `document.visibilitychange` → `data-hidden` em `<html>` com `animation-play-state: paused` em `global.css` (FR-1520)
 - [ ] T039 Medição SC-1501/SC-1506 com o método da 014 (10 aberturas `full` × `off`; CPU em repouso minimizado) — pedir ao usuário antes; registrar em `specs/015-animacoes/quickstart.md`
 - [ ] T040 Rodar suíte: `node scripts/check-tokens.mjs`, lint, typecheck, Vitest, `go test ./...`, e2e (`motion`, `noc-ui`, `split`, `ui-polish`, `appearance`) — e2e só com aviso
-- [ ] T041 Notas de versão em `docs/release-notes/0.9.0.md` (animações + preferência)
+- [x] T041 Notas de versão em `docs/release-notes/0.9.0.md` (animações + preferência)
 
 ## Dependencies & Execution Order
 
