@@ -13,6 +13,7 @@ import { subscribeSnippets } from './stores/snippets';
 import { subscribeTransfers } from './stores/transfers';
 import { loadUi, useUi } from './stores/ui';
 import { dismissBoot, installMotion } from './ui/motion';
+import { installKeyboardPress } from './ui/press';
 import { loadSync } from './stores/sync';
 import { loadUpdates } from './stores/updates';
 import { subscribeBroadcastSafety } from './features/terminal/broadcastSafety';
@@ -33,6 +34,7 @@ async function start(): Promise<void> {
         if (next.settings?.motion !== prev.settings?.motion) onChange();
       }),
   );
+  installKeyboardPress();
   setTimeout(() => {
     dismissBoot();
   }, BOOT_GIVE_UP_MS);

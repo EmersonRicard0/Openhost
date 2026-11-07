@@ -18,7 +18,8 @@ import { toastError } from '../../ui/Toast';
 import { ForwardRulesPanel } from '../forwarding/ForwardRulesPanel';
 import { ExportDialog } from '../importexport/ExportDialog';
 import { openSftp } from '../sftp/openSftp';
-import { connectHost } from './connect';
+import { busyProps } from '../../ui/busy';
+import { connectHost, usePendingConnect } from './connect';
 import { GroupNameDialog, MoveDialog } from './GroupDialogs';
 import { setFavorite } from '../home/favorite';
 import { buildIndex, filterHosts } from './search';
@@ -134,6 +135,7 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
   const collapsedIds = useUi((u) => u.settings?.collapsedGroups);
   const density = useUi((u) => u.settings?.hostDensity ?? 'comfortable');
   const compact = density === 'compact';
+  const connecting = usePendingConnect((p) => p.keys);
   // Hosts com sessão aberta (FR-915): o item mostra o indicador nas duas densidades.
   const sessionTabs = useSessions((st) => st.tabs);
   const liveHosts = useMemo<ReadonlySet<string>>(
@@ -359,6 +361,7 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
         tabIndex={0}
         draggable={!searching}
         className={s.item}
+        {...busyProps(connecting.has(`host:${host.id}`))}
         style={indent}
         title={`${host.username}@${host.address}:${String(host.port)}`}
         onClick={() => {

@@ -1,7 +1,7 @@
 // Animações (specs/015): abertura com a marca, sem atrasar o primeiro campo.
 import { expect, test } from '@playwright/test';
 import { launchApp } from './helpers/launch';
-import { createVault, unlockForm } from './helpers/ui';
+import { addHost, createVault, hostItem, unlockForm } from './helpers/ui';
 
 test.describe('015 animações', () => {
   test('abertura: marca até a primeira tela, que já chega com foco (US1)', async () => {
@@ -29,4 +29,19 @@ test.describe('015 animações', () => {
       await app.close();
     }
   });
+});
+
+test('duplo Enter num host abre uma sessão só (US2, FR-1509)', async () => {
+  const app = await launchApp();
+  try {
+    await createVault(app.page);
+    await addHost(app.page, { label: 'duplo', address: '127.0.0.1', port: 1, username: 'x', method: 'Perguntar ao conectar' });
+    const item = hostItem(app.page, 'duplo');
+    await item.focus();
+    await app.page.keyboard.press('Enter');
+    await app.page.keyboard.press('Enter');
+    await expect(app.page.getByRole('tab', { name: 'duplo' })).toHaveCount(1);
+  } finally {
+    await app.close();
+  }
 });

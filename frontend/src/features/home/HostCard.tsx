@@ -6,7 +6,8 @@ import { environmentColor } from '../../theme/environments';
 import { Avatar } from '../../ui/Avatar';
 import { StarIcon } from '../../ui/icons';
 import { hostOs } from '../../ui/osIcons';
-import { connectHost } from '../hosts/connect';
+import { busyProps } from '../../ui/busy';
+import { connectHost, usePendingConnect } from '../hosts/connect';
 import { useHostEnvironment } from '../hosts/environment';
 import { setFavorite } from './favorite';
 import { targetLabel } from './quickTarget';
@@ -17,9 +18,11 @@ export function HostCard({ host }: { host: HostView }) {
   const dark = useUi((u) => u.dark);
   const target = targetLabel(host);
   const favorite = host.favorite ?? false;
+  const connecting = usePendingConnect((p) => p.keys.has(`host:${host.id}`));
   return (
     <div
       className={s.card}
+      {...busyProps(connecting)}
       data-environment={environment?.color}
       style={
         environment

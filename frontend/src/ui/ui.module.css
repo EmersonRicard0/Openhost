@@ -23,8 +23,17 @@
   background: var(--selected);
 }
 
-.button:active:not(:disabled) {
-  transform: translateY(1px);
+.button:active:not(:disabled),
+.button[data-pressed]:not(:disabled) {
+  /* Pressionado (specs/015, FR-1508): mouse (:active) ou Enter/espaço ([data-pressed]). */
+  background: var(--selected);
+  transform: scale(calc(1 - 0.03 * var(--motion-shift)));
+}
+
+/* Ação demorada em andamento (specs/015, FR-1509). */
+.button[data-busy] {
+  cursor: progress;
+  opacity: 0.75;
 }
 
 .button:disabled {
@@ -407,6 +416,11 @@ textarea.input {
 .menuItem:focus-visible {
   background: var(--hover);
   outline: none;
+}
+
+.menuItem:active,
+.menuItem[data-pressed] {
+  background: var(--selected);
 }
 
 .menuItemDanger {

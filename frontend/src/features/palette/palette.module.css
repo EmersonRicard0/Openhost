@@ -79,6 +79,11 @@
   background: var(--selected);
 }
 
+/* Pressionado (specs/015, FR-1508): só cor, a paleta fecha logo em seguida. */
+.item:active {
+  background: color-mix(in srgb, var(--accent) 18%, var(--selected));
+}
+
 .item[aria-selected='true'] .itemIcon {
   color: var(--accent);
 }

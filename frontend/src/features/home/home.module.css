@@ -134,11 +134,24 @@
   border-radius: 10px;
   background: var(--surface-raised);
   overflow: hidden;
-  transition: border-color var(--motion-fast) var(--ease-standard);
+  transition:
+    border-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
 }
 
 .card:hover {
   border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+/* Pressionado (specs/015, FR-1508). */
+.card:has(.cardMain:active),
+.card:has(.cardMain[data-pressed]) {
+  border-color: var(--accent);
+  transform: scale(calc(1 - 0.015 * var(--motion-shift)));
+}
+
+.card[data-busy] {
+  cursor: progress;
 }
 
 /* Cor do ambiente (specs/009) na borda esquerda do card. */
