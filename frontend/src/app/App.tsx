@@ -62,7 +62,10 @@ export function App() {
   // A primeira tela já montou (e focou o campo): a abertura sai por cima dela (specs/015, FR-1506).
   const ready = status !== null;
   useEffect(() => {
-    if (ready) dismissBoot();
+    if (!ready) return;
+    // Marca para medir a abertura (specs/014 e 015): primeira tela montada e com foco.
+    performance.mark('openhost:first-screen');
+    dismissBoot();
   }, [ready]);
 
   // Cofre apagado: ao criar o novo, começa pelas abas.

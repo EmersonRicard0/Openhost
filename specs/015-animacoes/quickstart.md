@@ -30,3 +30,14 @@ go test ./internal/appwin/
 8. **Preferência (US5, SC-1507)**: `Desligadas` → nenhuma `animation-name`/`transition-duration`
    diferente de `0s` em elementos visíveis; `Reduzidas` → nenhum `transform` animado; continua após
    reiniciar e não aparece na sincronização.
+
+## Resultados (2026-11-07, Windows 11, build e2e)
+
+- **SC-1501** (`tests/e2e/motion-perf.spec.ts`, marca `openhost:first-screen`): Desligadas
+  393 ms em média, Completas 405 ms → **+12 ms** (limite 20). Variação entre aberturas ±50 ms.
+- **SC-1504**: 20/20 abas receberam `echo` digitado logo ao abrir.
+- **SC-1505**: dividir com animação → 1 `resize` por terminal.
+- **SC-1507**: Desligadas → nenhuma duração ≠ 0; Reduzidas → `--motion-shift: 0`.
+- Suíte e2e completa: 88/90; `memory.spec` (meta 014 de +15 MB em 3 ciclos) falha também na
+  `main` (+16 MB) e oscila na 015 (+44 a +58 MB, quase tudo memória da GPU, mesmo sem a animação
+  das abas); `process.spec` falhou uma vez por foco e passou na repetição.

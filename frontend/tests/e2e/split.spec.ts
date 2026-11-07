@@ -1,7 +1,7 @@
 // Grupos de terminais na mesma aba (specs/006, quickstart §2): juntar arrastando a aba, até 4.
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { launchApp, testService } from './helpers/launch';
-import { createVault, expectTerminalLine, terminalSize } from './helpers/ui';
+import { createVault, expectTerminalLine, resizeCount, terminalSize } from './helpers/ui';
 type Side = 'left' | 'right' | 'top' | 'bottom';
 
 interface Size {
@@ -258,6 +258,30 @@ test('reorganizar pelo cabeçalho, separar sem reconectar e fechar painel (US3, 
     await expect(page.locator('[data-pane]')).toHaveCount(0);
     await expect(page.locator(`[data-session-id="${a}"]`)).toHaveAttribute('role', 'tabpanel');
     await expect(tabs(page)).toHaveCount(2);
+  } finally {
+    await app.close();
+  }
+});
+
+test('dividir com animação recalcula cada terminal uma vez só (specs/015, SC-1505)', async () => {
+  const app = await launchApp({ motion: true });
+  try {
+    const { page } = app;
+    await createVault(page);
+    const a = await openCmd(page);
+    const b = await openCmd(page);
+    await tabs(page).nth(0).click();
+    // Espera os ajustes da abertura assentarem antes de contar.
+    await page.waitForTimeout(500);
+    const [beforeA, beforeB] = [await resizeCount(page, a), await resizeCount(page, b)];
+    await dragTab(page, tabs(page).nth(1), a, 'right');
+    await expect(page.locator('[data-pane]')).toHaveCount(2);
+    await expect(pane(page, b)).not.toHaveAttribute('data-entering', '');
+    await page.waitForTimeout(500);
+    expect((await resizeCount(page, a)) - beforeA).toBe(1);
+    expect((await resizeCount(page, b)) - beforeB).toBe(1);
+    await expectServerMatches(page, a);
+    await expectServerMatches(page, b);
   } finally {
     await app.close();
   }

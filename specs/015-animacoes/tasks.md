@@ -61,7 +61,7 @@ description: "Tarefas da feature 015 — animações"
 
 - [x] T023 [P] [US3] e2e em `frontend/tests/e2e/motion.spec.ts`: 20× abrir aba local e digitar `echo ok` imediatamente → 20 saídas `ok` (SC-1504)
 - [x] T024 [P] [US3] (Mudou: o painel novo anima só `transform`/`opacity`, o tamanho não anima, então não há fit intermediário; teste em `features/terminal/paneEnter.test.ts`.) Teste Vitest em `frontend/src/features/terminal/fitOnce.test.ts`: durante uma transição marcada, vários resize → um único `fit()` no fim (ou no teto `--motion-slow` + 50 ms)
-- [ ] T025 [P] [US3] e2e em `frontend/tests/e2e/split.spec.ts`: dividir painel gera exatamente 1 `resize` na sessão (via `frontend/src/features/terminal/testProbe.ts`) (SC-1505)
+- [x] T025 [P] [US3] e2e em `frontend/tests/e2e/split.spec.ts`: dividir painel gera exatamente 1 `resize` na sessão (via `frontend/src/features/terminal/testProbe.ts`) (SC-1505)
 - [x] T026 [P] [US3] e2e em `frontend/tests/e2e/motion.spec.ts`: conectar no sshd mostra `[data-testid="connecting"]` até o diálogo de chave do servidor; host inexistente → indicador some quando o erro aparece
 - [x] T027 [US3] Entrada da aba nova em `frontend/src/features/terminal/TabBar.tsx` + `terminal.module.css`: keyframe `tab-in` (largura máxima 0→auto via `max-width`, opacidade 0→1, ≤ `--motion-base`); terminal monta e recebe foco no mesmo commit (sem esperar `animationend`)
 - [x] T028 [US3] (`useFlip` em `ui/motion.ts`, Web Animations API.) Fechar aba: usar `leaveGhost` de `frontend/src/ui/motion.ts` para clonar a aba fechada e encolher; vizinhas deslizam com FLIP (`transform` por `var(--motion-shift)`); o estado do store muda na hora (FR-1504)
@@ -90,8 +90,8 @@ description: "Tarefas da feature 015 — animações"
 ## Phase 8: Polish
 
 - [x] T038 Parar animações com a janela oculta: `document.visibilitychange` → `data-hidden` em `<html>` com `animation-play-state: paused` em `global.css` (FR-1520)
-- [ ] T039 Medição SC-1501/SC-1506 com o método da 014 (10 aberturas `full` × `off`; CPU em repouso minimizado) — pedir ao usuário antes; registrar em `specs/015-animacoes/quickstart.md`
-- [ ] T040 Rodar suíte: `node scripts/check-tokens.mjs`, lint, typecheck, Vitest, `go test ./...`, e2e (`motion`, `noc-ui`, `split`, `ui-polish`, `appearance`) — e2e só com aviso
+- [x] T039 Medição SC-1501/SC-1506 com o método da 014 (10 aberturas `full` × `off`; CPU em repouso minimizado) — pedir ao usuário antes; registrar em `specs/015-animacoes/quickstart.md`
+- [x] T040 Rodar suíte: `node scripts/check-tokens.mjs`, lint, typecheck, Vitest, `go test ./...`, e2e (`motion`, `noc-ui`, `split`, `ui-polish`, `appearance`) — e2e só com aviso
 - [x] T041 Notas de versão em `docs/release-notes/0.9.0.md` (animações + preferência)
 
 ## Dependencies & Execution Order
