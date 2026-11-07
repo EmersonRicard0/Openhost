@@ -1,35 +1,21 @@
 // Card de host na tela inicial (specs/010, FR-1012).
 import type { HostView } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
-import { useUi } from '../../stores/ui';
-import { environmentColor } from '../../theme/environments';
 import { Avatar } from '../../ui/Avatar';
 import { StarIcon } from '../../ui/icons';
 import { hostOs } from '../../ui/osIcons';
 import { busyProps } from '../../ui/busy';
 import { connectHost, usePendingConnect } from '../hosts/connect';
-import { useHostEnvironment } from '../hosts/environment';
 import { setFavorite } from './favorite';
 import { targetLabel } from './quickTarget';
 import s from './home.module.css';
 
 export function HostCard({ host }: { host: HostView }) {
-  const environment = useHostEnvironment(host.id);
-  const dark = useUi((u) => u.dark);
   const target = targetLabel(host);
   const favorite = host.favorite ?? false;
   const connecting = usePendingConnect((p) => p.keys.has(`host:${host.id}`));
   return (
-    <div
-      className={s.card}
-      {...busyProps(connecting)}
-      data-environment={environment?.color}
-      style={
-        environment
-          ? { ['--environment' as string]: environmentColor(environment.color, dark) }
-          : undefined
-      }
-    >
+    <div className={s.card} {...busyProps(connecting)}>
       <button
         type="button"
         className={s.cardMain}
