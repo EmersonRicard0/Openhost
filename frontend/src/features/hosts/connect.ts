@@ -1,10 +1,48 @@
 import type { HostView, QuickTarget, RecentEntryInput } from '@shared/model/types';
+import { create } from 'zustand';
 import { useSessions } from '../../stores/sessions';
 import { useUi } from '../../stores/ui';
 import { toastError } from '../../ui/Toast';
 import { targetLabel } from '../home/quickTarget';
 
-export async function connectHost(host: HostView): Promise<void> {
+/**
+ * Conexões pedidas e ainda sem sessão (specs/015, FR-1509): o mesmo pedido repetido nesse meio
+ * tempo (duplo clique, Enter segurado) é ignorado, e o item mostra que começou.
+ */
+export const usePendingConnect = create<{ keys: ReadonlySet<string> }>(() => ({ keys: new Set() }));
+
+async function once(key: string, open: () => Promise<void>): Promise<void> {
+  if (usePendingConnect.getState().keys.has(key)) return;
+  usePendingConnect.setState((s) => ({ keys: new Set(s.keys).add(key) }));
+  try {
+    await open();
+  } finally {
+    usePendingConnect.setState((s) => {
+      const keys = new Set(s.keys);
+      keys.delete(key);
+      return { keys };
+    });
+  }
+}
+
+export const isConnectPending = (key: string) => usePendingConnect.getState().keys.has(key);
+
+/** Estados em que a conexão pedida ainda não terminou (nem conectou, nem falhou). */
+const OPENING = new Set(['connecting', 'awaitingHostKey', 'authenticating', 'awaitingPrompt']);
+
+export function connectHost(host: HostView): Promise<void> {
+  // Pedido repetido com a sessão desse host ainda abrindo: só traz a aba (FR-1509).
+  const opening = useSessions
+    .getState()
+    .tabs.find((tab) => tab.hostId === host.id && tab.kind === 'ssh' && OPENING.has(tab.state));
+  if (opening) {
+    useSessions.getState().activate(opening.id);
+    return Promise.resolve();
+  }
+  return once(`host:${host.id}`, () => openHost(host));
+}
+
+async function openHost(host: HostView): Promise<void> {
   const res = await window.shellvault.sessions.openSsh(host.id);
   if (!res.ok) {
     toastError(res.error);
@@ -22,7 +60,11 @@ export async function connectHost(host: HostView): Promise<void> {
 }
 
 /** Sessão SSH sem host salvo (specs/010, FR-1002); a senha vem pelo prompt a cada conexão. */
-export async function connectQuick(target: QuickTarget): Promise<void> {
+export function connectQuick(target: QuickTarget): Promise<void> {
+  return once(`quick:${targetLabel(target)}:${String(target.port)}`, () => openQuick(target));
+}
+
+async function openQuick(target: QuickTarget): Promise<void> {
   const res = await window.shellvault.sessions.openQuick(target);
   if (!res.ok) {
     toastError(res.error);

@@ -92,12 +92,19 @@
   cursor: pointer;
   transition:
     background-color var(--motion-fast) var(--ease-standard),
-    color var(--motion-fast) var(--ease-standard);
+    color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
 }
 
 .tab:hover {
   background: var(--hover);
   color: var(--text-primary);
+}
+
+/* Pressionado (specs/015, FR-1508). */
+.tab:active,
+.tab[data-pressed] {
+  transform: scale(calc(1 - 0.03 * var(--motion-shift)));
 }
 
 .tabActive {
@@ -231,10 +238,9 @@
   color: var(--text-primary);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .dropPreview {
-    transition: none;
-  }
+/* Animações reduzidas ou desligadas (specs/015). */
+:global(:root:not([data-motion='full'])) .dropPreview {
+  transition: none;
 }
 
 .view {
@@ -253,6 +259,80 @@
   inset: auto;
   /* O xterm pode passar do painel até o próximo `fit` e cobriria o cabeçalho vizinho. */
   overflow: hidden;
+}
+
+/* Aba nova entra na barra; a fechada esmaece no lugar (specs/015, FR-1510). Só transform e
+   opacidade: a sessão e o foco não esperam a animação. */
+.tab {
+  animation: tab-in var(--motion-base) var(--ease-emphasized);
+}
+
+.tab[data-closing] {
+  animation: tab-out var(--motion-fast) var(--ease-exit) forwards;
+}
+
+@keyframes tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(6px * var(--motion-shift))) scale(calc(1 - 0.06 * var(--motion-shift)));
+  }
+}
+
+@keyframes tab-out {
+  to {
+    opacity: 0;
+    transform: scale(calc(1 - 0.1 * var(--motion-shift)));
+  }
+}
+
+/* Conectando (specs/015, FR-1512): por cima do terminal, sem pegar clique. Aparece com atraso
+   curto para conexões rápidas (e shells locais) não piscarem. */
+.connecting {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  pointer-events: none;
+  animation: connecting-in var(--motion-base) var(--ease-standard) 150ms both;
+}
+
+.connectingMark {
+  display: grid;
+  animation: connecting-pulse 1200ms ease-in-out infinite alternate;
+}
+
+.connectingText {
+  font-size: 12px;
+}
+
+@keyframes connecting-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes connecting-pulse {
+  to {
+    opacity: 0.5;
+    transform: scale(calc(1 - 0.06 * var(--motion-shift)));
+  }
+}
+
+/* Painel recém-chegado no grupo (specs/015, FR-1511). */
+.pane[data-entering] {
+  animation: pane-in var(--motion-base) var(--ease-emphasized);
+}
+
+@keyframes pane-in {
+  from {
+    opacity: 0;
+    transform: scale(calc(1 - 0.04 * var(--motion-shift)));
+  }
 }
 
 /* Painel ativo destacado na cor de destaque (FR-606). */
@@ -450,7 +530,7 @@
 @keyframes search-in {
   from {
     opacity: 0;
-    transform: translateY(-4px);
+    transform: translateY(calc(-4px * var(--motion-shift)));
   }
 }
 

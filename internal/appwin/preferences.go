@@ -68,6 +68,7 @@ type Preferences struct {
 	GpuRendering       bool              `json:"gpuRendering"`
 	HostDensity        string            `json:"hostDensity"`
 	PromptTitle        bool              `json:"promptTitle"`
+	Motion             string            `json:"motion"` // specs/015: system|full|reduced|off; só desta máquina
 	Updates            UpdatePrefs       `json:"updates"`
 	Recents            []RecentEntry     `json:"recents"`
 }
@@ -101,6 +102,7 @@ func DefaultPreferences() Preferences {
 		GpuRendering:       false,
 		HostDensity:        "comfortable",
 		PromptTitle:        true,
+		Motion:             "system",
 		Updates:            UpdatePrefs{Auto: true},
 		Recents:            []RecentEntry{},
 	}
@@ -222,6 +224,11 @@ func normalizedPreferences(preferences Preferences) Preferences {
 	case "comfortable", "compact":
 	default:
 		preferences.HostDensity = defaults.HostDensity
+	}
+	switch preferences.Motion {
+	case "system", "full", "reduced", "off":
+	default:
+		preferences.Motion = defaults.Motion
 	}
 	preferences.Updates = normalizedUpdatePrefs(preferences.Updates)
 	return preferences

@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
@@ -25,6 +25,7 @@ import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from '.
 import { SearchBar } from './SearchBar';
 import { registerTerminal } from './terminalRegistry';
 import { countResize, registerProbe } from './testProbe';
+import { takePaneEntering } from './paneEnter';
 import s from './terminal.module.css';
 
 async function copySelection(term: Terminal): Promise<boolean> {
@@ -103,6 +104,7 @@ export interface TerminalViewProps {
 
 export function TerminalView({ tab, visible, focused, pane, banner }: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const fitNowRef = useRef<() => void>(() => undefined);
@@ -359,6 +361,27 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     };
   }, [profile, scheme, zoom, tab.id]);
 
+  // Painel que acabou de entrar no grupo cresce a partir da divisão (specs/015, FR-1511). Só
+  // `transform`/`opacity`: o tamanho não anima, então o xterm recalcula uma vez só.
+  const inPane = pane !== undefined;
+  useLayoutEffect(() => {
+    const el = rootRef.current;
+    if (!inPane || !el || !takePaneEntering(tab.id)) return;
+    el.dataset.entering = '';
+    const end = () => {
+      delete el.dataset.entering;
+    };
+    const onEnd = (e: AnimationEvent) => {
+      if (e.target === el) end();
+    };
+    el.addEventListener('animationend', onEnd);
+    const timer = setTimeout(end, 400);
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener('animationend', onEnd);
+    };
+  }, [inPane, tab.id]);
+
   const background =
     profile.backgroundOpacity < 1
       ? withAlpha(scheme.background, profile.backgroundOpacity)
@@ -366,6 +389,7 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
 
   return (
     <div
+      ref={rootRef}
       className={`${s.view} ${pane ? s.pane : ''} ${visible ? '' : s.hidden}`}
       style={pane?.style}
       role={pane ? 'group' : 'tabpanel'}

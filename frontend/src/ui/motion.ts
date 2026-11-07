@@ -1,13 +1,101 @@
-// Movimento (FR-170): saída animada antes de desmontar e indicador que desliza até o item ativo.
-// Durações e curvas vêm dos tokens `--motion-*`/`--ease-*`, zerados com "reduzir movimento".
+// Movimento (FR-170, specs/015): nível de animação, saída da abertura, saída animada antes de
+// desmontar e indicador que desliza até o item ativo. Durações e curvas vêm dos tokens
+// `--motion-*`/`--ease-*`; `<html data-motion>` decide quanto se move (global.css).
+import type { MotionPreference } from '@shared/model/types';
 import {
   useCallback,
   useEffect,
   useLayoutEffect,
   useReducer,
+  useRef,
   useState,
   type RefObject,
 } from 'react';
+
+export type MotionLevel = 'full' | 'reduced' | 'off';
+
+/** Nível efetivo: a escolha do usuário, ou o "reduzir movimento" do sistema com `system`. */
+export function resolveMotion(
+  preference: MotionPreference | undefined,
+  systemReduced: boolean,
+): MotionLevel {
+  if (preference === 'full' || preference === 'reduced' || preference === 'off') return preference;
+  return systemReduced ? 'reduced' : 'full';
+}
+
+const REDUCE_QUERY = '(prefers-reduced-motion: reduce)';
+
+export function currentMotion(): MotionLevel {
+  const level = document.documentElement.dataset.motion;
+  if (level === 'full' || level === 'reduced' || level === 'off') return level;
+  return window.matchMedia(REDUCE_QUERY).matches ? 'off' : 'full';
+}
+
+/**
+ * Mantém `<html data-motion>` em dia com a preferência e com o sistema. `subscribe` avisa quando a
+ * preferência muda; devolve a função que desliga tudo.
+ */
+export function installMotion(
+  read: () => MotionPreference | undefined,
+  subscribe: (onChange: () => void) => () => void,
+): () => void {
+  const query = window.matchMedia(REDUCE_QUERY);
+  const apply = () => {
+    const level = resolveMotion(read(), query.matches);
+    if (document.documentElement.dataset.motion !== level) {
+      document.documentElement.dataset.motion = level;
+    }
+  };
+  // Janela oculta ou minimizada: animações pausadas (FR-1520).
+  const visibility = () => {
+    if (document.hidden) document.documentElement.dataset.hidden = '';
+    else delete document.documentElement.dataset.hidden;
+  };
+  apply();
+  visibility();
+  query.addEventListener('change', apply);
+  document.addEventListener('visibilitychange', visibility);
+  const unsubscribe = subscribe(apply);
+  return () => {
+    query.removeEventListener('change', apply);
+    document.removeEventListener('visibilitychange', visibility);
+    unsubscribe();
+  };
+}
+
+/** Teto da saída da abertura (a transição no `index.html` dura 200 ms). */
+export const BOOT_EXIT_MS = 300;
+
+interface BootElement {
+  dataset: DOMStringMap | Record<string, string | undefined>;
+  addEventListener: (type: 'transitionend', fn: () => void) => void;
+  remove: () => void;
+}
+
+/**
+ * Tira a tela de abertura do `index.html` (specs/015, FR-1506): esmaece e sai do DOM. Não bloqueia
+ * nada — `#boot` já não recebe cliques ao começar a sair. Chamar mais de uma vez não faz nada.
+ */
+export function dismissBoot(
+  doc: { getElementById: (id: string) => unknown } = document,
+  level: MotionLevel = currentMotion(),
+): void {
+  const boot = doc.getElementById('boot') as BootElement | null;
+  if (!boot || boot.dataset.leaving !== undefined) return;
+  boot.dataset.leaving = '';
+  if (level === 'off') {
+    boot.remove();
+    return;
+  }
+  let done = false;
+  const remove = () => {
+    if (done) return;
+    done = true;
+    boot.remove();
+  };
+  boot.addEventListener('transitionend', remove);
+  setTimeout(remove, BOOT_EXIT_MS);
+}
 
 export type Phase = 'closed' | 'open' | 'closing';
 type PhaseEvent = 'open' | 'close' | 'animationEnd';
@@ -109,14 +197,13 @@ export function useSlidingIndicator(
   return style;
 }
 
-const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /**
  * Saída animada de quem é desmontado pelo pai (`{open && <Dialog/>}`): uma cópia inerte, sem
  * papéis ARIA, fica no lugar do elemento com `data-closing` até a animação terminar.
  */
 export function leaveGhost(node: HTMLElement | null): void {
-  if (!node?.isConnected || reducedMotion()) return;
+  if (!node?.isConnected || currentMotion() !== 'full') return;
   const rect = node.getBoundingClientRect();
   const style = getComputedStyle(node);
   const layer =
@@ -164,4 +251,41 @@ export function useExitGhost(ref: RefObject<HTMLElement | null>): void {
     },
     [ref],
   );
+}
+
+/** Duração de um token `--motion-*` em ms (0 se ausente ou zerado). */
+function motionMs(token: '--motion-fast' | '--motion-base' | '--motion-slow'): number {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  const value = Number.parseFloat(raw);
+  if (!Number.isFinite(value)) return 0;
+  return raw.endsWith('ms') ? value : value * 1000;
+}
+
+/**
+ * Itens que mudam de lugar (aba fechada, reordenada) deslizam até a posição nova em vez de pular
+ * (specs/015, FR-1510). Cada item marca `data-flip-id`; `key` muda quando a lista muda. Usa a Web
+ * Animations API só com `transform`, e só com animações completas.
+ */
+export function useFlip(containerRef: RefObject<HTMLElement | null>, key: string): void {
+  const previous = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const items = container.querySelectorAll<HTMLElement>('[data-flip-id]');
+    const next = new Map<string, number>();
+    const duration = currentMotion() === 'full' ? motionMs('--motion-base') : 0;
+    for (const el of items) {
+      const id = el.dataset.flipId ?? '';
+      const left = el.offsetLeft;
+      next.set(id, left);
+      const before = previous.current.get(id);
+      if (duration > 0 && before !== undefined && before !== left) {
+        el.animate(
+          [{ transform: `translateX(${String(before - left)}px)` }, { transform: 'none' }],
+          { duration, easing: 'cubic-bezier(0.2, 0, 0, 1)' },
+        );
+      }
+    }
+    previous.current = next;
+  }, [containerRef, key]);
 }

@@ -5,6 +5,7 @@ import type {
   BellMode,
   HostDensity,
   LocalShell,
+  MotionPreference,
   Settings,
   TermType,
   ThemePreference,
@@ -159,6 +160,10 @@ const DENSITIES: { value: HostDensity; label: string }[] = (
   ['comfortable', 'compact'] as const
 ).map((value) => ({ value, label: t.settings.hostDensityOptions[value] }));
 
+const MOTIONS: { value: MotionPreference; label: string }[] = (
+  ['system', 'full', 'reduced', 'off'] as const
+).map((value) => ({ value, label: t.settings.motionOptions[value] }));
+
 const BELLS: { value: BellMode; label: string }[] = (['visual', 'sound', 'off'] as const).map(
   (value) => ({ value, label: t.settings.bellOptions[value] }),
 );
@@ -259,6 +264,13 @@ function AppearanceSection({ settings }: { settings: Settings }) {
         options={DENSITIES}
         hint={t.settings.hostDensityHint}
         onChange={(hostDensity) => void saveUi({ hostDensity })}
+      />
+      <Segmented
+        label={t.settings.motion}
+        value={settings.motion ?? 'system'}
+        options={MOTIONS}
+        hint={t.settings.motionHint}
+        onChange={(motion) => void saveUi({ motion })}
       />
       {glassAvailable && (
         <Checkbox

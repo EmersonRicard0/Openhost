@@ -14,13 +14,13 @@
   width: min(460px, 100%);
   padding: 32px;
   border-radius: 18px;
-  animation: card-in var(--motion-slow) var(--ease-standard);
+  animation: card-in var(--motion-slow) var(--ease-emphasized);
 }
 
 @keyframes card-in {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    transform: translateY(calc(8px * var(--motion-shift)));
   }
 }
 

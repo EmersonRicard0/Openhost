@@ -66,7 +66,7 @@
 }
 
 .railButton:active:not(:disabled) {
-  transform: scale(0.94);
+  transform: scale(calc(1 - 0.06 * var(--motion-shift)));
 }
 
 .railButton:focus-visible {

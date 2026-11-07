@@ -70,11 +70,25 @@
   padding: 6px 8px;
   border-radius: 9px;
   cursor: default;
-  transition: background-color var(--motion-fast) var(--ease-standard);
+  transition:
+    background-color var(--motion-fast) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-standard);
 }
 
 .item:hover {
   background: var(--hover);
+}
+
+/* Pressionado (specs/015, FR-1508). */
+.item:active,
+.item[data-pressed] {
+  background: var(--selected);
+  transform: scale(calc(1 - 0.015 * var(--motion-shift)));
+}
+
+/* Conexão pedida, sessão ainda não aberta (FR-1509). */
+.item[data-busy] {
+  cursor: progress;
 }
 
 .item[aria-selected='true'] {
@@ -309,10 +323,9 @@
   background: var(--hover);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .chevron {
-    transition: none;
-  }
+/* Animações reduzidas ou desligadas (specs/015). */
+:global(:root:not([data-motion='full'])) .chevron {
+  transition: none;
 }
 
 .itemLabelRow {
@@ -490,4 +503,49 @@
 .list[data-density='compact'] .itemSubRow {
   flex: 1 1 0;
   min-width: 0;
+}
+
+/* Entrada em sequência só dos primeiros itens, até ~250 ms no total, sem bloquear clique
+   (specs/015, FR-1516). */
+.list > * {
+  animation: rise-in var(--motion-fast) var(--ease-emphasized) both;
+}
+
+.list > *:nth-child(2) {
+  animation-delay: 18ms;
+}
+
+.list > *:nth-child(3) {
+  animation-delay: 36ms;
+}
+
+.list > *:nth-child(4) {
+  animation-delay: 54ms;
+}
+
+.list > *:nth-child(5) {
+  animation-delay: 72ms;
+}
+
+.list > *:nth-child(6) {
+  animation-delay: 90ms;
+}
+
+.list > *:nth-child(7) {
+  animation-delay: 108ms;
+}
+
+.list > *:nth-child(8) {
+  animation-delay: 126ms;
+}
+
+.list > *:nth-child(n + 9) {
+  animation: none;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(calc(4px * var(--motion-shift)));
+  }
 }

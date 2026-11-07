@@ -18,6 +18,7 @@ import { MAX_ATTEMPTS, stopAutoReconnect, useAutoReconnect } from './autoReconne
 import { runShortcut, shortcutActive } from './commands';
 import { useDrag } from './dragState';
 import { BroadcastConfirm } from './BroadcastConfirm';
+import { Logo } from '../../ui/Logo';
 import { Divider } from './Divider';
 import { DropLayer } from './DropLayer';
 import { HostKeyDialog } from './HostKeyDialog';
@@ -110,6 +111,20 @@ function Banner({ tab }: { tab: Tab }) {
             {t.terminal.reconnect}
           </Button>
         )}
+      </div>
+    );
+  }
+  // SSH abrindo, sem pedido nem erro ainda (specs/015, FR-1512): a marca pulsa no painel. Não
+  // pega clique nem teclado; some na hora quando o estado muda.
+  if (tab.kind === 'ssh' && (tab.state === 'connecting' || tab.state === 'authenticating')) {
+    return (
+      <div className={s.connecting} role="status" data-testid="connecting">
+        <span className={s.connectingMark}>
+          <Logo size={40} variant="mark" />
+        </span>
+        <span className={s.connectingText}>
+          {tab.state === 'connecting' ? t.terminal.connecting : t.terminal.authenticating}
+        </span>
       </div>
     );
   }
