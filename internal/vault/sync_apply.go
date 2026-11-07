@@ -64,7 +64,7 @@ func (s *Store) installSynchronized(required State, password string, newDEK []by
 	}
 	draft := content.Clone()
 	pre := func(tx *sql.Tx) error {
-		for _, table := range []string{"forward_rules", "hosts", "credentials", "groups", "known_hosts", "vault_settings"} {
+		for _, table := range []string{"forward_rules", "hosts", "credentials", "groups", "known_hosts", "snippets", "vault_settings"} {
 			if _, err := tx.Exec(`DELETE FROM ` + table); err != nil {
 				return err
 			}
@@ -108,6 +108,7 @@ func (s *Store) installSynchronized(required State, password string, newDEK []by
 	if required == StateNonexistent {
 		s.setStatus(Status{State: StateUnlocked})
 	}
+	s.markApplied()
 	return nil
 }
 
@@ -182,5 +183,6 @@ func (s *Store) ApplySynchronized(content *model.Content, profiles []model.Termi
 		return err
 	}
 	s.content, s.sigs = draft, sigs
+	s.markApplied()
 	return nil
 }

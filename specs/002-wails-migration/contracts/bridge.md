@@ -9,7 +9,7 @@ Operações sem marcação mantêm assinatura e semântica da 001.
 ## Regras gerais
 
 - Cada grupo de operações é uma struct Go ligada ao Wails (`Bind`): `VaultService`,
-  `HostService` (hosts e grupos), `CredentialService`, `SessionService`, `SftpService`,
+  `HostService` (hosts e grupos), `SnippetService`, `CredentialService`, `SessionService`, `SftpService`,
   `ForwardService`, `ProfileService` **novo**, `AppService`, e, desde a 003, `ImportService` e
   `ExportService`. Nenhuma outra struct é ligada no binário de release (os builds de teste
   ligam também `TestService` e `Smoke`, abaixo).
@@ -71,6 +71,20 @@ Desde a 010, incluem também `favorite: boolean` (chave omitida em `Update` pres
 
 Evento `hosts:changed`: `{ hostId: string, detectedOs: OsId | null }`, emitido quando a detecção
 de sistema de uma conexão SSH altera o host persistido.
+
+## SnippetService 🔒 (012)
+
+| Método | Entrada | Saída | Erros |
+|---|---|---|---|
+| `List()` | — | `Snippet[]` por nome | `VAULT_LOCKED` |
+| `Create(input)` | `SnippetInput {name,text,tags,execute}` | `Snippet` | `INVALID_INPUT`, `VAULT_LOCKED` |
+| `Update(id, input)` | campos omitidos preservam o valor | `Snippet` | anteriores + `NOT_FOUND` |
+| `Remove(id)` | — | `void` | `NOT_FOUND`, `VAULT_LOCKED` |
+| `Duplicate(id)` | — | `Snippet` com nome numerado | `NOT_FOUND`, `INVALID_INPUT` |
+
+`Snippet` contém `id`, `name`, `text`, `tags`, `execute`, `createdAt` e `updatedAt`. O evento
+`snippets:changed`, sem payload, é emitido depois de criar, editar, duplicar, apagar ou aplicar
+uma sincronização; o texto do comando nunca aparece em evento ou erro.
 
 ## CredentialService 🔒
 
@@ -157,6 +171,12 @@ descartados quando o cofre bloqueia.
 
 Desde a 010, o formato próprio OpenHost é versão 2 e inclui `tags`, `notes`, `favorite` e
 `environment: {name,color} | null`; a importação estrita continua aceitando a versão 1.
+
+Desde a 012, OpenHost é versão 3 e pode incluir `snippets: [{name,text,tags,execute}]`.
+`ExportRequest` ganha `includeSnippets` e `ExportCount` ganha `snippets`. A prévia de importação
+ganha `snippets: [{name,duplicateOf?,action: "skip" | "copy"}]`; `SetSnippetAction(previewId,
+name, action)` escolhe pular ou importar uma cópia com nome numerado. A leitura estrita aceita
+as versões 1–3; versões posteriores devolvem `IMPORT_FORMAT_NEWER`.
 
 ## UpdateService (007)
 

@@ -174,3 +174,50 @@ describe('nome da aba pelo prompt (009, FR-922–FR-925)', () => {
     expect(title('A')).toBe('R2');
   });
 });
+
+describe('digitar no grupo: estado no grupo (012, data-model)', () => {
+  beforeEach(() => {
+    useSessions.setState({ tabs: [], activeId: null, groups: {} });
+    for (const id of ['A', 'B', 'C', 'D']) open(id);
+    state().join('B', 'A', 'right');
+    state().join('C', 'A', 'bottom');
+  });
+  const group = () => groupOf(state().groups, 'A');
+
+  it('liga com todos marcados, desmarca e marca painéis, desliga', () => {
+    const id = group()?.id ?? '';
+    state().setBroadcast(id, true);
+    expect(group()?.broadcast).toEqual({ excluded: [] });
+    state().setReceiving(id, 'C', false);
+    expect(group()?.broadcast).toEqual({ excluded: ['C'] });
+    state().setReceiving(id, 'C', true);
+    expect(group()?.broadcast).toEqual({ excluded: [] });
+    state().setBroadcast(id, false);
+    expect(group()?.broadcast).toBeUndefined();
+  });
+
+  it('quem entra num grupo transmitindo começa desmarcado', () => {
+    const id = group()?.id ?? '';
+    state().setBroadcast(id, true);
+    state().join('D', 'A', 'right');
+    expect(group()?.broadcast).toEqual({ excluded: ['D'] });
+  });
+
+  it('quem sai deixa de constar; grupo desfeito leva o modo junto', () => {
+    const id = group()?.id ?? '';
+    state().setBroadcast(id, true);
+    state().setReceiving(id, 'C', false);
+    state().splitOut('C');
+    expect(group()?.broadcast).toEqual({ excluded: [] });
+    state().close('B');
+    expect(state().groups).toEqual({});
+  });
+
+  it('ignora grupo inexistente e membro de fora', () => {
+    state().setBroadcast('nada', true);
+    const id = group()?.id ?? '';
+    state().setBroadcast(id, true);
+    state().setReceiving(id, 'D', false);
+    expect(group()?.broadcast).toEqual({ excluded: [] });
+  });
+});

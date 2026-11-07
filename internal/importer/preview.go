@@ -107,6 +107,19 @@ type PreviewKey struct {
 	Fingerprint *string   `json:"fingerprint"`
 	UsedBy      int       `json:"usedBy"`
 }
+
+type SnippetAction string
+
+const (
+	SnippetSkip SnippetAction = "skip"
+	SnippetCopy SnippetAction = "copy"
+)
+
+type PreviewSnippet struct {
+	Name        string        `json:"name"`
+	DuplicateOf *string       `json:"duplicateOf,omitempty"`
+	Action      SnippetAction `json:"action"`
+}
 type CsvPreview struct {
 	Columns      []string        `json:"columns"`
 	Mapping      map[string]*int `json:"mapping"`
@@ -114,15 +127,16 @@ type CsvPreview struct {
 }
 
 type PreviewView struct {
-	ID           string         `json:"id"`
-	Kind         SourceKind     `json:"kind"`
-	SourceLabel  string         `json:"sourceLabel"`
-	Rows         []PreviewRow   `json:"rows"`
-	Groups       []PreviewGroup `json:"groups,omitempty"`
-	Keys         []PreviewKey   `json:"keys"`
-	Ignored      []IgnoredItem  `json:"ignored"`
-	FileWarnings []Warning      `json:"fileWarnings"`
-	CSV          *CsvPreview    `json:"csv"`
+	ID           string           `json:"id"`
+	Kind         SourceKind       `json:"kind"`
+	SourceLabel  string           `json:"sourceLabel"`
+	Rows         []PreviewRow     `json:"rows"`
+	Groups       []PreviewGroup   `json:"groups,omitempty"`
+	Keys         []PreviewKey     `json:"keys"`
+	Snippets     []PreviewSnippet `json:"snippets"`
+	Ignored      []IgnoredItem    `json:"ignored"`
+	FileWarnings []Warning        `json:"fileWarnings"`
+	CSV          *CsvPreview      `json:"csv"`
 }
 
 type CandidateRow struct {
@@ -156,6 +170,7 @@ type ImportPreview struct {
 	Rows                    []PreviewRow
 	Groups                  []PreviewGroup
 	Keys                    []PreviewKey
+	Snippets                []PreviewSnippet
 	Ignored                 []IgnoredItem
 	FileWarnings            []Warning
 	CSV                     *CsvPreview
@@ -163,6 +178,7 @@ type ImportPreview struct {
 	keyData                 map[string]*keySecret
 	credentialByFingerprint map[string]string
 	groupSortOrders         map[string]int
+	snippetData             map[string]model.Snippet
 	expiresAt               time.Time
 }
 
@@ -170,7 +186,7 @@ func Build(kind SourceKind, sourceLabel string, rows []CandidateRow, content *mo
 	if len(rows) > MaxRows {
 		return nil, apperr.New(apperr.ImportTooLarge)
 	}
-	p := &ImportPreview{ID: domain.NewID(), Kind: kind, SourceLabel: sourceLabel, keyData: map[string]*keySecret{}, credentialByFingerprint: map[string]string{}, expiresAt: time.Now().Add(30 * time.Minute)}
+	p := &ImportPreview{ID: domain.NewID(), Kind: kind, SourceLabel: sourceLabel, keyData: map[string]*keySecret{}, credentialByFingerprint: map[string]string{}, snippetData: map[string]model.Snippet{}, expiresAt: time.Now().Add(30 * time.Minute)}
 	keyRefs := map[string]string{}
 	groups := map[string]bool{}
 	for _, candidate := range rows {
@@ -312,7 +328,7 @@ func keepParserWarnings(in []Warning) []Warning {
 }
 func (p *ImportPreview) View() PreviewView {
 	p.expiresAt = time.Now().Add(30 * time.Minute)
-	return PreviewView{ID: p.ID, Kind: p.Kind, SourceLabel: p.SourceLabel, Rows: cloneRows(p.Rows), Groups: append([]PreviewGroup{}, p.Groups...), Keys: append([]PreviewKey{}, p.Keys...), Ignored: append([]IgnoredItem{}, p.Ignored...), FileWarnings: append([]Warning{}, p.FileWarnings...), CSV: p.CSV}
+	return PreviewView{ID: p.ID, Kind: p.Kind, SourceLabel: p.SourceLabel, Rows: cloneRows(p.Rows), Groups: append([]PreviewGroup{}, p.Groups...), Keys: append([]PreviewKey{}, p.Keys...), Snippets: append([]PreviewSnippet{}, p.Snippets...), Ignored: append([]IgnoredItem{}, p.Ignored...), FileWarnings: append([]Warning{}, p.FileWarnings...), CSV: p.CSV}
 }
 func cloneRows(rows []PreviewRow) []PreviewRow {
 	out := make([]PreviewRow, len(rows))
@@ -396,12 +412,30 @@ func (p *ImportPreview) SetDuplicateAction(action DuplicateAction) error {
 	}
 	return nil
 }
+
+func (p *ImportPreview) SetSnippetAction(name string, action SnippetAction) error {
+	if action != SnippetSkip && action != SnippetCopy {
+		return apperr.New(apperr.InvalidInput)
+	}
+	for i := range p.Snippets {
+		if strings.EqualFold(p.Snippets[i].Name, name) {
+			p.Snippets[i].Action = action
+			return nil
+		}
+	}
+	return apperr.New(apperr.NotFound)
+}
 func (p *ImportPreview) Zero() {
 	for _, d := range p.keyData {
 		zero(d.privateKey)
 		zero(d.passphrase)
 	}
 	p.keyData = map[string]*keySecret{}
+	for key, snippet := range p.snippetData {
+		snippet.Text = ""
+		p.snippetData[key] = snippet
+	}
+	p.snippetData = map[string]model.Snippet{}
 }
 func zero(b []byte) {
 	for i := range b {

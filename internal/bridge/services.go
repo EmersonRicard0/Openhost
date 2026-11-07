@@ -38,6 +38,7 @@ type Services struct {
 
 	vaultService      *VaultService
 	hostService       *HostService
+	snippetService    *SnippetService
 	credentialService *CredentialService
 	sessionService    *SessionService
 	sftpService       *SftpService
@@ -65,6 +66,8 @@ func newServices(dataDir string, kdf func([]byte) vault.KDFParams) (*Services, e
 	s.sessions = session.NewManager(s.emit)
 	s.vaultService = newVaultService(store, s.autoLock)
 	s.hostService = newHostService(store)
+	s.snippetService = newSnippetService(store, s.emit)
+	store.OnApply(s.snippetService.changed)
 	s.credentialService = newCredentialService(store, s.Context)
 	s.sessionService = newSessionService(store, s.sessions, s.emit)
 	s.transfers = sftpx.NewTransferManager(sftpx.TransferEvents{
@@ -150,7 +153,7 @@ func (s *Services) connectForward(hostID string) (forwarding.Client, error) {
 
 // Bound devolve as structs que o main.go passa para options.App.Bind.
 func (s *Services) Bound() []any {
-	return []any{s.vaultService, s.hostService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService, s.exportService, s.updateService, s.syncService}
+	return []any{s.vaultService, s.hostService, s.snippetService, s.credentialService, s.sessionService, s.sftpService, s.forwardService, s.profileService, s.appService, s.importService, s.exportService, s.updateService, s.syncService}
 }
 
 // Context é o contexto do Wails, disponível depois de Startup.

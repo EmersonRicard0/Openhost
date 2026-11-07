@@ -4,9 +4,10 @@ package updater
 
 import (
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"golang.org/x/sys/windows/registry"
 )
 
 const windowsUninstallKey = `Software\Microsoft\Windows\CurrentVersion\Uninstall\OpenHostOpenHost`
@@ -36,15 +37,15 @@ func classifyWindowsInstall(executable string, registeredExecutables []string) I
 
 func windowsDisplayIcons() []string {
 	var result []string
-	for _, root := range []string{"HKCU", "HKLM"} {
-		output, err := exec.Command("reg", "query", root+`\`+windowsUninstallKey, "/v", "DisplayIcon", "/reg:64").Output()
+	for _, root := range []registry.Key{registry.CURRENT_USER, registry.LOCAL_MACHINE} {
+		key, err := registry.OpenKey(root, windowsUninstallKey, registry.QUERY_VALUE|registry.WOW64_64KEY)
 		if err != nil {
 			continue
 		}
-		for _, line := range strings.Split(string(output), "\n") {
-			if index := strings.Index(line, "REG_SZ"); index >= 0 {
-				result = append(result, strings.TrimSpace(line[index+len("REG_SZ"):]))
-			}
+		value, _, readErr := key.GetStringValue("DisplayIcon")
+		_ = key.Close()
+		if readErr == nil && strings.TrimSpace(value) != "" {
+			result = append(result, value)
 		}
 	}
 	return result

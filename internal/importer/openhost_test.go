@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"testing"
 
 	"shellvault/internal/apperr"
@@ -212,6 +213,11 @@ func TestLoadOpenHostVersion1AndStrictFormat(t *testing.T) {
 	if tags, ok := row.Extra["tags"].([]string); !ok || tags == nil || len(tags) != 0 || row.Extra["notes"] != "" || !environmentOK || environment != nil {
 		t.Fatalf("campos padrão da v1 = %#v", row.Extra)
 	}
+	v2 := bytes.Replace(v1, []byte(`"version":1`), []byte(`"version":2`), 1)
+	preview, err = importer.LoadOpenHost(writeOpenHost(t, v2), nil, model.EmptyContent())
+	if err != nil || len(preview.View().Snippets) != 0 {
+		t.Fatalf("v2 sem comandos = %+v, %v", preview, err)
+	}
 
 	var unknown map[string]any
 	if err := json.Unmarshal(v1, &unknown); err != nil {
@@ -221,6 +227,72 @@ func TestLoadOpenHostVersion1AndStrictFormat(t *testing.T) {
 	raw, _ := json.Marshal(unknown)
 	if _, err := importer.LoadOpenHost(writeOpenHost(t, raw), nil, model.EmptyContent()); apperr.CodeOf(err) != apperr.ImportUnreadable {
 		t.Fatalf("campo desconhecido foi aceito: %v", err)
+	}
+}
+
+func TestOpenHostV3ImportsSnippetsAndCopiesDuplicateName(t *testing.T) {
+	source := model.EmptyContent()
+	source.Snippets = []model.Snippet{
+		{ID: domain.NewID(), Name: "Versão", Text: "show version", Tags: []string{"huawei"}, Execute: true, CreatedAt: domain.Now(), UpdatedAt: domain.Now()},
+		{ID: domain.NewID(), Name: "Relógio", Text: "show clock", Tags: []string{}, CreatedAt: domain.Now(), UpdatedAt: domain.Now()},
+	}
+	raw, err := exporter.MarshalOpenHost(source, exporter.OpenHostOptions{IncludeSnippets: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	destination := model.EmptyContent()
+	existing, err := domain.CreateSnippet(destination, domain.SnippetInput{Name: "versão", Text: "display version"}, domain.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	preview, err := importer.LoadOpenHost(writeOpenHost(t, raw), nil, destination)
+	if err != nil {
+		t.Fatal(err)
+	}
+	view := preview.View()
+	if len(view.Snippets) != 2 || view.Snippets[0].Name != "Versão" || view.Snippets[0].DuplicateOf == nil ||
+		*view.Snippets[0].DuplicateOf != existing.Name || view.Snippets[0].Action != importer.SnippetSkip ||
+		view.Snippets[1].Name != "Relógio" || view.Snippets[1].Action != importer.SnippetCopy {
+		t.Fatalf("prévia de comandos = %+v", view.Snippets)
+	}
+	if err := preview.SetSnippetAction("Versão", importer.SnippetCopy); err != nil {
+		t.Fatal(err)
+	}
+	store, err := vault.Open(t.TempDir(), vault.TestKDF)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = store.Close() })
+	if err := store.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	if err := store.Mutate(func(content *model.Content) error {
+		content.Snippets = append(content.Snippets, existing)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	coordinator := importer.NewCoordinator(store)
+	coordinator.SetPreview(preview)
+	result, err := coordinator.Commit(preview.ID, nil)
+	if err != nil || result.Snippets != 2 {
+		t.Fatalf("commit de comandos = %+v, %v", result, err)
+	}
+	content, err := store.Read()
+	if err != nil || len(content.Snippets) != 3 {
+		t.Fatalf("comandos importados = %+v, %v", content.Snippets, err)
+	}
+	names := []string{content.Snippets[0].Name, content.Snippets[1].Name, content.Snippets[2].Name}
+	if !slices.Contains(names, "Versão (2)") || !slices.Contains(names, "Relógio") {
+		t.Fatalf("nomes importados = %v", names)
+	}
+	undo, err := coordinator.Undo(result.BatchID)
+	if err != nil || undo.Removed != 2 {
+		t.Fatalf("desfazer comandos = %+v, %v", undo, err)
+	}
+	content, _ = store.Read()
+	if len(content.Snippets) != 1 || content.Snippets[0].ID != existing.ID {
+		t.Fatalf("desfazer removeu comando preexistente: %+v", content.Snippets)
 	}
 }
 

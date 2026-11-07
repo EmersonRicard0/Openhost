@@ -26,6 +26,7 @@ import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
 import { useSlidingIndicator } from '../../ui/motion';
 import {
+  BroadcastIcon,
   ChevronDownIcon,
   ChevronIcon,
   ChevronLeftIcon,
@@ -38,7 +39,7 @@ import {
 } from '../../ui/icons';
 import { Menu, type MenuItem } from '../../ui/Menu';
 import { toastError } from '../../ui/Toast';
-import { closeGroup, closeSession } from './commands';
+import { closeGroup, closeSession, toggleBroadcast } from './commands';
 import { endDrag, startDrag, useDrag } from './dragState';
 import { MAX_PANES } from './layout';
 import { StateIcon } from './StateIcon';
@@ -215,12 +216,14 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
   ]
     .filter(Boolean)
     .join('\n');
-  const name =
+  const broadcasting = item.kind === 'group' && Boolean(item.group.broadcast);
+  const baseName =
     item.kind === 'group'
       ? t.terminal.group.label(tab.title, members.length - 1)
       : tab.title === tab.baseTitle
         ? tab.title
         : accessibleTitle(tab);
+  const name = broadcasting ? `${baseName}, ${t.terminal.broadcast.tabSuffix}` : baseName;
 
   return (
     <div
@@ -242,6 +245,7 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
           : undefined
       }
       data-group={item.kind === 'group' ? '' : undefined}
+      data-broadcast={broadcasting ? '' : undefined}
       className={`${s.tab} ${active ? s.tabActive : ''} ${dropTarget ? s.dropBefore : ''} no-drag`}
       draggable={!editing}
       onClick={() => {
@@ -323,6 +327,22 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
         <span className={s.groupCount} aria-hidden>
           {members.length}
         </span>
+      )}
+      {item.kind === 'group' && (
+        <Button
+          variant="ghost"
+          iconOnly
+          className={`${s.tabClose} ${s.tabBroadcast}`}
+          aria-label={t.terminal.broadcast.toggle}
+          aria-pressed={broadcasting}
+          title={t.terminal.broadcast.toggle}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleBroadcast(item.id);
+          }}
+        >
+          <BroadcastIcon width={13} height={13} />
+        </Button>
       )}
       <Button
         variant="ghost"

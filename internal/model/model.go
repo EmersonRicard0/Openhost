@@ -188,6 +188,16 @@ type ColorScheme struct {
 	ANSI       []string     `json:"ansi"`
 }
 
+type Snippet struct {
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	Text      string   `json:"text"`
+	Tags      []string `json:"tags"`
+	Execute   bool     `json:"execute"`
+	CreatedAt string   `json:"createdAt"`
+	UpdatedAt string   `json:"updatedAt"`
+}
+
 func DefaultVaultSettings() VaultSettings {
 	autoLock := 15
 	return VaultSettings{
@@ -230,6 +240,7 @@ type Content struct {
 	Credentials  []Credential
 	KnownHosts   []KnownHost
 	ForwardRules []ForwardRule
+	Snippets     []Snippet
 }
 
 func EmptyContent() *Content {
@@ -240,6 +251,7 @@ func EmptyContent() *Content {
 		Credentials:  []Credential{},
 		KnownHosts:   []KnownHost{},
 		ForwardRules: []ForwardRule{},
+		Snippets:     []Snippet{},
 	}
 }
 
@@ -252,6 +264,7 @@ func (c *Content) Clone() *Content {
 		Credentials:  make([]Credential, len(c.Credentials)),
 		KnownHosts:   append([]KnownHost{}, c.KnownHosts...),
 		ForwardRules: make([]ForwardRule, len(c.ForwardRules)),
+		Snippets:     make([]Snippet, len(c.Snippets)),
 	}
 	out.Settings.AutoLockMinutes = clonePtr(c.Settings.AutoLockMinutes)
 	out.Settings.Environments = append([]Environment{}, c.Settings.Environments...)
@@ -275,6 +288,10 @@ func (c *Content) Clone() *Content {
 	for i, r := range c.ForwardRules {
 		r.Label = clonePtr(r.Label)
 		out.ForwardRules[i] = r
+	}
+	for i, snippet := range c.Snippets {
+		snippet.Tags = append([]string{}, snippet.Tags...)
+		out.Snippets[i] = snippet
 	}
 	return out
 }

@@ -20,10 +20,10 @@ type replacedHost struct {
 	UpdatedAt      string
 }
 type ImportBatch struct {
-	ID                                                    string
-	CreatedHostIDs, CreatedGroupIDs, CreatedCredentialIDs []string
-	Replaced                                              []replacedHost
-	CommittedAt                                           string
+	ID                                                                       string
+	CreatedHostIDs, CreatedGroupIDs, CreatedCredentialIDs, CreatedSnippetIDs []string
+	Replaced                                                                 []replacedHost
+	CommittedAt                                                              string
 }
 type ImportResult struct {
 	BatchID     string `json:"batchId"`
@@ -34,6 +34,7 @@ type ImportResult struct {
 	KeysStored  int    `json:"keysStored"`
 	KeysReused  int    `json:"keysReused"`
 	AskPassword int    `json:"askPassword"`
+	Snippets    int    `json:"snippets"`
 }
 type UndoResult struct {
 	Removed    int `json:"removed"`
@@ -231,6 +232,27 @@ func (c *Coordinator) Commit(previewID string, targetGroupID *string) (ImportRes
 			}
 			batch.CreatedHostIDs = append(batch.CreatedHostIDs, host.ID)
 			result.Created++
+		}
+		for _, previewSnippet := range p.Snippets {
+			if previewSnippet.Action == SnippetSkip {
+				result.Skipped++
+				continue
+			}
+			source, ok := p.snippetData[strings.ToLower(previewSnippet.Name)]
+			if !ok || previewSnippet.Action != SnippetCopy {
+				return profileChanges, apperr.New(apperr.ImportUnreadable)
+			}
+			name := source.Name
+			if previewSnippet.DuplicateOf != nil {
+				name = domain.UniqueSnippetName(content, name)
+			}
+			created, err := domain.CreateSnippet(content, domain.SnippetInput{Name: name, Text: source.Text,
+				Tags: source.Tags, Execute: source.Execute}, now)
+			if err != nil {
+				return profileChanges, err
+			}
+			batch.CreatedSnippetIDs = append(batch.CreatedSnippetIDs, created.ID)
+			result.Snippets++
 		}
 		if c.commitHook != nil {
 			if err := c.commitHook(content); err != nil {
@@ -500,6 +522,19 @@ func (c *Coordinator) Undo(batchID string) (UndoResult, error) {
 			}
 		}
 		content.ForwardRules = keptRules
+		createdSnippets := set(batch.CreatedSnippetIDs)
+		snippets := content.Snippets[:0]
+		for _, snippet := range content.Snippets {
+			if createdSnippets[snippet.ID] && snippet.UpdatedAt == batch.CommittedAt {
+				result.Removed++
+				continue
+			}
+			if createdSnippets[snippet.ID] {
+				result.KeptEdited++
+			}
+			snippets = append(snippets, snippet)
+		}
+		content.Snippets = snippets
 		for _, rep := range batch.Replaced {
 			for i := range content.Hosts {
 				if content.Hosts[i].ID == rep.Before.ID {

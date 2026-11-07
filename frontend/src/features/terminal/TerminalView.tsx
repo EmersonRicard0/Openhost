@@ -12,13 +12,15 @@ import { useUi } from '../../stores/ui';
 import { useVault } from '../../stores/vault';
 import { fontSizeOf, useWorkspace } from '../../stores/workspace';
 import { ringBell } from './bell';
+import { broadcastTargets, sendFrom } from './broadcast';
 import { readClipboard, writeClipboard } from './clipboard';
 import { attach } from './dataBus';
 import { opensLink, terminalKeyAction } from './keys';
 import { environmentColor } from '../../theme/environments';
 import { useHostEnvironment } from '../hosts/environment';
-import { needsConfirm } from './paste';
+import { needsBroadcastConfirm, needsConfirm } from './paste';
 import { watchPrompt } from './promptTitle';
+import { createWebglPool } from './webglPool';
 import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from './profile';
 import { SearchBar } from './SearchBar';
 import { registerTerminal } from './terminalRegistry';
@@ -33,10 +35,57 @@ async function copySelection(term: Terminal): Promise<boolean> {
   return ok;
 }
 
-/** Cola; várias linhas passam antes pela confirmação (FR-144). */
+interface WebglHandle {
+  addon: WebglAddon;
+  contexts: WebGL2RenderingContext[];
+}
+
+// O addon não perde o contexto no `dispose` e o Chromium só o solta quando o canvas é coletado:
+// perder explicitamente devolve a memória do processo de GPU na hora (specs/014, R2).
+const webglPool = createWebglPool<WebglHandle>({
+  keepHidden: 1,
+  release: (_id, { addon, contexts }) => {
+    for (const gl of contexts) gl.getExtension('WEBGL_lose_context')?.loseContext();
+    addon.dispose();
+  },
+});
+
+function attachWebgl(term: Terminal, id: string): WebglHandle | null {
+  // Renderer DOM por padrão (specs/014, T018): 3,9 MB por aba contra 11 MB com WebGL, sem sobra no
+  // processo de GPU, troca de aba p95 ~40 ms. WebGL só com "Aceleração por GPU" ligada.
+  if (!(useUi.getState().settings?.gpuRendering ?? false)) return null;
+  const before = new Set(term.element?.querySelectorAll('canvas'));
+  try {
+    const addon = new WebglAddon();
+    addon.onContextLoss(() => {
+      webglPool.forget(id);
+      addon.dispose();
+    });
+    term.loadAddon(addon);
+    const contexts: WebGL2RenderingContext[] = [];
+    // Só canvas criados pelo addon: getContext num canvas sem contexto criaria um novo.
+    for (const canvas of term.element?.querySelectorAll('canvas') ?? []) {
+      if (before.has(canvas)) continue;
+      const gl = canvas.getContext('webgl2');
+      if (gl) contexts.push(gl);
+    }
+    return { addon, contexts };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Cola; várias linhas passam antes pela confirmação (FR-144). Com "Digitar no grupo", o limite é
+ * menor e o diálogo mostra quantos painéis recebem (FR-1210); a colagem sai pelo `onData` e vai a
+ * todos.
+ */
 function pasteText(sessionId: string, term: Terminal, text: string): void {
   if (!text) return;
-  if (needsConfirm(text)) useWorkspace.getState().setPendingPaste({ sessionId, text });
+  const { tabs, groups, activeId } = useSessions.getState();
+  const broadcasting = activeId === sessionId && broadcastTargets(tabs, groups, sessionId).length > 0;
+  if (broadcasting ? needsBroadcastConfirm(text) : needsConfirm(text))
+    useWorkspace.getState().setPendingPaste({ sessionId, text });
   else term.paste(text);
 }
 
@@ -93,8 +142,15 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
-    const search = new SearchAddon();
-    term.loadAddon(search);
+    // Busca carregada na primeira vez que for aberta nesta aba (specs/014, R5).
+    let search: SearchAddon | null = null;
+    const searchAddon = () => {
+      if (!search) {
+        search = new SearchAddon();
+        term.loadAddon(search);
+      }
+      return search;
+    };
     // Ctrl+clique (⌘-clique no macOS) abre no navegador padrão; o app não faz a requisição (FR-145).
     term.loadAddon(
       new WebLinksAddon((event, uri) => {
@@ -125,7 +181,9 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     const unregisterProbe = registerProbe(sessionId, term);
     const unregisterTerminal = registerTerminal(sessionId, {
       term,
-      search,
+      get search() {
+        return searchAddon();
+      },
       focus: () => {
         if (focusedRef.current) term.focus();
       },
@@ -143,23 +201,10 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
         prompt?.schedule();
       });
     });
-    // Uma escrita por vez: o Wails atende cada chamada numa goroutine e teclas rápidas chegariam
-    // fora de ordem. O que for digitado durante a escrita vai junto na próxima.
-    let pending = '';
-    let writing = false;
-    const flush = () => {
-      if (writing || !pending) return;
-      const data = pending;
-      pending = '';
-      writing = true;
-      void api.write(sessionId, data).finally(() => {
-        writing = false;
-        flush();
-      });
-    };
+    // Fila por sessão (writer.ts); com "Digitar no grupo" o painel ativo escreve também nos
+    // painéis marcados (specs/012, FR-1202).
     const onData = term.onData((data) => {
-      pending += data;
-      flush();
+      sendFrom(sessionId, data, useSessions.getState());
     });
     const onBell = term.onBell(() => {
       ringBell(behavior()?.bell ?? 'visual', container.parentElement ?? container);
@@ -214,6 +259,12 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       }, 50);
     });
     observer.observe(container);
+    // Fonte que termina de carregar depois (negrito, reserva de um glifo) muda a célula sem mudar o
+    // contêiner: o ResizeObserver não vê, então o ajuste refaz aqui (specs/014).
+    const onFonts = () => {
+      requestAnimationFrame(fitAndResize);
+    };
+    document.fonts.addEventListener('loadingdone', onFonts);
 
     // Troca de monitor com outra escala: o tamanho em CSS pode não mudar, mas a célula muda.
     let stopDpr: () => void = () => undefined;
@@ -233,6 +284,7 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     return () => {
       if (timer) clearTimeout(timer);
       observer.disconnect();
+      document.fonts.removeEventListener('loadingdone', onFonts);
       stopDpr();
       if (copyTimer) clearTimeout(copyTimer);
       onSelection.dispose();
@@ -244,36 +296,29 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
       detach();
       prompt?.dispose();
       unregisterProbe();
+      webglPool.remove(sessionId);
       term.dispose();
       termRef.current = null;
       fitNowRef.current = () => undefined;
     };
   }, [tab.id, tab.hostId, tab.kind]);
 
-  // WebGL só nos terminais visíveis (limite de contextos do Chromium; research R4): no máximo os
-  // quatro painéis de um grupo.
+  // WebGL nos terminais visíveis e no recém-escondido (specs/014, R2); os outros são liberados de
+  // verdade pelo pool. Sem WebGL fica o renderer DOM.
   useEffect(() => {
     const term = termRef.current;
-    if (!term || !visible) return;
-    let webgl: WebglAddon | null = null;
-    try {
-      webgl = new WebglAddon();
-      webgl.onContextLoss(() => {
-        webgl?.dispose();
-        webgl = null;
-      });
-      term.loadAddon(webgl);
-    } catch {
-      webgl = null; // Sem WebGL: fica o renderer DOM.
-    }
-    requestAnimationFrame(() => {
+    if (!term) return;
+    const id = tab.id;
+    webglPool.setVisible(id, visible, () => attachWebgl(term, id));
+    if (!visible) return;
+    const frame = requestAnimationFrame(() => {
       fitNowRef.current();
       if (focusedRef.current) term.focus();
     });
     return () => {
-      webgl?.dispose();
+      cancelAnimationFrame(frame);
     };
-  }, [visible]);
+  }, [visible, tab.id]);
 
   useEffect(() => {
     if (!focused || !visibleRef.current) return;
@@ -302,7 +347,11 @@ export function TerminalView({ tab, visible, focused, pane, banner }: TerminalVi
     let alive = true;
     void applyProfile(term, profile, scheme, fontSizeOf(tab.id, profile.fontSize, zoom)).then(
       () => {
-        if (alive && visibleRef.current) fitNowRef.current();
+        // O renderer DOM só aplica a medida nova da célula no quadro seguinte; ajustar agora usaria
+        // a largura da fonte de reserva e deixaria uma coluna a menos (specs/014).
+        requestAnimationFrame(() => {
+          if (alive && visibleRef.current) fitNowRef.current();
+        });
       },
     );
     return () => {

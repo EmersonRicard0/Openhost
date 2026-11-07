@@ -18,12 +18,14 @@ func TestItemsRoundTripAndStableHashes(t *testing.T) {
 	forwardID := "55555555-6666-4777-8888-999999999999"
 	profileID := "66666666-7777-4888-8999-aaaaaaaaaaaa"
 	schemeID := "77777777-8888-4999-8aaa-bbbbbbbbbbbb"
+	snippetID := "88888888-9999-4aaa-8bbb-cccccccccccc"
 	content := model.EmptyContent()
 	content.Groups = []model.Group{{ID: groupID, Name: "NOC", SortOrder: 1}}
 	content.Credentials = []model.Credential{{ID: credentialID, Kind: model.CredentialPassword, Name: "Senha", Password: "segredo", CreatedAt: "2026-10-27T12:00:00Z"}}
 	content.Hosts = []model.Host{{ID: hostID, Label: "Roteador", Address: "10.0.0.1", Port: 22, Username: "admin", AuthMethod: model.AuthPassword, CredentialID: &credentialID, GroupID: &groupID, EnvironmentID: model.Ptr("prod"), Tags: []string{"olt", "cliente-x"}, Notes: "VLAN 100", ProfileID: &profileID, OSIcon: model.OSIconAuto, CreatedAt: "2026-10-27T12:00:00Z", UpdatedAt: "2026-10-27T12:00:00Z"}}
 	content.KnownHosts = []model.KnownHost{{ID: knownID, Endpoint: "10.0.0.1:22", KeyType: "ssh-ed25519", Fingerprint: "SHA256:abc", AcceptedAt: "2026-10-27T12:00:00Z"}}
 	content.ForwardRules = []model.ForwardRule{{ID: forwardID, HostID: hostID, BindAddress: "127.0.0.1", BindPort: 2200, DestHost: "db.local", DestPort: 5432}}
+	content.Snippets = []model.Snippet{{ID: snippetID, Name: "Versão", Text: "show version", Tags: []string{"huawei"}, Execute: true, CreatedAt: "2026-10-27T12:00:00Z", UpdatedAt: "2026-10-27T12:00:00Z"}}
 	scheme := model.ColorScheme{ID: schemeID, Name: "Teste", Origin: model.SchemeCustom, Foreground: "#ffffff", Background: "#000000", Cursor: "#ffffff", Selection: "#11223344", ANSI: []string{"#000000", "#111111", "#222222", "#333333", "#444444", "#555555", "#666666", "#777777", "#888888", "#999999", "#aaaaaa", "#bbbbbb", "#cccccc", "#dddddd", "#eeeeee", "#ffffff"}}
 	profile := model.TerminalProfile{ID: profileID, Name: "Perfil", FontFamily: "Mono", FontSize: 14, FontWeight: 400, FontWeightBold: 700, LineHeight: 1.2, CursorStyle: model.CursorBlock, Scrollback: 10000, BackgroundOpacity: 1, Padding: 12, ColorSchemeID: schemeID}
 	prefs := appwin.DefaultPreferences()
@@ -114,12 +116,13 @@ func TestSyncPreferencesExcludeMachineLocalFields(t *testing.T) {
 	preferences.Updates.Skipped = "9.9.9"
 	preferences.HostDensity = "compact"
 	preferences.PromptTitle = false
+	preferences.GpuRendering = true
 	preferences.Shortcuts = map[string]string{"newTab": "Ctrl+T"}
 	encoded, err := json.Marshal(SyncPreferencesFrom(preferences))
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, local := range []string{"dark", "Fonte só desta máquina", "shell-local", "9.9.9", "updates", "compact", "hostDensity"} {
+	for _, local := range []string{"dark", "Fonte só desta máquina", "shell-local", "9.9.9", "updates", "compact", "hostDensity", "gpuRendering"} {
 		if string(encoded) == local || containsJSONText(encoded, local) {
 			t.Fatalf("preferência local %q entrou no item: %s", local, encoded)
 		}
@@ -127,9 +130,10 @@ func TestSyncPreferencesExcludeMachineLocalFields(t *testing.T) {
 	base := appwin.DefaultPreferences()
 	base.Theme = "light"
 	base.DefaultShell = "cmd"
+	base.GpuRendering = true
 	merged := ApplySyncPreferences(base, SyncPreferencesFrom(preferences))
 	if merged.Theme != "light" || merged.DefaultShell != "cmd" || merged.HostDensity != "comfortable" ||
-		merged.Shortcuts["newTab"] != "Ctrl+T" || merged.PromptTitle {
+		!merged.GpuRendering || merged.Shortcuts["newTab"] != "Ctrl+T" || merged.PromptTitle {
 		t.Fatalf("preferências aplicadas incorretamente: %+v", merged)
 	}
 }
@@ -149,6 +153,19 @@ func TestDecodeItemsRejectsInvalidCloudItem(t *testing.T) {
 	decoded, rejected, err := DecodeItems([]PlainItem{bad})
 	if err != nil || len(rejected) != 1 || len(decoded.Content.Hosts) != 0 {
 		t.Fatalf("item inválido = decoded %+v rejected %v err %v", decoded, rejected, err)
+	}
+}
+
+func TestDecodeItemsPreservesUnknownAndRejectsInvalidKnownType(t *testing.T) {
+	unknownData := json.RawMessage(`{"future":true}`)
+	invalidSnippet := json.RawMessage(`{"id":"11111111-2222-4333-8444-555555555555","name":"","text":"segredo","tags":[],"execute":false,"createdAt":"2026-10-30T12:00:00Z","updatedAt":"2026-10-30T12:00:00Z"}`)
+	items := []PlainItem{
+		{Key: "futuro:1", Data: unknownData, Hash: StableItemHash(unknownData)},
+		{Key: "snippet:11111111-2222-4333-8444-555555555555", Data: invalidSnippet, Hash: StableItemHash(invalidSnippet)},
+	}
+	decoded, rejected, err := DecodeItems(items)
+	if err != nil || !reflect.DeepEqual(rejected, []string{"snippet:11111111-2222-4333-8444-555555555555"}) || len(decoded.Content.Snippets) != 0 {
+		t.Fatalf("tipos futuro/conhecido = decoded %+v rejected %v err %v", decoded, rejected, err)
 	}
 }
 
