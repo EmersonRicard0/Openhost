@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -397,7 +398,7 @@ func (s *Syncer) sync(ctx context.Context) error {
 		return apperr.New(apperr.NotFound)
 	}
 	s.updateInfo(SyncStateSyncing, 0, nil)
-	remoteFiles, err := drive.List(ctx, SnapshotFiles, 1)
+	remoteFiles, err := drive.List(ctx, SnapshotFiles, snapshotScanPage)
 	if err != nil {
 		s.failed(err)
 		return err
@@ -414,12 +415,7 @@ func (s *Syncer) sync(ctx context.Context) error {
 		s.updateInfo(SyncStateError, 0, &reason)
 		return nil
 	}
-	if len(remoteFiles) != 0 && remoteFiles[0].Name != state.Base {
-		bytes, err := drive.Get(ctx, remoteFiles[0].ID)
-		if err != nil {
-			s.failed(err)
-			return err
-		}
+	if candidates := snapshotsToMerge(remoteFiles, state.Base); len(candidates) != 0 {
 		material, err := s.store.SyncKeyMaterial()
 		if err != nil {
 			s.failed(err)
@@ -427,33 +423,53 @@ func (s *Syncer) sync(ctx context.Context) error {
 		}
 		keys := cloneEpochKeys(state.EpochKeys)
 		keys[state.Epoch] = append([]byte(nil), material.DEK...)
-		header, remote, openErr := OpenSnapshot(bytes, keys)
-		zeroKeys(keys)
 		vault.Zero(material.DEK)
 		vault.Zero(material.KEK)
-		if openErr != nil {
-			if errors.Is(openErr, ErrMissingEpoch) && header.Epoch > state.Epoch {
-				s.updateInfo(SyncStateNeedsPassword, 0, nil)
-				return nil
+		var discovered []Conflict
+		for _, file := range candidates {
+			bytes, err := drive.Get(ctx, file.ID)
+			if err != nil {
+				zeroKeys(keys)
+				s.failed(err)
+				return err
 			}
-			s.failed(openErr)
-			return openErr
+			header, remote, openErr := OpenSnapshot(bytes, keys)
+			if openErr != nil {
+				zeroKeys(keys)
+				if errors.Is(openErr, ErrMissingEpoch) && header.Epoch > state.Epoch {
+					s.updateInfo(SyncStateNeedsPassword, 0, nil)
+					return nil
+				}
+				s.failed(openErr)
+				return openErr
+			}
+			if header.Lamport > state.Lamport {
+				state.Lamport = header.Lamport
+			}
+			merged, err := Merge(local, remote.Items, s.options.Now().UTC())
+			if err != nil {
+				zeroKeys(keys)
+				s.failed(err)
+				return err
+			}
+			if file.Name == remoteFiles[0].Name {
+				// Só o mais novo vira base sem reenvio; os empatados ou mais antigos que ele entram
+				// na mesclagem e o resultado sobe num snapshot novo que os contém.
+				needUpload = needUpload || !sameVersions(merged.Items, remote.Items)
+			} else {
+				needUpload = true
+			}
+			local = merged.Items
+			// Um conflito achado num snapshot intermediário some se um mais novo já o resolveu.
+			discovered = reconcileConflicts(discovered, merged.Conflicts, merged.Items)
 		}
-		if header.Lamport > state.Lamport {
-			state.Lamport = header.Lamport
-		}
-		merged, err := Merge(local, remote.Items, s.options.Now().UTC())
-		if err != nil {
+		zeroKeys(keys)
+		if err := s.applyVersions(local); err != nil {
 			s.failed(err)
 			return err
 		}
-		if err := s.applyVersions(merged.Items); err != nil {
-			s.failed(err)
-			return err
-		}
-		needUpload = needUpload || !sameVersions(merged.Items, remote.Items)
-		local, state.Base = merged.Items, remoteFiles[0].Name
-		state.Conflicts = reconcileConflicts(state.Conflicts, merged.Conflicts, merged.Items)
+		state.Base = remoteFiles[0].Name
+		state.Conflicts = reconcileConflicts(state.Conflicts, discovered, local)
 	}
 	state.Items = itemStates(local)
 	if needUpload {
@@ -689,6 +705,52 @@ func itemStates(items []ItemVersion) map[string]syncItemState {
 	}
 	return result
 }
+
+// snapshotScanPage limita quantos snapshots recentes cada sincronização olha. Dois computadores
+// que enviam ao mesmo tempo geram snapshots com o mesmo Lamport; ler só o primeiro pelo nome
+// escondia o do outro até ele sincronizar de novo.
+const snapshotScanPage = 20
+
+// snapshotsToMerge devolve, do mais antigo para o mais novo, os snapshots que podem ter mudanças
+// ainda não vistas: os que não são a base e têm Lamport igual ou maior que o dela. Sem base,
+// só os empatados com o mais novo.
+func snapshotsToMerge(files []DriveFile, base string) []DriveFile {
+	if len(files) == 0 {
+		return nil
+	}
+	floor, ok := snapshotLamport(base)
+	if !ok {
+		floor, _ = snapshotLamport(files[0].Name)
+	}
+	var result []DriveFile
+	for _, file := range files {
+		lamport, ok := snapshotLamport(file.Name)
+		if file.Name == base || !ok || lamport < floor {
+			continue
+		}
+		result = append(result, file)
+	}
+	if len(result) == 0 && files[0].Name != base {
+		result = append(result, files[0])
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
+	return result
+}
+
+// snapshotLamport lê o Lamport do nome "snap-%012d-<device>.ohs".
+func snapshotLamport(name string) (uint64, bool) {
+	rest, found := strings.CutPrefix(name, "snap-")
+	if !found {
+		return 0, false
+	}
+	digits, _, found := strings.Cut(rest, "-")
+	if !found || len(digits) != 12 {
+		return 0, false
+	}
+	value, err := strconv.ParseUint(digits, 10, 64)
+	return value, err == nil
+}
+
 func sameVersions(a, b []ItemVersion) bool {
 	if len(a) != len(b) {
 		return false
