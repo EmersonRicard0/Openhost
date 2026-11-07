@@ -226,7 +226,31 @@ func newSyncPair(t *testing.T) syncPair {
 	if err := b.OpenFromCloud(context.Background(), SyncAccount{Email: "usuario@example.com", RefreshToken: "refresh-b"}, drive, syncTestPassword); err != nil {
 		t.Fatal(err)
 	}
+	waitUnlockSync(b)
 	return syncPair{fake: fake, drive: drive, aStore: aStore, bStore: bStore, a: a, b: b, firstHost: first, secondHost: second}
+}
+
+// waitUnlockSync espera a sincronização que o loop dispara sozinho quando o cofre aberto da nuvem
+// fica desbloqueado. Sem isso ela cai no meio do teste: consome uma falha preparada no fake, faz
+// requisição depois de desconectar ou sobe um snapshot fora de ordem.
+func waitUnlockSync(syncer *Syncer) {
+	syncer.mu.Lock()
+	opened := syncer.state.LastSync
+	syncer.mu.Unlock()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		syncer.mu.Lock()
+		synced := syncer.state.LastSync != opened
+		syncer.mu.Unlock()
+		if synced {
+			// A sincronização grava o estado antes de soltar o opMu; pegar o lock garante que ela
+			// terminou.
+			syncer.opMu.Lock()
+			syncer.opMu.Unlock()
+			return
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
 }
 
 func mustSync(t *testing.T, syncer *Syncer) {
