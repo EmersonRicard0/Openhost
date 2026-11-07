@@ -154,12 +154,6 @@
   cursor: progress;
 }
 
-/* Cor do ambiente (specs/009) na borda esquerda do card. */
-.card[data-environment] {
-  --environment-bar: inset 3px 0 0 var(--environment);
-  box-shadow: var(--environment-bar);
-}
-
 .cardMain {
   display: flex;
   flex: 1;

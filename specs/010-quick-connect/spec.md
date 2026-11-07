@@ -148,8 +148,10 @@ Enter, e conferir que abriu o host salvo.
   id do host ou o alvo `usuário@endereço:porta`.
 - **FR-1011**: Usuários MUST poder favoritar e desfavoritar um host pelo menu da lista lateral e
   pela estrela do card; o favorito MUST ficar no host (segue na sincronização e na exportação).
-- **FR-1012**: Cada card MUST mostrar rótulo, `usuário@endereço[:porta]`, ícone do sistema ou
-  fabricante e a cor do ambiente (specs/009), e conectar com clique ou Enter.
+- **FR-1012**: Cada card MUST mostrar rótulo, `usuário@endereço[:porta]` e ícone do sistema ou
+  fabricante, e conectar com clique ou Enter. O card não leva a barra colorida do ambiente
+  (removida em 2026-11-07 a pedido do usuário); a cor do ambiente segue na aba e na borda do
+  terminal (specs/009).
 
 **Sugestões (US3)**
 
