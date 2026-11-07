@@ -22,5 +22,5 @@
     "forceConsistentCasingInFileNames": true,
     "paths": { "@shared/*": ["./src/shared/*"] }
   },
-  "include": ["src/**/*", "wailsjs/**/*"]
+  "include": ["src/**/*", "src/**/*.json", "wailsjs/**/*"]
 }

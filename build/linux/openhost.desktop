@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=OpenHost
+GenericName=Cliente SSH
+Comment=Cliente SSH local-first com cofre criptografado
+Exec=openhost
+Icon=openhost
+Terminal=false
+Categories=Network;RemoteAccess;System;TerminalEmulator;
+Keywords=ssh;sftp;terminal;servidor;
+StartupWMClass=openhost

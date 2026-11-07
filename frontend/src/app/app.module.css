@@ -29,6 +29,47 @@
   overflow: hidden;
 }
 
+/* Alça de recolher na divisa entre lateral e área principal (FR-167): discreta até o mouse
+   passar pela lateral ou pela própria alça. */
+.sidebarHandle {
+  grid-area: sidebar;
+  z-index: 2;
+  align-self: center;
+  justify-self: end;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-small);
+  color: var(--text-secondary);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateX(50%);
+  transition:
+    opacity var(--motion-fast) var(--ease-standard),
+    color var(--motion-fast) var(--ease-standard);
+}
+
+.root:has(.sidebar:hover) .sidebarHandle,
+.sidebarHandle:hover,
+.sidebarHandle:focus-visible {
+  opacity: 1;
+}
+
+.sidebarHandle:hover {
+  color: var(--accent);
+}
+
+.sidebarHandle:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
 .main {
   grid-area: main;
   display: flex;

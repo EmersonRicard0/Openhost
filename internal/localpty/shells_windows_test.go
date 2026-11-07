@@ -1,3 +1,5 @@
+//go:build windows
+
 package localpty
 
 import (
@@ -114,6 +116,12 @@ func TestParseWSLDistrosUTF16AndValidIDs(t *testing.T) {
 		if ValidShellID(id) {
 			t.Errorf("id inválido aceito: %q", id)
 		}
+	}
+}
+
+func TestDefaultShellIDWindows(t *testing.T) {
+	if got := DefaultShellID(); got != "powershell" {
+		t.Fatalf("shell padrão = %q", got)
 	}
 }
 

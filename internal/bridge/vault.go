@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"shellvault/internal/apperr"
+	"shellvault/internal/domain"
 	"shellvault/internal/model"
 	"shellvault/internal/validate"
 	"shellvault/internal/vault"
@@ -16,12 +17,13 @@ const erasePhrase = "APAGAR"
 type VaultSettingsPatch map[string]any
 
 type VaultService struct {
-	store    *vault.Store
-	autoLock *vault.AutoLock
+	store          *vault.Store
+	autoLock       *vault.AutoLock
+	changePassword func(string, string, string) error
 }
 
 func newVaultService(store *vault.Store, autoLock *vault.AutoLock) *VaultService {
-	return &VaultService{store: store, autoLock: autoLock}
+	return &VaultService{store: store, autoLock: autoLock, changePassword: store.ChangePassword}
 }
 
 func (s *VaultService) GetStatus() (vault.Status, error) {
@@ -45,7 +47,7 @@ func (s *VaultService) Lock() error {
 }
 
 func (s *VaultService) ChangePassword(current, next, confirmation string) error {
-	return clean(s.store.ChangePassword(current, next, confirmation))
+	return clean(s.changePassword(current, next, confirmation))
 }
 
 func (s *VaultService) Erase(confirmPhrase string) error {
@@ -72,6 +74,25 @@ func (s *VaultService) UpdateSettings(patch VaultSettingsPatch) (model.VaultSett
 		next := content.Settings
 		for key, raw := range patch {
 			switch key {
+			case "environments":
+				encoded, err := json.Marshal(raw)
+				if err != nil {
+					return invalidPreference("field: environments")
+				}
+				var environments []model.Environment
+				if err := json.Unmarshal(encoded, &environments); err != nil || environments == nil {
+					return invalidPreference("field: environments")
+				}
+				for i := range environments {
+					if environments[i].ID == "" {
+						environments[i].ID = domain.NewID()
+					}
+				}
+				environments, err = domain.ValidateEnvironments(environments)
+				if err != nil {
+					return err
+				}
+				next.Environments = environments
 			case "autoLockMinutes":
 				if raw == nil {
 					next.AutoLockMinutes = nil

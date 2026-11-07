@@ -2,12 +2,19 @@ package bridge
 
 import (
 	"context"
+	"encoding/json"
+	"log"
 	"net/url"
+	"strings"
+	"time"
+	"unicode"
+	"unicode/utf8"
 
 	wruntime "github.com/wailsapp/wails/v2/pkg/runtime"
 
 	"shellvault/internal/apperr"
 	"shellvault/internal/appwin"
+	"shellvault/internal/domain"
 	"shellvault/internal/localpty"
 	"shellvault/internal/validate"
 )
@@ -22,6 +29,7 @@ type AppService struct {
 	closeGuard  *appwin.CloseGuard
 	context     func() context.Context
 	localShells func() []localpty.LocalShell
+	now         func() time.Time
 
 	minimise       func(context.Context)
 	toggleMaximise func(context.Context)
@@ -41,6 +49,7 @@ func newAppService(
 		closeGuard:  closeGuard,
 		context:     contextFn,
 		localShells: localpty.ListShells,
+		now:         time.Now,
 		minimise:    wruntime.WindowMinimise,
 		toggleMaximise: func(ctx context.Context) {
 			wruntime.WindowToggleMaximise(ctx)
@@ -48,6 +57,85 @@ func newAppService(
 		quit:    wruntime.Quit,
 		openURL: wruntime.BrowserOpenURL,
 	}
+}
+
+type RecentEntryInput struct {
+	Kind     string `json:"kind"`
+	HostID   string `json:"hostId"`
+	Address  string `json:"address"`
+	Port     int    `json:"port"`
+	Username string `json:"username"`
+}
+
+func (entry *RecentEntryInput) UnmarshalJSON(data []byte) error {
+	type wire RecentEntryInput
+	var decoded wire
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	for key := range fields {
+		if key != "kind" && key != "hostId" && key != "address" && key != "port" && key != "username" {
+			return apperr.New(apperr.InvalidInput)
+		}
+	}
+	*entry = RecentEntryInput(decoded)
+	return nil
+}
+
+func (s *AppService) RecordRecent(entry RecentEntryInput) ([]appwin.RecentEntry, error) {
+	var recent appwin.RecentEntry
+	switch entry.Kind {
+	case "host":
+		if validate.UUID(entry.HostID) != nil || entry.Address != "" || entry.Port != 0 || entry.Username != "" {
+			return nil, apperr.New(apperr.InvalidInput)
+		}
+		recent = appwin.RecentEntry{Kind: "host", HostID: entry.HostID}
+	case "quick":
+		if !validQuickTarget(entry.Address, entry.Port, entry.Username) {
+			return nil, apperr.New(apperr.InvalidInput)
+		}
+		recent = appwin.RecentEntry{Kind: "quick", Address: strings.ToLower(entry.Address), Port: entry.Port, Username: entry.Username}
+	default:
+		return nil, apperr.New(apperr.InvalidInput)
+	}
+	recent.At = s.now().Format(time.RFC3339)
+	preferences, err := s.preferences.Update(func(p *appwin.Preferences) error {
+		out := make([]appwin.RecentEntry, 0, 20)
+		for _, old := range p.Recents {
+			if recent.Kind == "host" && old.Kind == "host" && recent.HostID == old.HostID {
+				continue
+			}
+			if recent.Kind == "quick" && old.Kind == "quick" && strings.EqualFold(recent.Address, old.Address) && recent.Port == old.Port && recent.Username == old.Username {
+				continue
+			}
+			out = append(out, old)
+		}
+		p.Recents = append([]appwin.RecentEntry{recent}, out...)
+		if len(p.Recents) > 20 {
+			p.Recents = p.Recents[:20]
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, clean(err)
+	}
+	return preferences.Recents, nil
+}
+
+func validQuickTarget(address string, port int, username string) bool {
+	if !utf8.ValidString(address) || !utf8.ValidString(username) || address == "" || strings.TrimSpace(address) != address || strings.ContainsAny(address, "[]") || !domain.IsValidAddress(address) || port < 1 || port > 65535 || len([]rune(username)) < 1 || len([]rune(username)) > 64 {
+		return false
+	}
+	for _, r := range username {
+		if unicode.IsSpace(r) || unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
 }
 
 func (s *AppService) GetAppearance() (Appearance, error) {
@@ -59,9 +147,14 @@ func (s *AppService) GetPreferences() (appwin.Preferences, error) {
 	if err != nil {
 		return appwin.Preferences{}, clean(err)
 	}
-	if preferences.DefaultShell != string(localpty.PowerShell) && !shellAvailable(s.localShells(), preferences.DefaultShell) {
-		preferences.DefaultShell = string(localpty.PowerShell)
-		if err := s.preferences.Save(preferences); err != nil {
+	defaultShell := localpty.DefaultShellID()
+	if preferences.DefaultShell != defaultShell && !shellAvailable(s.localShells(), preferences.DefaultShell) {
+		log.Printf("bridge: shell padrão %q indisponível; usando %q", preferences.DefaultShell, defaultShell)
+		preferences, err = s.preferences.Update(func(current *appwin.Preferences) error {
+			current.DefaultShell = defaultShell
+			return nil
+		})
+		if err != nil {
 			return appwin.Preferences{}, clean(err)
 		}
 	}
@@ -77,116 +170,127 @@ func (s *AppService) UpdatePreferences(patch PreferencesPatch) (appwin.Preferenc
 	if patch == nil {
 		return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
 	}
-	preferences, err := s.preferences.Get()
-	if err != nil {
-		return appwin.Preferences{}, clean(err)
-	}
-	for key, raw := range patch {
-		switch key {
-		case "theme":
-			value, ok := raw.(string)
-			if !ok || validate.OneOf(value, "system", "light", "dark") != nil {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.Theme = value
-		case "terminalFontFamily":
-			value, ok := raw.(string)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			value, err = validate.Text(value, 1, 200)
-			if err != nil {
-				return appwin.Preferences{}, clean(err)
-			}
-			preferences.TerminalFontFamily = value
-		case "terminalFontSize":
-			value, ok := bridgeInt(raw)
-			if !ok || validate.Int(value, 8, 32) != nil {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.TerminalFontSize = value
-		case "glassEnabled":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.GlassEnabled = value
-		case "sidebarCollapsed":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.SidebarCollapsed = value
-		case "accent":
-			value, ok := raw.(string)
-			if !ok || !appwin.ValidAccent(value) {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.Accent = value
-		case "defaultShell":
-			value, ok := raw.(string)
-			if !ok || !localpty.ValidShellID(value) || !shellAvailable(s.localShells(), value) {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.DefaultShell = value
-		case "collapsedGroups":
-			groups, ok := bridgeStrings(raw)
-			if !ok || len(groups) > 5000 {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			seen := make(map[string]bool, len(groups))
-			preferences.CollapsedGroups = preferences.CollapsedGroups[:0]
-			for _, id := range groups {
-				if validate.UUID(id) != nil || seen[id] {
-					return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
+	preferences, err := s.preferences.Update(func(preferences *appwin.Preferences) error {
+		for key, raw := range patch {
+			switch key {
+			case "hostDensity":
+				value, ok := raw.(string)
+				if !ok || validate.OneOf(value, "comfortable", "compact") != nil {
+					return apperr.New(apperr.InvalidInput)
 				}
-				seen[id] = true
-				preferences.CollapsedGroups = append(preferences.CollapsedGroups, id)
+				preferences.HostDensity = value
+			case "promptTitle":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.PromptTitle = value
+			case "theme":
+				value, ok := raw.(string)
+				if !ok || validate.OneOf(value, "system", "light", "dark") != nil {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.Theme = value
+			case "terminalFontFamily":
+				value, ok := raw.(string)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				value, validationErr := validate.Text(value, 1, 200)
+				if validationErr != nil {
+					return clean(validationErr)
+				}
+				preferences.TerminalFontFamily = value
+			case "terminalFontSize":
+				value, ok := bridgeInt(raw)
+				if !ok || validate.Int(value, 8, 32) != nil {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.TerminalFontSize = value
+			case "glassEnabled":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.GlassEnabled = value
+			case "sidebarCollapsed":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.SidebarCollapsed = value
+			case "accent":
+				value, ok := raw.(string)
+				if !ok || !appwin.ValidAccent(value) {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.Accent = value
+			case "defaultShell":
+				value, ok := raw.(string)
+				if !ok || !localpty.ValidShellID(value) || !shellAvailable(s.localShells(), value) {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.DefaultShell = value
+			case "collapsedGroups":
+				groups, ok := bridgeStrings(raw)
+				if !ok || len(groups) > 5000 {
+					return apperr.New(apperr.InvalidInput)
+				}
+				seen := make(map[string]bool, len(groups))
+				preferences.CollapsedGroups = preferences.CollapsedGroups[:0]
+				for _, id := range groups {
+					if validate.UUID(id) != nil || seen[id] {
+						return apperr.New(apperr.InvalidInput)
+					}
+					seen[id] = true
+					preferences.CollapsedGroups = append(preferences.CollapsedGroups, id)
+				}
+			case "shortcuts":
+				shortcuts, ok := bridgeStringMap(raw)
+				if !ok {
+					return invalidPreference("shortcuts precisa ser um objeto de texto para texto")
+				}
+				if err := appwin.ValidateShortcuts(shortcuts); err != nil {
+					return invalidPreference(err.Error())
+				}
+				preferences.Shortcuts = shortcuts
+			case "copyOnSelect":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.CopyOnSelect = value
+			case "rightClickPaste":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.RightClickPaste = value
+			case "bell":
+				value, ok := raw.(string)
+				if !ok || validate.OneOf(value, "off", "sound", "visual") != nil {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.Bell = value
+			case "boldBright":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.BoldBright = value
+			case "autoReconnect":
+				value, ok := raw.(bool)
+				if !ok {
+					return apperr.New(apperr.InvalidInput)
+				}
+				preferences.AutoReconnect = value
+			default:
+				return apperr.New(apperr.InvalidInput)
 			}
-		case "shortcuts":
-			shortcuts, ok := bridgeStringMap(raw)
-			if !ok {
-				return appwin.Preferences{}, invalidPreference("shortcuts precisa ser um objeto de texto para texto")
-			}
-			if err := appwin.ValidateShortcuts(shortcuts); err != nil {
-				return appwin.Preferences{}, invalidPreference(err.Error())
-			}
-			preferences.Shortcuts = shortcuts
-		case "copyOnSelect":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.CopyOnSelect = value
-		case "rightClickPaste":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.RightClickPaste = value
-		case "bell":
-			value, ok := raw.(string)
-			if !ok || validate.OneOf(value, "off", "sound", "visual") != nil {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.Bell = value
-		case "boldBright":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.BoldBright = value
-		case "autoReconnect":
-			value, ok := raw.(bool)
-			if !ok {
-				return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
-			}
-			preferences.AutoReconnect = value
-		default:
-			return appwin.Preferences{}, apperr.New(apperr.InvalidInput)
 		}
-	}
-	if err := s.preferences.Save(preferences); err != nil {
+		return nil
+	})
+	if err != nil {
 		return appwin.Preferences{}, clean(err)
 	}
 	s.appearance.EmitCurrent()

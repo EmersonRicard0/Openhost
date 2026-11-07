@@ -1,8 +1,23 @@
 // Contrato da ponte `window.shellvault` (contracts/ipc-bridge.md).
 import type {
   ActiveForward,
+  CsvMapping,
+  DuplicateAction,
+  ExportCount,
+  ExportRequest,
+  ExportResult,
+  ExportScope,
+  ImportResult,
+  ImportSource,
+  PreviewKey,
+  PreviewOptions,
+  PreviewView,
+  RowPatch,
+  SourceKind,
+  UndoResult,
   ActiveSummary,
   Appearance,
+  Platform,
   ColorScheme,
   ConflictChoice,
   ConflictEvent,
@@ -19,16 +34,29 @@ import type {
   LocalShellInfo,
   SendKeysCombo,
   ProfilesChangedEvent,
+  HostsChangedEvent,
   PromptEvent,
   RemoteEntry,
   SchemeImportResult,
   SessionDataEvent,
   SessionClosedEvent,
   SessionStateEvent,
+  QuickTarget,
+  RecentEntry,
+  RecentEntryInput,
   Settings,
   TerminalProfile,
   TermSize,
   Transfer,
+  UpdateInfo,
+  UpdatePrefs,
+  UpdateResult,
+  CloudVersion,
+  ConflictView,
+  SyncConnectResult,
+  SyncInfo,
+  SyncStartMode,
+  UpdateStateEvent,
   VaultSettings,
   VaultStatus,
 } from '../model/types';
@@ -62,6 +90,7 @@ export interface ShellVaultApi {
     duplicate: (id: string) => R<HostView>;
     remove: (id: string) => R<void>;
     move: (id: string, groupId: string | null) => R<void>;
+    onChanged: On<HostsChangedEvent>;
   };
   groups: {
     list: () => R<Group[]>;
@@ -82,6 +111,8 @@ export interface ShellVaultApi {
   };
   sessions: {
     openSsh: (hostId: string) => R<{ sessionId: string }>;
+    /** Sessão SSH sem host salvo (specs/010); a senha vem pelo prompt, nunca por aqui. */
+    openQuick: (target: QuickTarget) => R<{ sessionId: string }>;
     openLocal: (shell: LocalShell) => R<{ sessionId: string }>;
     write: (sessionId: string, data: string) => R<void>;
     resize: (sessionId: string, size: TermSize) => R<void>;
@@ -138,9 +169,35 @@ export interface ShellVaultApi {
     listFonts: () => R<FontInfo[]>;
     onChanged: On<ProfilesChangedEvent>;
   };
+  /** Importação com prévia (specs/003-host-import-export/contracts/bridge.md, ImportService). */
+  imports: {
+    sources: () => R<ImportSource[]>;
+    /** Sem `useDefault`, abre o diálogo nativo; null quando cancelado. */
+    preview: (kind: SourceKind, options: PreviewOptions) => R<PreviewView | null>;
+    remapCsv: (previewId: string, mapping: CsvMapping) => R<PreviewView>;
+    updateRow: (previewId: string, rowId: string, patch: RowPatch) => R<PreviewView>;
+    selectAll: (previewId: string, selected: boolean, groupPath: string[] | null) => R<PreviewView>;
+    setDuplicateAction: (previewId: string, action: DuplicateAction) => R<PreviewView>;
+    unlockKey: (previewId: string, keyRef: string, passphrase: string) => R<PreviewKey>;
+    skipKey: (previewId: string, keyRef: string) => R<PreviewKey>;
+    commit: (previewId: string, targetGroupId: string | null) => R<ImportResult>;
+    undo: (batchId: string) => R<UndoResult>;
+    discard: (previewId: string) => R<void>;
+    /** Diálogo de salvar; false quando cancelado. */
+    saveCsvTemplate: () => R<boolean>;
+  };
+  exports: {
+    count: (scope: ExportScope) => R<ExportCount>;
+    /** Diálogo de salvar; null quando cancelado. */
+    export: (request: ExportRequest) => R<ExportResult | null>;
+  };
   app: {
+    /** Sistema em que o app roda; lido uma vez no início (specs/004, contracts/platform.md). */
+    getPlatform: () => R<Platform>;
     getAppearance: () => R<Appearance>;
     getUiSettings: () => R<Settings>;
+    /** Registra um recente local e devolve a lista nova (specs/010). */
+    recordRecent: (entry: RecentEntryInput) => R<RecentEntry[]>;
     /** Shells instalados, em ordem estável (FR-176). */
     listLocalShells: () => R<LocalShellInfo[]>;
     updateUiSettings: (patch: Patch<Omit<Settings, 'window'>>) => R<Settings>;
@@ -154,6 +211,43 @@ export interface ShellVaultApi {
     openExternalUrl: (url: string) => R<void>;
     onAppearanceChanged: On<Appearance>;
     onCloseRequested: On<ActiveSummary>;
+  };
+  /** Atualização pelo próprio app (specs/007, contracts/bridge-updater.md). */
+  updates: {
+    info: () => R<UpdateInfo>;
+    /** `manual`: sempre consulta e devolve o erro; automático respeita a preferência e cala. */
+    check: (manual: boolean) => R<UpdateInfo>;
+    download: () => R<void>;
+    cancel: () => R<void>;
+    remind: () => R<void>;
+    skip: (version: string) => R<void>;
+    prefs: () => R<UpdatePrefs>;
+    setPrefs: (prefs: UpdatePrefs) => R<UpdatePrefs>;
+    restartNow: () => R<void>;
+    applyOnQuit: () => R<void>;
+    lastResult: () => R<UpdateResult | null>;
+    openDownloadFolder: () => R<void>;
+    onState: On<UpdateStateEvent>;
+  };
+  /** Sincronização pelo Google Drive (specs/008, contracts/bridge-sync.md). */
+  sync: {
+    info: () => R<SyncInfo>;
+    /** Abre o navegador e espera o login (até 5 min); cancelado ⇒ `SYNC_CANCELLED`. */
+    connect: () => R<SyncConnectResult>;
+    cancelConnect: () => R<void>;
+    /** Depois de `connect` com cofre aberto; `replace`/`merge` pedem a senha da nuvem. */
+    start: (mode: SyncStartMode, cloudPassword: string) => R<SyncInfo>;
+    /** Primeira tela, sem cofre: cria o cofre local a partir da nuvem. */
+    openFromCloud: (password: string) => R<void>;
+    syncNow: () => R<SyncInfo>;
+    conflicts: () => R<ConflictView[]>;
+    resolve: (key: string, keep: 'local' | 'remote') => R<SyncInfo>;
+    versions: () => R<CloudVersion[]>;
+    restoreVersion: (name: string) => R<SyncInfo>;
+    providePassword: (password: string) => R<SyncInfo>;
+    setDeviceName: (name: string) => R<void>;
+    disconnect: (deleteCloud: boolean) => R<void>;
+    onState: On<SyncInfo>;
   };
 }
 
@@ -178,7 +272,10 @@ export const API_SHAPE = {
     ],
     events: ['onStateChanged'],
   },
-  hosts: { invoke: ['list', 'create', 'update', 'duplicate', 'remove', 'move'], events: [] },
+  hosts: {
+    invoke: ['list', 'create', 'update', 'duplicate', 'remove', 'move'],
+    events: ['onChanged'],
+  },
   groups: { invoke: ['list', 'create', 'rename', 'move', 'remove'], events: [] },
   credentials: {
     invoke: [
@@ -196,6 +293,7 @@ export const API_SHAPE = {
   sessions: {
     invoke: [
       'openSsh',
+      'openQuick',
       'openLocal',
       'write',
       'resize',
@@ -243,10 +341,30 @@ export const API_SHAPE = {
     ],
     events: ['onChanged'],
   },
+  imports: {
+    invoke: [
+      'sources',
+      'preview',
+      'remapCsv',
+      'updateRow',
+      'selectAll',
+      'setDuplicateAction',
+      'unlockKey',
+      'skipKey',
+      'commit',
+      'undo',
+      'discard',
+      'saveCsvTemplate',
+    ],
+    events: [],
+  },
+  exports: { invoke: ['count', 'export'], events: [] },
   app: {
     invoke: [
+      'getPlatform',
       'getAppearance',
       'getUiSettings',
+      'recordRecent',
       'listLocalShells',
       'updateUiSettings',
       'confirmClose',
@@ -257,6 +375,41 @@ export const API_SHAPE = {
       'openExternalUrl',
     ],
     events: ['onAppearanceChanged', 'onCloseRequested'],
+  },
+  updates: {
+    invoke: [
+      'info',
+      'check',
+      'download',
+      'cancel',
+      'remind',
+      'skip',
+      'prefs',
+      'setPrefs',
+      'restartNow',
+      'applyOnQuit',
+      'lastResult',
+      'openDownloadFolder',
+    ],
+    events: ['onState'],
+  },
+  sync: {
+    invoke: [
+      'info',
+      'connect',
+      'cancelConnect',
+      'start',
+      'openFromCloud',
+      'syncNow',
+      'conflicts',
+      'resolve',
+      'versions',
+      'restoreVersion',
+      'providePassword',
+      'setDeviceName',
+      'disconnect',
+    ],
+    events: ['onState'],
   },
 } as const satisfies {
   [M in ApiModule]: {

@@ -1,0 +1,3 @@
+# fonte: banner
+# versao: SSH-2.0-OpenSSH_8.0
+Juniper Networks - acesso monitorado

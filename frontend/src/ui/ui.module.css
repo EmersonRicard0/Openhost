@@ -305,6 +305,12 @@ textarea.input {
   font-variant-numeric: tabular-nums;
 }
 
+/* Sem −/+ (porta): número alinhado como um campo de texto. */
+.numberPlain .numberInput {
+  padding: 0 7px;
+  text-align: left;
+}
+
 .unit {
   padding-right: 4px;
   color: var(--text-secondary);
@@ -573,18 +579,27 @@ textarea.input {
 }
 
 /* Avatar do host: inicial em uma pastilha com matiz estável (ver Avatar.tsx). */
+/* Avatar do host: quadrado de cor única; o logo do sistema vem na cor oficial da marca quando ela
+   se destaca do fundo (--logo-dark/--logo-light, de osLogoColors), senão na cor do texto. */
 .avatar {
   flex: none;
   display: grid;
   place-items: center;
   border-radius: 8px;
-  background: var(--avatar-fill);
-  box-shadow: var(--avatar-highlight);
-  color: var(--avatar-text);
+  background: var(--surface-raised);
+  box-shadow: var(--inset-border);
+  color: var(--text-secondary);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.3px;
-  text-shadow: var(--avatar-text-shadow);
+}
+
+.avatar[data-os] {
+  color: var(--logo-dark, var(--text-primary));
+}
+
+:global(:root[data-mode$='light']) .avatar[data-os] {
+  color: var(--logo-light, var(--text-primary));
 }
 
 :global(:root[data-mode='high-contrast']) .avatar {

@@ -1,4 +1,5 @@
-// Busca de hosts (FR-011): substring em rótulo, endereço e usuário, sem caixa nem acentos.
+// Busca de hosts (FR-011): substring em rótulo, endereço, usuário, tags e nota (specs/009,
+// FR-917), sem caixa nem acentos.
 import type { HostView } from '@shared/model/types';
 
 export interface SearchIndex {
@@ -13,7 +14,14 @@ export function normalize(text: string): string {
 
 export function buildIndex(hosts: readonly HostView[]): SearchIndex {
   // Separador fora do alfabeto evita casar através de campos.
-  return { hosts, keys: hosts.map((h) => normalize(`${h.label}\n${h.address}\n${h.username}`)) };
+  const fields = (h: HostView) => [
+    h.label,
+    h.address,
+    h.username,
+    ...(h.tags ?? []),
+    h.notes ?? '',
+  ];
+  return { hosts, keys: hosts.map((h) => normalize(fields(h).join('\n'))) };
 }
 
 export function filterHosts(index: SearchIndex, query: string): HostView[] {

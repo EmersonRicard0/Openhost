@@ -1,0 +1,4 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_9.8
+Last login: Mon Oct 20 10:00:00 on ttys000
+noc@mac-mini ~ % 

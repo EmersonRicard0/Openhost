@@ -42,3 +42,13 @@ skills-lock.json
 specs/*/coordination.md
 docs/reference/
 frontend/package.json.md5
+
+# Chave privada de assinatura das atualizações (specs/007): nunca versionar
+update-signing.key
+
+# Credenciais OAuth do Google baixadas do Console (nunca no git)
+client_secret*.json
+
+# Vídeo de apresentação gerado localmente (fora do git desde 0803a79)
+scripts/openhost_motion.py
+artifacts/

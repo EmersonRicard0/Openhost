@@ -79,7 +79,7 @@ test('Ctrl+Shift+B recolhe e expande a lateral sem reconectar e o estado volta a
   }
 });
 
-test('configurações abrem como página, Esc volta à aba e a barra de status mostra a aba ativa (FR-168, FR-172)', async () => {
+test('configurações abrem como página, Esc volta à aba e a barra de status não repete a aba (FR-168, FR-172)', async () => {
   const app = await launchApp();
   try {
     const { page } = app;
@@ -88,8 +88,9 @@ test('configurações abrem como página, Esc volta à aba e a barra de status m
     await waitPowerShellPrompt(page, id);
 
     const status = page.getByRole('contentinfo', { name: 'Barra de status' });
-    await expect(status.getByTestId('status-tab')).toContainText('PowerShell');
-    await expect(status.getByTestId('status-state')).toHaveText('Em execução');
+    // Nome e estado ficam só na aba; a barra de status não os repete.
+    await expect(status.getByTestId('status-tab')).toHaveCount(0);
+    await expect(status).toContainText('Cofre desbloqueado');
 
     await page.keyboard.press('Control+Shift+P');
     await page.keyboard.type('configura');
@@ -175,6 +176,51 @@ test('com "reduzir movimento" as durações computadas são 0 (FR-170)', async (
     expect((await durations()).join()).toMatch(/[1-9]/);
     await page.emulateMedia({ reducedMotion: 'reduce' });
     for (const d of await durations()) expect(d).toMatch(/^0s(, 0s)*\|0s(, 0s)*$/);
+  } finally {
+    await app.close();
+  }
+});
+
+test('muitas abas: roda do mouse, setas e lista de abas mostram as escondidas', async () => {
+  const app = await launchApp();
+  try {
+    const { page } = app;
+    await createVault(page);
+    await page.setViewportSize({ width: 900, height: 700 });
+    const tabs = page.getByRole('tab');
+    for (let i = 1; i <= 12; i++) {
+      await page.getByRole('button', { name: 'Novo terminal local' }).click();
+      await page.getByRole('menuitem', { name: 'Prompt de Comando', exact: true }).click();
+      await expect(tabs).toHaveCount(i);
+    }
+    const bar = page.getByRole('tablist');
+    const scrollLeft = () => bar.evaluate((el) => el.scrollLeft);
+    const left = page.getByRole('button', { name: 'Rolar abas para a esquerda' });
+    const right = page.getByRole('button', { name: 'Rolar abas para a direita' });
+
+    // A última aba aberta é a ativa e fica à vista: a barra está no fim.
+    await expect(right).toBeDisabled();
+    await expect(left).toBeEnabled();
+    await expect(tabs.last()).toBeInViewport();
+
+    // Roda do mouse (vertical) rola as abas na horizontal.
+    await bar.hover();
+    await page.mouse.wheel(0, -100_000);
+    await expect.poll(scrollLeft).toBe(0);
+    await expect(left).toBeDisabled();
+    await expect(tabs.first()).toBeInViewport();
+
+    // Seta para a direita avança.
+    await right.click();
+    await expect.poll(scrollLeft).toBeGreaterThan(0);
+
+    // Lista de abas ativa uma escondida e a traz para a vista. A roda vale também sobre a seta.
+    await page.mouse.wheel(0, -100_000);
+    await expect.poll(scrollLeft).toBe(0);
+    await page.getByRole('button', { name: 'Todas as abas' }).click();
+    await page.getByRole('menuitem').last().click();
+    await expect(tabs.last()).toHaveAttribute('aria-selected', 'true');
+    await expect(tabs.last()).toBeInViewport();
   } finally {
     await app.close();
   }

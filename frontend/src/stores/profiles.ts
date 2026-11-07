@@ -89,8 +89,15 @@ export async function subscribeProfiles(): Promise<void> {
   api().onChanged((e) => {
     const state = useProfiles.getState();
     if (e.scope === 'host' && e.hostId) void state.loadOverride(e.hostId);
-    // Mudança feita por esta janela ainda pendente: o valor local é o mais novo.
-    else if (!saveTimer) void state.load();
+    // Esquemas são compartilhados pelo perfil global e pelos overrides. Ao excluir um esquema,
+    // o backend reassocia todos os perfis ao padrão; recarregar os overrides já conhecidos evita
+    // manter em memória uma referência ao esquema removido. Mudança local pendente continua sendo
+    // a fonte mais nova e não deve ser sobrescrita.
+    else if (!saveTimer)
+      void Promise.all([
+        state.load(),
+        ...Object.keys(state.overrides).map((hostId) => state.loadOverride(hostId)),
+      ]);
   });
   await useProfiles.getState().load();
 }

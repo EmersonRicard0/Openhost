@@ -80,3 +80,6 @@ func appearanceFromValues(transparency, light uint64, highContrastFlags uint32, 
 func accentColorHex(abgr uint32) string {
 	return fmt.Sprintf("#%02x%02x%02x", byte(abgr), byte(abgr>>8), byte(abgr>>16))
 }
+
+// SystemAppearanceReader é o leitor de aparência deste sistema.
+func SystemAppearanceReader() AppearanceReader { return RegistryAppearanceReader{} }

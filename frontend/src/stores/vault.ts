@@ -63,6 +63,9 @@ export function subscribeVault(): void {
   if (subscribed) return;
   subscribed = true;
   api().onStateChanged((status) => {
+    const was = useVault.getState().status?.state;
     useVault.setState({ status, ...(status.state === 'unlocked' ? {} : { settings: null }) });
+    // Ambientes dos hosts (specs/009) pintam abas e terminais: as configurações vêm ao desbloquear.
+    if (status.state === 'unlocked' && was !== 'unlocked') void useVault.getState().loadSettings();
   });
 }

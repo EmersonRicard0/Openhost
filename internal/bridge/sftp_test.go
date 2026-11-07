@@ -1,6 +1,8 @@
 package bridge
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"shellvault/internal/apperr"
@@ -40,7 +42,9 @@ func TestSftpServiceValidatesBoundaryAndIsBound(t *testing.T) {
 }
 
 func TestSftpDialogPathsAndRemotePathValidation(t *testing.T) {
-	if got := splitDialogPaths(`C:\a.txt;D:\b.txt;;`); len(got) != 2 || got[0] != `C:\a.txt` || got[1] != `D:\b.txt` {
+	a, b := filepath.Join(t.TempDir(), "a.txt"), filepath.Join(t.TempDir(), "b.txt")
+	sep := string(os.PathListSeparator)
+	if got := splitDialogPaths(a + sep + b + sep + sep); len(got) != 2 || got[0] != a || got[1] != b {
 		t.Fatalf("caminhos = %v", got)
 	}
 	for _, invalid := range []string{"", "a\x00b", string([]byte{0xff})} {

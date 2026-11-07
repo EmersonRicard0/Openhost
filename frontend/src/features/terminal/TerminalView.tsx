@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode } from 'react';
 import { FitAddon } from '@xterm/addon-fit';
 import { SearchAddon } from '@xterm/addon-search';
 import { Unicode11Addon } from '@xterm/addon-unicode11';
@@ -6,14 +6,19 @@ import { WebLinksAddon } from '@xterm/addon-web-links';
 import { WebglAddon } from '@xterm/addon-webgl';
 import { Terminal } from '@xterm/xterm';
 import '@xterm/xterm/css/xterm.css';
-import type { Tab } from '../../stores/sessions';
+import { accessibleTitle, useSessions, type Tab } from '../../stores/sessions';
 import { effectiveProfile, useProfiles } from '../../stores/profiles';
 import { useUi } from '../../stores/ui';
 import { useVault } from '../../stores/vault';
 import { fontSizeOf, useWorkspace } from '../../stores/workspace';
 import { ringBell } from './bell';
+import { readClipboard, writeClipboard } from './clipboard';
 import { attach } from './dataBus';
+import { opensLink, terminalKeyAction } from './keys';
+import { environmentColor } from '../../theme/environments';
+import { useHostEnvironment } from '../hosts/environment';
 import { needsConfirm } from './paste';
+import { watchPrompt } from './promptTitle';
 import { applyProfile, cssFontFamily, schemeOf, schemeTheme, withAlpha } from './profile';
 import { SearchBar } from './SearchBar';
 import { registerTerminal } from './terminalRegistry';
@@ -23,9 +28,9 @@ import s from './terminal.module.css';
 async function copySelection(term: Terminal): Promise<boolean> {
   const text = term.getSelection();
   if (!text) return false;
-  await navigator.clipboard.writeText(text);
-  term.clearSelection();
-  return true;
+  const ok = await writeClipboard(text);
+  if (ok) term.clearSelection();
+  return ok;
 }
 
 /** Cola; várias linhas passam antes pela confirmação (FR-144). */
@@ -37,25 +42,34 @@ function pasteText(sessionId: string, term: Terminal, text: string): void {
 
 export interface TerminalViewProps {
   tab: Tab;
-  active: boolean;
+  /** Na tela: mede, ajusta e manda o tamanho ao servidor. */
+  visible: boolean;
+  /** Recebe o teclado; numa aba avulsa coincide com `visible`. */
+  focused: boolean;
+  /** Painel de um grupo (specs/006): posição na área, cabeçalho e foco por clique. */
+  pane?: { style: CSSProperties; header?: ReactNode; onActivate: () => void } | undefined;
   /** Faixa sobre o terminal (desconectado, processo encerrado). */
   banner?: ReactNode;
 }
 
-export function TerminalView({ tab, active, banner }: TerminalViewProps) {
+export function TerminalView({ tab, visible, focused, pane, banner }: TerminalViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const termRef = useRef<Terminal | null>(null);
   const fitRef = useRef<FitAddon | null>(null);
   const fitNowRef = useRef<() => void>(() => undefined);
-  const activeRef = useRef(active);
+  const visibleRef = useRef(visible);
+  const focusedRef = useRef(focused);
   const profile = useProfiles((p) => effectiveProfile(tab.hostId, p.global, p.overrides));
   const scheme = useProfiles((p) => schemeOf(p.schemes, profile.colorSchemeId));
   const unlocked = useVault((v) => v.status?.state === 'unlocked');
   const zoom = useWorkspace((w) => w.zoom);
   const searching = useWorkspace((w) => w.searchFor === tab.id);
+  const environment = useHostEnvironment(tab.hostId);
+  const dark = useUi((u) => u.dark);
   useEffect(() => {
-    activeRef.current = active;
-  }, [active]);
+    visibleRef.current = visible;
+    focusedRef.current = focused;
+  }, [visible, focused]);
 
   // Cria o terminal uma vez por aba.
   useEffect(() => {
@@ -81,10 +95,11 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     term.loadAddon(fit);
     const search = new SearchAddon();
     term.loadAddon(search);
-    // Ctrl+clique abre no navegador padrão; o app não faz a requisição (FR-145).
+    // Ctrl+clique (⌘-clique no macOS) abre no navegador padrão; o app não faz a requisição (FR-145).
     term.loadAddon(
       new WebLinksAddon((event, uri) => {
-        if (event.ctrlKey) void window.shellvault.app.openExternalUrl(uri);
+        if (opensLink(event, useUi.getState().platform))
+          void window.shellvault.app.openExternalUrl(uri);
       }),
     );
     term.loadAddon(new Unicode11Addon());
@@ -97,7 +112,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     const api = window.shellvault.sessions;
     let lastSize: { cols: number; rows: number } | null = null;
     const fitAndResize = () => {
-      if (!activeRef.current || container.clientWidth <= 0 || container.clientHeight <= 0) return;
+      if (!visibleRef.current || container.clientWidth <= 0 || container.clientHeight <= 0) return;
       fit.fit();
       const size = { cols: term.cols, rows: term.rows };
       if (size.cols <= 0 || size.rows <= 0) return;
@@ -112,28 +127,55 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       term,
       search,
       focus: () => {
-        if (activeRef.current) term.focus();
+        if (focusedRef.current) term.focus();
       },
+      fit: fitAndResize,
     });
+    // Nome da aba pelo prompt do equipamento, só em SSH (specs/009, FR-922).
+    const prompt =
+      tab.kind === 'ssh'
+        ? watchPrompt(term, (name) => {
+            useSessions.getState().setPromptTitle(sessionId, name);
+          })
+        : null;
     const detach = attach(sessionId, (data) => {
-      term.write(data);
+      term.write(data, () => {
+        prompt?.schedule();
+      });
     });
+    // Uma escrita por vez: o Wails atende cada chamada numa goroutine e teclas rápidas chegariam
+    // fora de ordem. O que for digitado durante a escrita vai junto na próxima.
+    let pending = '';
+    let writing = false;
+    const flush = () => {
+      if (writing || !pending) return;
+      const data = pending;
+      pending = '';
+      writing = true;
+      void api.write(sessionId, data).finally(() => {
+        writing = false;
+        flush();
+      });
+    };
     const onData = term.onData((data) => {
-      void api.write(sessionId, data);
+      pending += data;
+      flush();
     });
     const onBell = term.onBell(() => {
       ringBell(behavior()?.bell ?? 'visual', container.parentElement ?? container);
     });
 
     term.attachCustomKeyEventHandler((e) => {
-      if (e.type !== 'keydown' || !e.ctrlKey || !e.shiftKey) return true;
-      if (e.code === 'KeyC') {
-        void copySelection(term);
-        return false;
-      }
-      // Ctrl+Shift+V: o xterm não trata a tecla; a colagem chega pelo evento `paste` abaixo.
-      if (e.code === 'KeyV') return false;
-      return true;
+      const action = terminalKeyAction(e, useUi.getState().platform, term.hasSelection());
+      if (action === 'terminal') return true;
+      // A tecla não vira o evento `paste` nativo (colaria duas vezes): o app lê e cola.
+      e.preventDefault();
+      if (action === 'copy') void copySelection(term);
+      else
+        void readClipboard().then((text) => {
+          pasteText(sessionId, term, text);
+        });
+      return false;
     });
     // Opções de FR-177 lidas na hora do evento: mudar nas configurações vale sem recriar o xterm.
     const behavior = () => useUi.getState().settings;
@@ -144,18 +186,18 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       if (!(behavior()?.copyOnSelect ?? false)) return;
       copyTimer = setTimeout(() => {
         const text = term.getSelection();
-        if (text) void navigator.clipboard.writeText(text);
+        if (text) void writeClipboard(text);
       }, 120);
     });
     const onContextMenu = (e: MouseEvent) => {
       e.preventDefault();
       if (!(behavior()?.rightClickPaste ?? true)) return;
-      void navigator.clipboard.readText().then((text) => {
+      void readClipboard().then((text) => {
         pasteText(sessionId, term, text);
       });
     };
     container.addEventListener('contextmenu', onContextMenu);
-    // Toda colagem nativa (Ctrl+Shift+V, menu do sistema) passa pela confirmação antes do xterm.
+    // Toda colagem nativa (Ctrl+Shift+V, ⌘V, menu do sistema) passa pela confirmação antes do xterm.
     const onPaste = (e: ClipboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
@@ -200,17 +242,19 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
       onData.dispose();
       onBell.dispose();
       detach();
+      prompt?.dispose();
       unregisterProbe();
       term.dispose();
       termRef.current = null;
       fitNowRef.current = () => undefined;
     };
-  }, [tab.id, tab.hostId]);
+  }, [tab.id, tab.hostId, tab.kind]);
 
-  // WebGL só na aba visível (limite de contextos do Chromium; research R4).
+  // WebGL só nos terminais visíveis (limite de contextos do Chromium; research R4): no máximo os
+  // quatro painéis de um grupo.
   useEffect(() => {
     const term = termRef.current;
-    if (!term || !active) return;
+    if (!term || !visible) return;
     let webgl: WebglAddon | null = null;
     try {
       webgl = new WebglAddon();
@@ -224,12 +268,20 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     }
     requestAnimationFrame(() => {
       fitNowRef.current();
-      term.focus();
+      if (focusedRef.current) term.focus();
     });
     return () => {
       webgl?.dispose();
     };
-  }, [active]);
+  }, [visible]);
+
+  useEffect(() => {
+    if (!focused || !visibleRef.current) return;
+    const frame = requestAnimationFrame(() => termRef.current?.focus());
+    return () => {
+      cancelAnimationFrame(frame);
+    };
+  }, [focused]);
 
   // Negrito em cores claras (FR-177) muda ao vivo, como o perfil.
   const boldBright = useUi((u) => u.settings?.boldBright ?? true);
@@ -250,7 +302,7 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
     let alive = true;
     void applyProfile(term, profile, scheme, fontSizeOf(tab.id, profile.fontSize, zoom)).then(
       () => {
-        if (alive && activeRef.current) fitNowRef.current();
+        if (alive && visibleRef.current) fitNowRef.current();
       },
     );
     return () => {
@@ -265,18 +317,32 @@ export function TerminalView({ tab, active, banner }: TerminalViewProps) {
 
   return (
     <div
-      className={`${s.view} ${active ? '' : s.hidden}`}
-      role="tabpanel"
-      aria-label={tab.title}
+      className={`${s.view} ${pane ? s.pane : ''} ${visible ? '' : s.hidden}`}
+      style={pane?.style}
+      role={pane ? 'group' : 'tabpanel'}
+      aria-label={accessibleTitle(tab)}
       data-session-id={tab.id}
+      data-environment={environment?.color}
+      data-pane={pane ? '' : undefined}
+      data-focused={pane && focused ? '' : undefined}
+      onPointerDownCapture={(e) => {
+        // No cabeçalho, mudar o foco no `pointerdown` cancelaria o arrasto: ele ativa no clique.
+        if (!(e.target instanceof Element && e.target.closest('[data-pane-header]')))
+          pane?.onActivate();
+      }}
     >
+      {pane?.header}
       {banner}
       {searching && <SearchBar sessionId={tab.id} />}
       {/* Espaçamento no quadro, não no contêiner do xterm: o FitAddon mede a altura do pai
           sem descontar o padding e cortaria a última linha. */}
       <div
         className={`${s.frame} solid`}
+        data-environment={environment?.color}
         style={{
+          ['--environment' as string]: environment
+            ? environmentColor(environment.color, dark)
+            : undefined,
           padding: profile.padding,
           background,
           backdropFilter:

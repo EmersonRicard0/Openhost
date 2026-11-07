@@ -1,0 +1,5 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+ArubaOS-CX
+(c) Copyright 2017-2023 Hewlett Packard Enterprise Development LP
+aruba-lab#

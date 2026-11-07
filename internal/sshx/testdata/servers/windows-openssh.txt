@@ -1,0 +1,6 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_for_Windows_9.5
+Microsoft Windows [Version 10.0.20348.2655]
+(c) Microsoft Corporation. All rights reserved.
+
+admin@WIN-SRV C:\Users\admin>

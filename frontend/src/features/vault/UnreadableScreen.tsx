@@ -21,16 +21,19 @@ export function UnreadableScreen() {
             ? t.vault.unreadableVersion
             : t.vault.unreadableCorrupted}
         </p>
-        <div className={s.actions}>
-          <Button
-            variant="danger"
-            onClick={() => {
-              setErasing(true);
-            }}
-          >
-            {t.vault.eraseAction}
-          </Button>
-        </div>
+        {/* Cofre de versão mais nova está inteiro: apagar só faria perder o que a versão nova lê. */}
+        {reason !== 'unsupportedVersion' && (
+          <div className={s.actions}>
+            <Button
+              variant="danger"
+              onClick={() => {
+                setErasing(true);
+              }}
+            >
+              {t.vault.eraseAction}
+            </Button>
+          </div>
+        )}
       </div>
       {erasing && (
         <EraseVaultDialog

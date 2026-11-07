@@ -58,16 +58,21 @@ async function fakeClipboard(page: Page, toPaste: string) {
   await page.evaluate((text) => {
     const w = window as unknown as { __copied: string[] };
     w.__copied = [];
+    const writeText = (value: string) => {
+      w.__copied.push(value);
+      return Promise.resolve(true);
+    };
+    const readText = () => Promise.resolve(text);
     Object.defineProperty(navigator, 'clipboard', {
       configurable: true,
-      value: {
-        writeText: (value: string) => {
-          w.__copied.push(value);
-          return Promise.resolve();
-        },
-        readText: () => Promise.resolve(text),
-      },
+      value: { writeText, readText },
     });
+    // O terminal usa a área de transferência nativa pelo runtime do Wails.
+    const runtime = (window as unknown as { runtime?: Record<string, unknown> }).runtime;
+    if (runtime) {
+      runtime.ClipboardSetText = writeText;
+      runtime.ClipboardGetText = readText;
+    }
   }, toPaste);
 }
 
@@ -173,6 +178,46 @@ test('erro mostra o código e copia os detalhes', async () => {
     const [details] = await copied(page);
     expect(details).toContain('SCHEME_INVALID');
     expect(details).toContain('ProfileService.ImportScheme');
+  } finally {
+    await app.close();
+  }
+});
+
+test('cria, edita e exclui tema sem importação e mostra uma só engrenagem', async () => {
+  const app = await launchApp();
+  const { page } = app;
+  try {
+    await createVault(page);
+    const settings = await openSettings(page, 'Terminal');
+
+    // A engrenagem fica na barra superior; a aba usa apenas o texto e o botão de fechar.
+    const settingsTab = page.getByRole('tab', { name: 'Configurações' });
+    await expect(settingsTab.locator(':scope > svg')).toHaveCount(0);
+
+    await settings.getByRole('button', { name: 'Novo tema' }).click();
+    const editor = page.getByRole('dialog', { name: 'Novo tema' });
+    await editor.getByLabel('Nome do esquema').fill('Tema da operação');
+    await editor.getByLabel('Fundo').fill('#102030');
+    await editor.getByLabel('Texto').fill('#f0f0f0');
+    await editor.getByRole('button', { name: 'Salvar' }).click();
+
+    await expect(settings.getByRole('radio', { name: 'Tema da operação' })).toBeChecked();
+    await settings.getByRole('button', { name: 'Ações do tema Tema da operação' }).click();
+    await page.getByRole('menuitem', { name: 'Editar cores' }).click();
+    await expect(page.getByRole('dialog', { name: 'Editar esquema de cores' })).toBeVisible();
+    await page
+      .getByRole('dialog', { name: 'Editar esquema de cores' })
+      .getByRole('button', {
+        name: 'Cancelar',
+      })
+      .click();
+
+    await settings.getByRole('button', { name: 'Ações do tema Tema da operação' }).click();
+    await page.getByRole('menuitem', { name: 'Excluir' }).click();
+    const confirm = page.getByRole('dialog', { name: 'Excluir' });
+    await expect(confirm).toContainText('voltarão ao tema padrão');
+    await confirm.getByRole('button', { name: 'Excluir' }).click();
+    await expect(settings.getByRole('radio', { name: 'Tema da operação' })).toHaveCount(0);
   } finally {
     await app.close();
   }

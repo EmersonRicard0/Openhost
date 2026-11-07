@@ -17,6 +17,10 @@ export interface NumberFieldProps {
   /** Unidade mostrada depois do número (ex.: "s", "px"). */
   unit?: string;
   disabled?: boolean;
+  /** `false` tira os botões −/+ (porta, specs/009 FR-921); as setas do teclado continuam. */
+  steppers?: boolean;
+  /** Seleciona o valor inteiro ao receber o foco, para digitar por cima. */
+  selectOnFocus?: boolean;
 }
 
 export function NumberField({
@@ -30,6 +34,8 @@ export function NumberField({
   error,
   unit,
   disabled,
+  steppers = true,
+  selectOnFocus = false,
 }: NumberFieldProps) {
   const id = useId();
   const parsed = Number(value);
@@ -46,19 +52,21 @@ export function NumberField({
       <label className={s.label} htmlFor={id}>
         {label}
       </label>
-      <div className={`${s.inputWrap} ${s.numberWrap}`}>
-        <button
-          type="button"
-          tabIndex={-1}
-          className={s.stepper}
-          aria-label={t.common.decrease}
-          disabled={disabled || (numeric && parsed <= min)}
-          onClick={() => {
-            bump(-1);
-          }}
-        >
-          <MinusIcon />
-        </button>
+      <div className={`${s.inputWrap} ${s.numberWrap} ${steppers ? '' : s.numberPlain}`}>
+        {steppers && (
+          <button
+            type="button"
+            tabIndex={-1}
+            className={s.stepper}
+            aria-label={t.common.decrease}
+            disabled={disabled || (numeric && parsed <= min)}
+            onClick={() => {
+              bump(-1);
+            }}
+          >
+            <MinusIcon />
+          </button>
+        )}
         <input
           id={id}
           className={`${s.input} ${s.numberInput}`}
@@ -75,6 +83,13 @@ export function NumberField({
           onChange={(e) => {
             onChange(e.target.value);
           }}
+          onFocus={
+            selectOnFocus
+              ? (e) => {
+                  e.currentTarget.select();
+                }
+              : undefined
+          }
           onKeyDown={(e) => {
             if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
               e.preventDefault();
@@ -83,18 +98,20 @@ export function NumberField({
           }}
         />
         {unit && <span className={s.unit}>{unit}</span>}
-        <button
-          type="button"
-          tabIndex={-1}
-          className={s.stepper}
-          aria-label={t.common.increase}
-          disabled={disabled || (numeric && parsed >= max)}
-          onClick={() => {
-            bump(1);
-          }}
-        >
-          <PlusIcon />
-        </button>
+        {steppers && (
+          <button
+            type="button"
+            tabIndex={-1}
+            className={s.stepper}
+            aria-label={t.common.increase}
+            disabled={disabled || (numeric && parsed >= max)}
+            onClick={() => {
+              bump(1);
+            }}
+          >
+            <PlusIcon />
+          </button>
+        )}
       </div>
       {error ? (
         <span className={s.error} role="alert">

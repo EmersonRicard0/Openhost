@@ -27,6 +27,6 @@ func init() {
 			}
 			return nil
 		}
-		return []any{testsvc.New(s.Context, sessions)}
+		return []any{testsvc.New(s.Context, sessions, s.SetUpdateSourceForTest, s.SetInstallKindForTest, s.SetCloudEndpointForTest)}
 	}
 }

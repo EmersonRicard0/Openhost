@@ -158,6 +158,9 @@ func scanScheme(scanner interface{ Scan(...any) error }) (model.ColorScheme, err
 func (s *Store) TerminalProfiles() ([]model.TerminalProfile, error) {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return nil, apperr.New(apperr.VaultUnreadable)
+	}
 	rows, err := s.db.Query(`SELECT id, name, is_global, data FROM terminal_profiles ORDER BY is_global DESC, name, id`)
 	if err != nil {
 		return nil, err
@@ -177,18 +180,28 @@ func (s *Store) TerminalProfiles() ([]model.TerminalProfile, error) {
 func (s *Store) GlobalProfile() (model.TerminalProfile, error) {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return model.TerminalProfile{}, apperr.New(apperr.VaultUnreadable)
+	}
 	return scanProfile(s.db.QueryRow(`SELECT id, name, is_global, data FROM terminal_profiles WHERE is_global = 1`))
 }
 
 func (s *Store) SaveGlobalProfile(p model.TerminalProfile) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return apperr.New(apperr.VaultUnreadable)
+	}
 	var id string
 	if err := s.db.QueryRow(`SELECT id FROM terminal_profiles WHERE is_global = 1`).Scan(&id); err != nil {
 		return err
 	}
 	p.ID, p.IsGlobal = id, true
-	return putTerminalProfile(s.db, p)
+	if err := putTerminalProfile(s.db, p); err != nil {
+		return err
+	}
+	s.markChanged()
+	return nil
 }
 
 func (s *Store) HostProfile(hostID string) (*model.TerminalProfile, error) {
@@ -260,12 +273,16 @@ func (s *Store) SetHostProfile(hostID string, p *model.TerminalProfile) error {
 		return err
 	}
 	s.content, s.sigs = draft, sigs
+	s.markChanged()
 	return nil
 }
 
 func (s *Store) ColorSchemes() ([]model.ColorScheme, error) {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return nil, apperr.New(apperr.VaultUnreadable)
+	}
 	rows, err := s.db.Query(`SELECT id, name, origin, data FROM color_schemes ORDER BY name, id`)
 	if err != nil {
 		return nil, err
@@ -285,6 +302,9 @@ func (s *Store) ColorSchemes() ([]model.ColorScheme, error) {
 func (s *Store) SaveColorScheme(item model.ColorScheme) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return apperr.New(apperr.VaultUnreadable)
+	}
 	var existingID string
 	err := s.db.QueryRow(`SELECT id FROM color_schemes WHERE name = ?`, item.Name).Scan(&existingID)
 	if err == nil && existingID != item.ID {
@@ -297,38 +317,60 @@ func (s *Store) SaveColorScheme(item model.ColorScheme) error {
 	if err := putColorScheme(s.db, item); err != nil {
 		return apperr.New(apperr.InvalidInput)
 	}
+	s.markChanged()
 	return nil
 }
 
 func (s *Store) DeleteColorScheme(id string) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
-	rows, err := s.db.Query(`SELECT id, name, is_global, data FROM terminal_profiles`)
+	if s.db == nil {
+		return apperr.New(apperr.VaultUnreadable)
+	}
+	tx, err := s.db.Begin()
 	if err != nil {
 		return err
 	}
+	fail := func(err error) error {
+		_ = tx.Rollback()
+		return err
+	}
+	rows, err := tx.Query(`SELECT id, name, is_global, data FROM terminal_profiles`)
+	if err != nil {
+		return fail(err)
+	}
+	var reassigned []model.TerminalProfile
 	for rows.Next() {
 		p, err := scanProfile(rows)
 		if err != nil {
 			_ = rows.Close()
-			return err
+			return fail(err)
 		}
 		if p.ColorSchemeID == id {
-			_ = rows.Close()
-			return apperr.New(apperr.InUse)
+			p.ColorSchemeID = BrandSchemeID
+			reassigned = append(reassigned, p)
 		}
 	}
 	if err := rows.Close(); err != nil {
-		return err
+		return fail(err)
 	}
-	res, err := s.db.Exec(`DELETE FROM color_schemes WHERE id = ?`, id)
+	for _, profile := range reassigned {
+		if err := putTerminalProfile(tx, profile); err != nil {
+			return fail(err)
+		}
+	}
+	res, err := tx.Exec(`DELETE FROM color_schemes WHERE id = ?`, id)
 	if err != nil {
-		return err
+		return fail(err)
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return apperr.New(apperr.NotFound)
+		return fail(apperr.New(apperr.NotFound))
 	}
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	s.markChanged()
 	return nil
 }
 
@@ -337,6 +379,9 @@ func (s *Store) DeleteColorScheme(id string) error {
 func (s *Store) ApplyLegacyTerminalFont(family string, size int) error {
 	s.mu.Lock()
 	defer s.unlockAndNotify()
+	if s.db == nil {
+		return apperr.New(apperr.VaultUnreadable)
+	}
 	p, err := scanProfile(s.db.QueryRow(`SELECT id, name, is_global, data FROM terminal_profiles WHERE is_global = 1`))
 	if err != nil {
 		return err
@@ -354,5 +399,9 @@ func (s *Store) ApplyLegacyTerminalFont(family string, size int) error {
 		_ = tx.Rollback()
 		return err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	s.markChanged()
+	return nil
 }

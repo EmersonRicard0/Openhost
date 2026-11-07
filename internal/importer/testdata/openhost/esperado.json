@@ -1,0 +1,19 @@
+{
+  "groups": [
+    "Clientes",
+    "Clientes/Produção",
+    "Laboratório"
+  ],
+  "hosts": [
+    "web-01|web01.example.test",
+    "db-01|10.0.0.20",
+    "backup|backup.example.test",
+    "roteador|192.0.2.1",
+    "solto|solto.example.test"
+  ],
+  "fingerprints": [
+    "SHA256:gJtNhrF3VAhkbN//XC1vlMiIpAz5k2P+57oF/chFShY",
+    "SHA256:CfX89W+AJXa+hpan9gVmv0IKI/P2Kx6kcDi9ZMy57pc"
+  ],
+  "rules": 1
+}

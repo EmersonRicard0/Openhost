@@ -1,0 +1,6 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+
+Welcome to the DmOS CLI
+admin connected from 192.0.2.10 using ssh on DM4270-LAB
+DM4270-LAB#

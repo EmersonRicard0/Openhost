@@ -7,7 +7,7 @@ import (
 
 // SchemaVersion é o PRAGMA user_version que esta versão sabe ler. Toda mudança de esquema
 // ganha uma migração numerada com teste (Princípio III).
-const SchemaVersion = 1
+const SchemaVersion = 2
 
 // migrations[i] leva o banco da versão i para i+1.
 var migrations = []string{
@@ -72,6 +72,13 @@ CREATE TABLE color_schemes (
 	name   TEXT NOT NULL UNIQUE,
 	origin TEXT NOT NULL,
 	data   TEXT NOT NULL
+);
+`,
+	// 1 → 2 (sincronização pelo Google Drive, R7)
+	`
+CREATE TABLE sync_state (
+	id     INTEGER PRIMARY KEY CHECK (id = 1),
+	sealed BLOB NOT NULL
 );
 `,
 }

@@ -57,6 +57,28 @@ func (a *authState) methods() ([]ssh.AuthMethod, func(), error) {
 		}
 		return []ssh.AuthMethod{ssh.PublicKeysCallback(signers), kbd}, func() { _ = conn.Close() }, nil
 	case model.AuthAsk:
+		if a.o.AgentFirst {
+			open := a.o.Agent
+			if open == nil {
+				open = openSystemAgent
+			}
+			if conn, err := open(); err == nil {
+				ag := agent.NewClient(conn)
+				signers := func() ([]ssh.Signer, error) {
+					list, err := ag.Signers()
+					if err != nil {
+						// O agent é opcional na conexão rápida; uma falha dele ainda deve
+						// permitir o método de senha que vem em seguida.
+						return []ssh.Signer{}, nil
+					}
+					for i, signer := range list {
+						list[i] = a.restrict(signer)
+					}
+					return list, nil
+				}
+				return []ssh.AuthMethod{ssh.PublicKeysCallback(signers), kbd, ssh.PasswordCallback(a.askPassword)}, func() { _ = conn.Close() }, nil
+			}
+		}
 		return []ssh.AuthMethod{kbd, ssh.PasswordCallback(a.askPassword)}, noop, nil
 	}
 	return nil, noop, apperr.New(apperr.InvalidInput)

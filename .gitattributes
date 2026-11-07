@@ -5,3 +5,5 @@ tests/fixtures/sshd-legacy/* text eol=lf
 *.go text eol=lf
 go.mod text eol=lf
 go.sum text eol=lf
+build/linux/AppRun text eol=lf
+build/linux/*.desktop text eol=lf

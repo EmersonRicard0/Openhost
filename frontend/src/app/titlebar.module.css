@@ -77,3 +77,8 @@
 .control:focus-visible {
   outline-offset: -2px;
 }
+
+/* macOS: os botões nativos (TitleBarHiddenInset) ocupam ~70 px no canto esquerdo. */
+.inset {
+  padding-left: 76px;
+}

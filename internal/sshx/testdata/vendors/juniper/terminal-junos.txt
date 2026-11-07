@@ -1,0 +1,5 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+Last login: Mon Oct 20 10:01:02 2026 from 192.0.2.10
+--- JUNOS 21.4R3.15 Kernel 64-bit  JNPR-12.1-20230120.8f2a4c4_buil
+operador@mx-lab>

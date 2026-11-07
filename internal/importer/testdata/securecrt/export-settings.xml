@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VanDyke version="3.0">
+  <key name="Sessions">
+    <key name="Datacenter">
+      <key name="Borda">
+        <key name="Core SSH2">
+          <string name="Protocol Name">SSH2</string>
+          <string name="Hostname">192.0.2.40</string>
+          <dword name="[SSH2] Port">2222</dword>
+          <string name="Username">deploy</string>
+          <string name="Identity Filename V2">../ppk/ed25519-v3-none.ppk:metadata-ignorada</string>
+          <string name="Password V2">SECURECRT_PASSWORD_SENTINEL_DO_NOT_READ</string>
+        </key>
+      </key>
+    </key>
+    <key name="Acesso Telnet">
+      <string name="Protocol Name">Telnet</string>
+      <string name="Hostname">198.51.100.41</string>
+      <dword name="Port">23</dword>
+      <string name="Password V2">SECURECRT_TELNET_SENTINEL_DO_NOT_READ</string>
+    </key>
+    <key name="Console Serial">
+      <string name="Protocol Name">Serial</string>
+      <string name="Hostname">COM4</string>
+    </key>
+  </key>
+</VanDyke>

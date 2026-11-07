@@ -1,6 +1,6 @@
 {
   "name": "openhost-tooling",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Ferramentas de desenvolvimento e fixtures do OpenHost",
   "private": true,
   "license": "MIT",

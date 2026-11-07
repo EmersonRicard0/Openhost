@@ -46,7 +46,7 @@ export function SchemeEditor({
 }: {
   scheme: ColorScheme;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (saved: ColorScheme) => void;
 }) {
   const [draft, setDraft] = useState<ColorScheme>({ ...scheme, ansi: [...scheme.ansi] });
   const [busy, setBusy] = useState(false);
@@ -67,7 +67,7 @@ export function SchemeEditor({
       toastError(res.error);
       return;
     }
-    onSaved();
+    onSaved(res.value);
     onClose();
   }
 
@@ -75,7 +75,7 @@ export function SchemeEditor({
 
   return (
     <Dialog
-      title={tt.editorTitle}
+      title={scheme.id === '' ? tt.newScheme : tt.editorTitle}
       onClose={onClose}
       width={620}
       actions={

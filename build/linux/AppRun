@@ -1,0 +1,22 @@
+#!/bin/sh
+# Entrada do AppImage (specs/004-linux-macos, R9): o WebKitGTK 4.1 não vai dentro do AppImage,
+# então confere antes de abrir e explica o que instalar quando faltar.
+HERE="$(dirname "$(readlink -f "$0")")"
+
+if ! ldconfig -p 2>/dev/null | grep -q 'libwebkit2gtk-4\.1\.so\.0'; then
+  TITLE="OpenHost"
+  MSG="O OpenHost precisa do WebKitGTK 4.1.
+
+Ubuntu e Debian: sudo apt install libwebkit2gtk-4.1-0
+Fedora: sudo dnf install webkit2gtk4.1
+Arch: sudo pacman -S webkit2gtk-4.1"
+  if command -v zenity >/dev/null 2>&1; then
+    zenity --error --title="$TITLE" --text="$MSG" 2>/dev/null
+  elif command -v kdialog >/dev/null 2>&1; then
+    kdialog --title "$TITLE" --error "$MSG" 2>/dev/null
+  fi
+  echo "$MSG" >&2
+  exit 1
+fi
+
+exec "$HERE/usr/bin/openhost" "$@"

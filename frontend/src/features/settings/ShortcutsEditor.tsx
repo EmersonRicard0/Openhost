@@ -2,7 +2,7 @@
 // desativada ou voltar ao padrão. Conflito com outra ação é recusado com o nome dela.
 import { useEffect, useRef, useState } from 'react';
 import {
-  ACTIONS,
+  actionsFor,
   comboLabel,
   comboOf,
   conflictOf,
@@ -51,6 +51,7 @@ function Recorder({
   onDone: () => void;
 }) {
   const [problem, setProblem] = useState<Problem | null>(null);
+  const platform = useUi((u) => u.platform);
   const ref = useRef<HTMLDivElement>(null);
 
   // O React só aplica `autoFocus` em campos e botões: o gravador recebe o foco aqui.
@@ -80,19 +81,20 @@ function Recorder({
             onDone();
             return;
           }
-          const combo = comboOf(e);
+          const combo = comboOf(e, platform);
           if (!combo) return;
           const fKey = /^F\d+$/.test(e.code);
-          if (!e.ctrlKey && !e.altKey && !fKey) {
+          const metaCounts = platform === 'darwin' && e.metaKey;
+          if (!e.ctrlKey && !e.altKey && !metaCounts && !fKey) {
             setProblem({ kind: 'modifier' });
             return;
           }
-          const other = conflictOf(combo, action, overrides);
+          const other = conflictOf(combo, action, overrides, platform);
           if (other) {
             setProblem({ kind: 'conflict', with: other });
             return;
           }
-          if (stealsFromTerminal(combo)) {
+          if (stealsFromTerminal(combo, platform)) {
             setProblem({ kind: 'steals', combo });
             return;
           }
@@ -103,14 +105,18 @@ function Recorder({
       </div>
       {problem && (
         <p className={s.recorderProblem} role="alert">
-          {problem.kind === 'modifier' && <span>{ts.shortcutNeedsModifier}</span>}
+          {problem.kind === 'modifier' && (
+            <span>
+              {platform === 'darwin' ? ts.shortcutNeedsModifierMac : ts.shortcutNeedsModifier}
+            </span>
+          )}
           {problem.kind === 'conflict' && (
             <span>{ts.shortcutConflict(ts.shortcutActions[problem.with])}</span>
           )}
           {problem.kind === 'steals' && (
             <>
               <WarningIcon aria-hidden />
-              <span>{ts.shortcutSteals(comboLabel(problem.combo))}</span>
+              <span>{ts.shortcutSteals(comboLabel(problem.combo, platform))}</span>
               <Button
                 variant="ghost"
                 // Sem tirar o foco do gravador antes do clique valer.
@@ -133,15 +139,17 @@ function Recorder({
 
 export function ShortcutsEditor() {
   const overrides = useShortcutOverrides();
-  const effective = effectiveShortcuts(overrides);
+  const platform = useUi((u) => u.platform);
+  const effective = effectiveShortcuts(overrides, platform);
+  const mac = platform === 'darwin';
   const [recording, setRecording] = useState<ShortcutAction | null>(null);
   const customized = Object.keys(overrides).length > 0;
 
   return (
     <>
-      <p className={s.hint}>{ts.shortcutsIntro}</p>
+      <p className={s.hint}>{mac ? ts.shortcutsIntroMac : ts.shortcutsIntro}</p>
       <ul className={s.shortcutList} aria-label={t.settings.sections.shortcuts}>
-        {ACTIONS.map((action) => {
+        {actionsFor(platform).map((action) => {
           const combos = effective[action];
           const changed = overrides[action] !== undefined;
           const name = ts.shortcutActions[action];
@@ -171,7 +179,7 @@ export function ShortcutsEditor() {
                   ) : (
                     combos.slice(0, 2).map((combo) => (
                       <kbd key={combo} className={s.kbd}>
-                        {comboLabel(combo)}
+                        {comboLabel(combo, platform)}
                       </kbd>
                     ))
                   )}
@@ -212,7 +220,7 @@ export function ShortcutsEditor() {
       )}
       <h3 className={s.subTitle}>{ts.shortcutFixedTitle}</h3>
       <ul className={s.shortcutList}>
-        {ts.shortcutFixed.map(([keys, label]) => (
+        {(mac ? ts.shortcutFixedMac : ts.shortcutFixed).map(([keys, label]) => (
           <li key={keys} className={s.shortcutRow}>
             <span className={s.shortcutName}>{label}</span>
             <span className={s.shortcutKeysStatic}>

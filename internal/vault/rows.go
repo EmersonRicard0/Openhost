@@ -29,8 +29,14 @@ type hostPlain struct {
 	Username         string           `json:"username"`
 	AuthMethod       model.AuthMethod `json:"authMethod"`
 	CredentialID     *string          `json:"credentialId"`
+	EnvironmentID    *string          `json:"environmentId"`
+	Tags             []string         `json:"tags"`
+	Notes            string           `json:"notes"`
+	Favorite         bool             `json:"favorite"`
 	LegacyAlgorithms bool             `json:"legacyAlgorithms"`
 	ProfileID        *string          `json:"profileId"`
+	DetectedOS       *string          `json:"detectedOs"`
+	OSIcon           string           `json:"osIcon"`
 }
 
 type credentialPlain struct {
@@ -114,9 +120,19 @@ func encodeContent(c *model.Content) (map[string]map[string]row, error) {
 		}
 	}
 	for _, h := range c.Hosts {
+		osIcon := h.OSIcon
+		if osIcon == "" {
+			osIcon = model.OSIconAuto
+		}
+		tags := h.Tags
+		if tags == nil {
+			tags = []string{}
+		}
 		p := hostPlain{Label: h.Label, Address: h.Address, Port: h.Port, Username: h.Username,
 			AuthMethod: h.AuthMethod, CredentialID: h.CredentialID,
-			LegacyAlgorithms: h.LegacyAlgorithms, ProfileID: h.ProfileID}
+			EnvironmentID: h.EnvironmentID, Tags: tags, Notes: h.Notes, Favorite: h.Favorite,
+			LegacyAlgorithms: h.LegacyAlgorithms, ProfileID: h.ProfileID,
+			DetectedOS: h.DetectedOS, OSIcon: osIcon}
 		if err := put("hosts", h.ID, []any{nullable(h.GroupID), 0, h.CreatedAt, h.UpdatedAt}, p); err != nil {
 			return nil, err
 		}
@@ -343,10 +359,15 @@ func decodeRow(c *model.Content, t, id string, cols []any, plain []byte) error {
 		if err := json.Unmarshal(plain, &p); err != nil {
 			return err
 		}
+		if p.OSIcon == "" {
+			p.OSIcon = model.OSIconAuto
+		}
 		c.Hosts = append(c.Hosts, model.Host{ID: id, GroupID: strPtr(cols[0]), CreatedAt: str(cols[2]),
 			UpdatedAt: str(cols[3]), Label: p.Label, Address: p.Address, Port: p.Port,
 			Username: p.Username, AuthMethod: p.AuthMethod, CredentialID: p.CredentialID,
-			LegacyAlgorithms: p.LegacyAlgorithms, ProfileID: p.ProfileID})
+			EnvironmentID: p.EnvironmentID, Tags: append([]string{}, p.Tags...), Notes: p.Notes, Favorite: p.Favorite,
+			LegacyAlgorithms: p.LegacyAlgorithms, ProfileID: p.ProfileID,
+			DetectedOS: p.DetectedOS, OSIcon: p.OSIcon})
 	case "known_hosts":
 		var p knownPlain
 		if err := json.Unmarshal(plain, &p); err != nil {

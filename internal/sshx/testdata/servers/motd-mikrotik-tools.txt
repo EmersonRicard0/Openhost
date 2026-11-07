@@ -1,0 +1,6 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+# os-release: ID=ubuntu
+Ferramentas para MikroTik RouterOS: winbox, the dude.
+Prompt de exemplo: [admin@RB-LAB] > 
+ops@tools-01:~$ 

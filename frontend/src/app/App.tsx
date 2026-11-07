@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { CommandPalette } from '../features/palette/CommandPalette';
+import { UpdateToast } from '../features/updates/UpdateToast';
 import { ActiveForwardsDialog } from '../features/forwarding/ActiveForwardsDialog';
 import { Sidebar } from '../features/sidebar/Sidebar';
 import { toggleSidebar } from '../features/terminal/commands';
@@ -12,7 +13,7 @@ import { useUi } from '../stores/ui';
 import { subscribeVault, useVault } from '../stores/vault';
 import { useWorkspace } from '../stores/workspace';
 import { Button } from '../ui/Button';
-import { LockIcon, SettingsIcon, SidebarCollapseIcon, SidebarExpandIcon } from '../ui/icons';
+import { ChevronIcon, ChevronLeftIcon, LockIcon, SettingsIcon } from '../ui/icons';
 import { Toasts } from '../ui/Toast';
 import { trackActivity } from './activity';
 import { CloseConfirmDialog } from './CloseConfirmDialog';
@@ -85,18 +86,6 @@ export function App() {
   return (
     <div className={`${s.root} ${s.backdrop} glass`} data-sidebar={collapsed ? 'rail' : 'full'}>
       <TitleBar
-        leading={
-          <Button
-            variant="ghost"
-            iconOnly
-            aria-label={sidebarLabel}
-            title={sidebarLabel}
-            aria-expanded={!collapsed}
-            onClick={toggleSidebar}
-          >
-            {collapsed ? <SidebarExpandIcon /> : <SidebarCollapseIcon />}
-          </Button>
-        }
         actions={
           <>
             {unlocked && (
@@ -129,6 +118,21 @@ export function App() {
       <aside className={s.sidebar}>
         <Sidebar />
       </aside>
+      {/* Alça na divisa da lateral: aparece ao passar o mouse por ela (ou com foco do teclado). */}
+      <button
+        type="button"
+        className={`${s.sidebarHandle} no-drag`}
+        aria-label={sidebarLabel}
+        title={sidebarLabel}
+        aria-expanded={!collapsed}
+        onClick={toggleSidebar}
+      >
+        {collapsed ? (
+          <ChevronIcon width={14} height={14} />
+        ) : (
+          <ChevronLeftIcon width={14} height={14} />
+        )}
+      </button>
       <main className={s.main}>
         <Workspace />
       </main>
@@ -136,6 +140,7 @@ export function App() {
       <ActiveForwardsDialog />
       <CommandPalette />
       <CloseConfirmDialog />
+      <UpdateToast />
       <Toasts />
     </div>
   );

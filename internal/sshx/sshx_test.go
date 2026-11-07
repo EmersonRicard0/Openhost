@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"io"
 	"net"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -45,12 +46,14 @@ type server struct {
 	// Comportamento.
 	ignoreKeepalive bool
 	authorized      ssh.PublicKey
+	initialOutput   string
 
 	mu         sync.Mutex
 	conns      []net.Conn
 	ptys       []ptyReq
 	resizes    []ptyReq
 	keepalives int
+	stdinBytes int
 	shellAfter bool // o shell chegou depois do pty-req
 	wg         sync.WaitGroup
 }
@@ -192,11 +195,18 @@ func (s *server) session(ch ssh.Channel, reqs <-chan *ssh.Request) {
 			s.wg.Add(1)
 			go func() {
 				defer s.wg.Done()
-				_, _ = ch.Write([]byte("$ "))
+				output := s.initialOutput
+				if output == "" {
+					output = "$ "
+				}
+				_, _ = ch.Write([]byte(output))
 				buf := make([]byte, 1024)
 				for {
 					n, err := ch.Read(buf)
 					if n > 0 {
+						s.mu.Lock()
+						s.stdinBytes += n
+						s.mu.Unlock()
 						if bytes.Contains(buf[:n], []byte("exit")) {
 							_, _ = ch.SendRequest("exit-status", false, []byte{0, 0, 0, 0})
 							_ = ch.Close()
@@ -336,6 +346,51 @@ func TestPasswordAuthAndNewHostKey(t *testing.T) {
 	}
 	if len(ix2.hostKeys) != 0 {
 		t.Fatal("perguntou de novo por chave conhecida")
+	}
+}
+
+func TestPreAuthBannerCapturedAndAuthenticationContinues(t *testing.T) {
+	banner := "ZTE Corporation\n" + strings.Repeat("x", maxVendorTextBytes)
+	s := startServer(t, func(s *server) {
+		s.cfg.BannerCallback = func(ssh.ConnMetadata) string { return banner }
+	})
+	client, err := dial(t, opts(s, newKnown(), Auth{Method: model.AuthPassword, Password: "pw"}), &fakeIx{acceptKey: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := client.PreAuthBanner()
+	if len(got) != maxVendorTextBytes || !strings.HasPrefix(got, "ZTE Corporation") {
+		t.Fatalf("banner capturado = %d bytes", len(got))
+	}
+}
+
+func TestDetectionNeverWritesStdin(t *testing.T) {
+	s := startServer(t, func(s *server) { s.initialOutput = "JUNOS 21.4R3\r\nrouter> " })
+	client, err := dial(t, opts(s, newKnown(), Auth{Method: model.AuthPassword, Password: "pw"}), &fakeIx{acceptKey: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	terminal := NewTerminal(client)
+	var output bytes.Buffer
+	if err := terminal.Start(80, 24, &output); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = terminal.Close() })
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	detected := ResolveOS(Signals{
+		Version:  string(client.ServerVersion()),
+		Banner:   client.PreAuthBanner(),
+		Terminal: terminal.InitialOutput(ctx),
+	})
+	if detected != domain.OSJuniper {
+		t.Fatalf("fabricante = %q, saída = %q", detected, output.String())
+	}
+	s.mu.Lock()
+	stdinBytes := s.stdinBytes
+	s.mu.Unlock()
+	if stdinBytes != 0 {
+		t.Fatalf("detecção enviou %d bytes ao stdin", stdinBytes)
 	}
 }
 

@@ -1,0 +1,4 @@
+﻿Nome;Endereço;Porta;Usuário;Grupo;Chave
+OLT Centro;192.0.2.10;22;admin;Clientes/Norte/OLTs;
+Concentrador São José;192.0.2.11;2222;operação;Clientes/Norte;
+Borda;[2001:db8::1];;root;;keys/id_ed25519

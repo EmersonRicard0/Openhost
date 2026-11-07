@@ -1,0 +1,8 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_9.6p1 Ubuntu-3ubuntu13.5
+# os-release: ID=ubuntu
+Welcome to Ubuntu 24.04.1 LTS (GNU/Linux 6.8.0-45-generic x86_64)
+
+ * Documentation:  https://help.ubuntu.com
+Last login: Mon Oct 20 10:00:00 2026 from 192.0.2.10
+deploy@web-01:~$ 

@@ -1,0 +1,5 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+# os-release: ID=debian
+[1;31mATENÇÃO[0m: servidor de backup das configs Juniper Networks e Datacom.
+backup@bkp-01:~$ 

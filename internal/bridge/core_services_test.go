@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"log"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -12,6 +15,7 @@ import (
 	"shellvault/internal/domain"
 	"shellvault/internal/localpty"
 	"shellvault/internal/model"
+	"shellvault/internal/validate"
 	"shellvault/internal/vault"
 )
 
@@ -30,17 +34,19 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 	app := services.appService
 
 	preferences, err := app.GetPreferences()
-	if err != nil || preferences.DefaultShell != "powershell" || !preferences.GlassEnabled || preferences.SidebarCollapsed ||
+	if err != nil || preferences.DefaultShell != localpty.DefaultShellID() || !preferences.GlassEnabled || preferences.SidebarCollapsed ||
 		preferences.CopyOnSelect || !preferences.RightClickPaste || preferences.Bell != "visual" || !preferences.BoldBright || preferences.AutoReconnect {
 		t.Fatalf("preferências %+v, %v", preferences, err)
 	}
+	alternative := testAlternativeLocalShell()
+	app.localShells = func() []localpty.LocalShell { return []localpty.LocalShell{alternative} }
 	groupID := "4ce66518-3068-4bef-ad0b-eb3f0141443d"
 	updated, err := app.UpdatePreferences(PreferencesPatch{
 		"theme":            "light",
 		"glassEnabled":     false,
 		"sidebarCollapsed": true,
 		"accent":           "brand-violet",
-		"defaultShell":     "cmd",
+		"defaultShell":     alternative.ID,
 		"collapsedGroups":  []any{groupID},
 		"shortcuts":        map[string]any{"closeTab": "Ctrl+Alt+W", "palette": ""},
 		"copyOnSelect":     true,
@@ -49,7 +55,7 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		"boldBright":       false,
 		"autoReconnect":    true,
 	})
-	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != "cmd" || len(updated.CollapsedGroups) != 1 || updated.Shortcuts["closeTab"] != "Ctrl+Alt+W" ||
+	if err != nil || updated.Theme != "light" || updated.GlassEnabled || !updated.SidebarCollapsed || updated.Accent != "brand-violet" || updated.DefaultShell != alternative.ID || len(updated.CollapsedGroups) != 1 || updated.Shortcuts["closeTab"] != "Ctrl+Alt+W" ||
 		!updated.CopyOnSelect || updated.RightClickPaste || updated.Bell != "sound" || updated.BoldBright || !updated.AutoReconnect {
 		t.Fatalf("preferências atualizadas %+v, %v", updated, err)
 	}
@@ -72,7 +78,7 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 		t.Fatalf("erro de shortcut = %+v", err)
 	}
 	wantBridgeCode(t, func() error {
-		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "bash"})
+		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "definitely-missing-shell"})
 		return err
 	}(), apperr.InvalidInput)
 	wantBridgeCode(t, func() error {
@@ -95,37 +101,87 @@ func TestAppServicePreferencesAndExternalURL(t *testing.T) {
 func TestAppServiceLocalShellsAndMissingDefaultFallback(t *testing.T) {
 	services := testServices(t)
 	app := services.appService
+	defaultID := localpty.DefaultShellID()
+	alternative := testAlternativeLocalShell()
 	app.localShells = func() []localpty.LocalShell {
 		return []localpty.LocalShell{
-			{ID: "powershell", Label: "Windows PowerShell", Kind: localpty.KindPowerShell},
-			{ID: "gitbash", Label: "Git Bash", Kind: localpty.KindGitBash},
-			{ID: "wsl:Ubuntu", Label: "Ubuntu", Kind: localpty.KindWSL},
+			{ID: defaultID, Label: defaultID, Kind: alternative.Kind},
+			alternative,
 		}
 	}
 
 	shells, err := app.ListLocalShells()
-	if err != nil || len(shells) != 3 || shells[1].Kind != localpty.KindGitBash {
+	if err != nil || len(shells) != 2 || shells[1].ID != alternative.ID {
 		t.Fatalf("shells = %+v, %v", shells, err)
 	}
-	updated, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "wsl:Ubuntu"})
-	if err != nil || updated.DefaultShell != "wsl:Ubuntu" {
+	updated, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": alternative.ID})
+	if err != nil || updated.DefaultShell != alternative.ID {
 		t.Fatalf("preferência = %+v, %v", updated, err)
 	}
 	wantBridgeCode(t, func() error {
-		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "pwsh"})
+		_, err := app.UpdatePreferences(PreferencesPatch{"defaultShell": "definitely-missing-shell"})
 		return err
 	}(), apperr.InvalidInput)
 
 	app.localShells = func() []localpty.LocalShell {
-		return []localpty.LocalShell{{ID: "powershell", Label: "Windows PowerShell", Kind: localpty.KindPowerShell}}
+		return []localpty.LocalShell{{ID: defaultID, Label: defaultID, Kind: alternative.Kind}}
 	}
+	var warning strings.Builder
+	previousLogOutput := log.Writer()
+	log.SetOutput(&warning)
+	t.Cleanup(func() { log.SetOutput(previousLogOutput) })
 	got, err := app.GetPreferences()
-	if err != nil || got.DefaultShell != "powershell" {
-		t.Fatalf("fallback = %+v, %v", got, err)
+	if err != nil || got.DefaultShell != defaultID || !strings.Contains(warning.String(), alternative.ID) {
+		t.Fatalf("fallback = %+v, aviso = %q, erro = %v", got, warning.String(), err)
 	}
 	persisted, err := app.preferences.Get()
-	if err != nil || persisted.DefaultShell != "powershell" {
+	if err != nil || persisted.DefaultShell != defaultID {
 		t.Fatalf("fallback persistido = %+v, %v", persisted, err)
+	}
+}
+
+func TestRecordRecentValidatesDeduplicatesOrdersCapsAndPersistsLocally(t *testing.T) {
+	services := testServices(t)
+	app := services.appService
+	app.now = func() time.Time { return time.Date(2026, 10, 28, 12, 0, 0, 0, time.UTC) }
+	firstHostID := "11111111-2222-4333-8444-555555555555"
+	first, err := app.RecordRecent(RecentEntryInput{Kind: "host", HostID: firstHostID})
+	if err != nil || len(first) != 1 || first[0].HostID != firstHostID || first[0].At != "2026-10-28T12:00:00Z" {
+		t.Fatalf("recent host = %+v, %v", first, err)
+	}
+	app.now = func() time.Time { return time.Date(2026, 10, 28, 12, 1, 0, 0, time.UTC) }
+	second, err := app.RecordRecent(RecentEntryInput{Kind: "quick", Address: "ROUTER.example", Port: 2222, Username: "ops"})
+	if err != nil || len(second) != 2 || second[0].Kind != "quick" || second[0].Address != "router.example" {
+		t.Fatalf("recent quick = %+v, %v", second, err)
+	}
+	app.now = func() time.Time { return time.Date(2026, 10, 28, 12, 2, 0, 0, time.UTC) }
+	third, err := app.RecordRecent(RecentEntryInput{Kind: "quick", Address: "router.example", Port: 2222, Username: "ops"})
+	if err != nil || len(third) != 2 || third[0].At != "2026-10-28T12:02:00Z" || third[1].HostID != firstHostID {
+		t.Fatalf("recent deduplicado = %+v, %v", third, err)
+	}
+	if _, err := app.RecordRecent(RecentEntryInput{Kind: "quick", Address: "bad host", Port: 22, Username: "ops"}); apperr.CodeOf(err) != apperr.InvalidInput {
+		t.Fatalf("endereço inválido aceito: %v", err)
+	}
+	if _, err := app.RecordRecent(RecentEntryInput{Kind: "host", HostID: "não-uuid"}); apperr.CodeOf(err) != apperr.InvalidInput {
+		t.Fatalf("hostId inválido aceito: %v", err)
+	}
+	var secret RecentEntryInput
+	if err := json.Unmarshal([]byte(`{"kind":"quick","address":"router.example","port":22,"username":"ops","password":"secret"}`), &secret); apperr.CodeOf(err) != apperr.InvalidInput {
+		t.Fatalf("campo extra/segredo aceito: %v", err)
+	}
+	for i := 0; i < 22; i++ {
+		address := fmt.Sprintf("r%d.example", i)
+		if _, err := app.RecordRecent(RecentEntryInput{Kind: "quick", Address: address, Port: 22, Username: "ops"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := app.GetPreferences()
+	if err != nil || len(got.Recents) != 20 || got.Recents[0].Address != "r21.example" {
+		t.Fatalf("recents persistidos = %+v, %v", got.Recents, err)
+	}
+	raw, _ := json.Marshal(got.Recents)
+	if strings.Contains(string(raw), "secret") || strings.Contains(string(raw), "password") {
+		t.Fatalf("recents incluem segredo: %s", raw)
 	}
 }
 
@@ -199,7 +255,7 @@ func TestSessionServiceLocalLifecycle(t *testing.T) {
 	services := testServices(t)
 	sessions := services.sessionService
 
-	opened, err := sessions.OpenLocal("cmd")
+	opened, err := sessions.OpenLocal(testOpenLocalShellID())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +269,7 @@ func TestSessionServiceLocalLifecycle(t *testing.T) {
 	if services.sessions.Count() != 0 {
 		t.Fatal("sessão local não foi removida")
 	}
-	_, err = sessions.OpenLocal("bash")
+	_, err = sessions.OpenLocal("definitely-missing-shell")
 	wantBridgeCode(t, err, apperr.InvalidInput)
 	wantBridgeCode(t, sessions.SendKeys(opened.SessionID, "ctrl+x"), apperr.InvalidInput)
 }
@@ -256,4 +312,95 @@ func TestConnectionSettingsTermAndLegacyDefault(t *testing.T) {
 
 	_, err = services.vaultService.UpdateSettings(VaultSettingsPatch{"term": "screen"})
 	wantBridgeCode(t, err, apperr.InvalidInput)
+}
+
+func TestVaultSettingsEnvironments(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	settings, err := services.vaultService.UpdateSettings(VaultSettingsPatch{
+		"environments": []any{
+			map[string]any{"id": "", "name": "  Produção especial  ", "color": "orange"},
+			map[string]any{"id": "lab", "name": "Laboratório", "color": "green"},
+		},
+	})
+	if err != nil || len(settings.Environments) != 2 ||
+		validate.UUID(settings.Environments[0].ID) != nil || settings.Environments[0].Name != "Produção especial" ||
+		settings.Environments[1].ID != "lab" {
+		t.Fatalf("ambientes atualizados = %+v, %v", settings.Environments, err)
+	}
+	persisted, err := services.vaultService.GetSettings()
+	if err != nil || !reflect.DeepEqual(persisted.Environments, settings.Environments) {
+		t.Fatalf("ambientes persistidos = %+v, %v", persisted.Environments, err)
+	}
+
+	_, err = services.vaultService.UpdateSettings(VaultSettingsPatch{
+		"environments": []any{map[string]any{"id": "x", "name": "Inválido", "color": "purple"}},
+	})
+	var appErr *apperr.Error
+	if !errors.As(err, &appErr) || appErr.Code != apperr.InvalidInput ||
+		!strings.Contains(appErr.Detail, "environments") {
+		t.Fatalf("erro de ambientes = %#v", err)
+	}
+	after, _ := services.vaultService.GetSettings()
+	if !reflect.DeepEqual(after.Environments, settings.Environments) {
+		t.Fatalf("erro alterou ambientes: %+v", after.Environments)
+	}
+}
+
+func TestHostDensityAndPromptTitlePreferences(t *testing.T) {
+	services := testServices(t)
+	updated, err := services.appService.UpdatePreferences(PreferencesPatch{
+		"hostDensity": "compact",
+		"promptTitle": false,
+	})
+	if err != nil || updated.HostDensity != "compact" || updated.PromptTitle {
+		t.Fatalf("preferências atualizadas = %+v, %v", updated, err)
+	}
+	for _, patch := range []PreferencesPatch{
+		{"hostDensity": "dense"},
+		{"hostDensity": true},
+		{"promptTitle": "sim"},
+	} {
+		if _, err := services.appService.UpdatePreferences(patch); apperr.CodeOf(err) != apperr.InvalidInput {
+			t.Errorf("valor inválido aceito: %v, erro %v", patch, err)
+		}
+	}
+}
+
+func TestDetectedOSIsPersistedAndEmittedOnce(t *testing.T) {
+	services := testServices(t)
+	if err := services.vaultService.Create("senha-teste-1", "senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	host, err := services.hostService.Create(domain.HostInput{
+		Label: "Alpine", Address: "localhost", Port: 22, Username: "ops", AuthMethod: model.AuthAsk,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var events []HostsChangedEvent
+	services.sessionService.emit = func(name string, payload any) {
+		if name == EventHostsChanged {
+			events = append(events, payload.(HostsChangedEvent))
+		}
+	}
+	if err := services.sessionService.recordDetectedOS(host.ID, domain.OSAlpine); err != nil {
+		t.Fatal(err)
+	}
+	if err := services.sessionService.recordDetectedOS(host.ID, domain.OSAlpine); err != nil {
+		t.Fatal(err)
+	}
+	if len(events) != 1 || events[0].HostID != host.ID || events[0].DetectedOS == nil || *events[0].DetectedOS != domain.OSAlpine {
+		t.Fatalf("eventos = %+v", events)
+	}
+	services.store.Lock()
+	if err := services.store.Unlock("senha-teste-1"); err != nil {
+		t.Fatal(err)
+	}
+	listed, err := services.hostService.List()
+	if err != nil || len(listed) != 1 || listed[0].DetectedOS == nil || *listed[0].DetectedOS != domain.OSAlpine {
+		t.Fatalf("host persistido = %+v, %v", listed, err)
+	}
 }

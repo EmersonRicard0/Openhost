@@ -105,7 +105,9 @@ test('fonte, tamanho e esquema ao vivo; importar, exportar; perfil próprio do h
     await settings.getByRole('radio', { name: 'Fixture WT' }).click();
     const exported = join(out, 'exportado.json');
     await dialogReturns(page, exported);
-    await settings.getByRole('button', { name: 'Exportar…' }).click();
+    // Exportar fica no menu de ações de cada tema.
+    await settings.getByRole('button', { name: 'Ações do tema Fixture WT' }).click();
+    await page.getByRole('menuitem', { name: 'Exportar…' }).click();
     await expect.poll(() => existsSync(exported)).toBe(true);
     const before = await settings.getByRole('radio').count();
     await dialogReturns(page, exported);

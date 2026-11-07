@@ -1,14 +1,6 @@
 import type { OsId } from '@shared/model/types';
-import { avatarFill } from '../theme/avatar';
-import { OsLogo } from './osIcons';
+import { OsLogo, osLogoColors } from './osIcons';
 import s from './ui.module.css';
-
-/** Matiz estável derivado do texto, para cada host ter sempre a mesma cor. */
-export function hueOf(text: string): number {
-  let h = 0;
-  for (const ch of text) h = (h * 31 + (ch.codePointAt(0) ?? 0)) % 360;
-  return h;
-}
 
 export function initialsOf(text: string): string {
   const words = text
@@ -25,14 +17,18 @@ export interface AvatarProps {
   os?: OsId | null;
 }
 
+/** Quadrado de cor única para todos os hosts; o logo do sistema vem na cor oficial da marca. */
 export function Avatar({ text, size = 28, os = null }: AvatarProps) {
+  const colors = os ? osLogoColors(os) : null;
   return (
     <span
       className={s.avatar}
       aria-hidden="true"
+      data-os={os ?? undefined}
       style={
         {
-          '--avatar-fill': avatarFill(hueOf(text)),
+          '--logo-dark': colors?.dark ?? undefined,
+          '--logo-light': colors?.light ?? undefined,
           width: size,
           height: size,
         } as React.CSSProperties

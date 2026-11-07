@@ -11,9 +11,6 @@ func TestListIncludesMonospaceAndBundledFonts(t *testing.T) {
 	for _, item := range items {
 		byFamily[item.Family] = item
 	}
-	if got, ok := byFamily["Consolas"]; !ok || got.Source != SourceSystem {
-		t.Fatalf("Consolas não encontrada como fonte do sistema: %+v", got)
-	}
 	if _, ok := byFamily["Arial"]; ok {
 		t.Fatal("Arial não é monoespaçada e não deve aparecer")
 	}

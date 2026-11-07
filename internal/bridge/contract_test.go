@@ -15,7 +15,7 @@ var contract = map[string][]string{
 		"ListGroups", "CreateGroup", "RenameGroup", "MoveGroup", "RemoveGroup"},
 	"CredentialService": {"List", "CreatePassword", "PickKeyFile", "ImportKey", "GenerateEd25519",
 		"CopyPublicKey", "Rename", "Remove"},
-	"SessionService": {"OpenSsh", "OpenLocal", "Write", "Resize", "Reconnect", "Close",
+	"SessionService": {"OpenSsh", "OpenQuick", "OpenLocal", "Write", "Resize", "Reconnect", "Close",
 		"AnswerHostKey", "AnswerPrompt", "ActiveSummary", "SendKeys"},
 	"SftpService": {"Open", "List", "Mkdir", "Rename", "Remove", "Upload", "Download",
 		"ResolveConflict", "Cancel"},
@@ -23,8 +23,15 @@ var contract = map[string][]string{
 	"ProfileService": {"GetGlobal", "UpdateGlobal", "GetForHost", "SetHostOverride", "Effective",
 		"ListSchemes", "SaveScheme", "DuplicateScheme", "RemoveScheme", "ImportScheme",
 		"ExportScheme", "ListFonts"},
-	"AppService": {"GetAppearance", "GetPreferences", "ListLocalShells", "UpdatePreferences", "ConfirmClose",
+	"AppService": {"GetAppearance", "GetPreferences", "ListLocalShells", "RecordRecent", "UpdatePreferences", "ConfirmClose",
 		"WindowMinimise", "WindowToggleMaximise", "WindowClose", "OpenExternalUrl"},
+	"ImportService": {"Sources", "Preview", "RemapCsv", "UpdateRow", "SelectAll",
+		"SetDuplicateAction", "UnlockKey", "SkipKey", "Commit", "Undo", "Discard", "SaveCsvTemplate"},
+	"ExportService": {"Count", "Export"},
+	"UpdateService": {"Info", "Check", "Download", "Cancel", "Remind", "Skip", "Prefs",
+		"SetPrefs", "RestartNow", "ApplyOnQuit", "LastResult", "OpenDownloadFolder"},
+	"SyncService": {"Info", "Connect", "CancelConnect", "Start", "OpenFromCloud", "SyncNow",
+		"Conflicts", "Resolve", "ProvidePassword", "Versions", "RestoreVersion", "SetDeviceName", "Disconnect"},
 }
 
 func TestBoundServicesMatchContract(t *testing.T) {

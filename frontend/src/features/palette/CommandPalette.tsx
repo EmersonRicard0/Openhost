@@ -7,7 +7,13 @@ import { useShells } from '../../stores/shells';
 import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
 import {
+  ChevronDownIcon,
+  ChevronIcon,
+  ChevronLeftIcon,
+  ChevronUpIcon,
+  DownloadIcon,
   FolderIcon,
+  ImportExportIcon,
   LockIcon,
   SearchIcon,
   ServerIcon,
@@ -16,7 +22,10 @@ import {
 } from '../../ui/icons';
 import { connectHost } from '../hosts/connect';
 import { openSftp } from '../sftp/openSftp';
-import { activeTerminalId, openSearch, toggleTheme } from '../terminal/commands';
+import { activeTerminalId, focusDir, openSearch, toggleTheme } from '../terminal/commands';
+import { groupOf, useSessions } from '../../stores/sessions';
+import { checkNow, useUpdates } from '../../stores/updates';
+import { toastError, toastInfo } from '../../ui/Toast';
 import { openLocal } from '../terminal/openLocal';
 import { useShortcutLabel } from '../../app/useShortcuts';
 import { ShellIcon } from '../../ui/ShellIcon';
@@ -32,10 +41,15 @@ function useCommands(): Entry[] {
   const unlocked = useVault((v) => v.status?.state === 'unlocked');
   const hosts = useHosts((h) => h.hosts);
   const lock = useVault((v) => v.lock);
+  const openSettings = useWorkspace((w) => w.openSettings);
   const setView = useWorkspace((w) => w.setView);
   const powershellKey = useShortcutLabel('newPowerShell') ?? '';
   const shells = useShells((x) => x.shells);
   const searchKey = useShortcutLabel('search') ?? '';
+  const focusLeftKey = useShortcutLabel('focusLeft') ?? '';
+  const focusRightKey = useShortcutLabel('focusRight') ?? '';
+  const focusUpKey = useShortcutLabel('focusUp') ?? '';
+  const focusDownKey = useShortcutLabel('focusDown') ?? '';
 
   return useMemo(() => {
     const p = t.palette;
@@ -56,6 +70,30 @@ function useCommands(): Entry[] {
         icon: <SearchIcon />,
         run: openSearch,
       });
+    // Grupo ativo: mover o foco entre painéis (specs/006, contracts/ui.md).
+    const { groups, activeId } = useSessions.getState();
+    if (activeId && groupOf(groups, activeId)) {
+      const names = t.settings.shortcutActions;
+      actions.push(
+        ...(
+          [
+            ['focusLeft', 'left', focusLeftKey, <ChevronLeftIcon key="l" />],
+            ['focusRight', 'right', focusRightKey, <ChevronIcon key="r" />],
+            ['focusUp', 'top', focusUpKey, <ChevronUpIcon key="u" />],
+            ['focusDown', 'bottom', focusDownKey, <ChevronDownIcon key="d" />],
+          ] as const
+        ).map(([id, side, hint, icon]) => ({
+          id,
+          label: names[id],
+          hint,
+          group: 'action' as const,
+          icon,
+          run: () => {
+            focusDir(side);
+          },
+        })),
+      );
+    }
     actions.push(
       {
         id: 'settings',
@@ -65,6 +103,21 @@ function useCommands(): Entry[] {
         icon: <SettingsIcon />,
         run: () => {
           setView('settings');
+        },
+      },
+      {
+        id: 'checkUpdates',
+        label: t.updates.palette,
+        hint: '',
+        group: 'action',
+        icon: <DownloadIcon />,
+        run: () => {
+          // Achando versão, o aviso abre; sem novidade ou com erro, um toast explica (FR-717).
+          void checkNow().then((err) => {
+            const info = useUpdates.getState().info;
+            if (err) toastError(err);
+            else if (info && !info.latest) toastInfo(t.updates.settings.upToDate(info.current));
+          });
         },
       },
       {
@@ -84,6 +137,16 @@ function useCommands(): Entry[] {
       group: 'action',
       icon: <LockIcon />,
       run: () => void lock(),
+    });
+    actions.push({
+      id: 'importExport',
+      label: p.importExport,
+      hint: '',
+      group: 'action',
+      icon: <ImportExportIcon />,
+      run: () => {
+        openSettings('importExport');
+      },
     });
     const hostEntries: Entry[] = hosts.flatMap((host) => {
       const hint = `${host.username}@${host.address}`;
@@ -107,7 +170,20 @@ function useCommands(): Entry[] {
       ];
     });
     return [...actions, ...hostEntries];
-  }, [shells, unlocked, hosts, lock, setView, powershellKey, searchKey]);
+  }, [
+    shells,
+    unlocked,
+    hosts,
+    lock,
+    setView,
+    openSettings,
+    powershellKey,
+    searchKey,
+    focusLeftKey,
+    focusRightKey,
+    focusUpKey,
+    focusDownKey,
+  ]);
 }
 
 export function CommandPalette() {

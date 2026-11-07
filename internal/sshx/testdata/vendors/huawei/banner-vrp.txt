@@ -1,0 +1,4 @@
+# fonte: banner
+# versao: SSH-2.0-OpenSSH_8.0
+Huawei Versatile Routing Platform Software
+Acesso restrito a pessoal autorizado.

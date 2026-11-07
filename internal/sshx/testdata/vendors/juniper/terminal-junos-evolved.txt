@@ -1,0 +1,4 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+--- Junos 23.2R1.14-EVO Linux (none) 5.2.60-yocto-standard-g3c
+operador@ptx-lab>

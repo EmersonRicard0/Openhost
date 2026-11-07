@@ -1,0 +1,4 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+Hillstone Networks StoneOS software version 5.5R9
+SG-6000-LAB#

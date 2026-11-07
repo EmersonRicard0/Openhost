@@ -1,15 +1,18 @@
 import { create } from 'zustand';
-import type { Appearance, Settings } from '@shared/model/types';
+import type { Appearance, Platform, Settings } from '@shared/model/types';
 import { applyTheme, resolveMode } from '../theme/apply';
 import { THEMES, type ThemeTokens } from '../theme/tokens';
 import { useShells } from './shells';
 
 interface UiState {
+  /** Sistema em que o app roda; decide barra de título, atalhos e opções (specs/004). */
+  platform: Platform;
   appearance: Appearance;
   settings: Settings | null;
   tokens: ThemeTokens;
-  /** Tema efetivo escuro (preferência do usuário ou do Windows). */
+  /** Tema efetivo escuro (preferência do usuário ou do sistema). */
   dark: boolean;
+  setPlatform: (p: Platform) => void;
   setAppearance: (a: Appearance) => void;
   setSettings: (s: Settings) => void;
 }
@@ -30,10 +33,14 @@ function derive(appearance: Appearance, settings: Settings | null) {
 }
 
 export const useUi = create<UiState>((set, get) => ({
+  platform: 'windows',
   appearance: initialAppearance,
   settings: null,
   tokens: THEMES['solid-dark'],
   dark: true,
+  setPlatform(platform) {
+    set({ platform });
+  },
   setAppearance(appearance) {
     set({ appearance, ...derive(appearance, get().settings) });
   },
@@ -44,10 +51,13 @@ export const useUi = create<UiState>((set, get) => ({
 
 export async function loadUi(): Promise<void> {
   const api = window.shellvault.app;
+  // A plataforma vem antes: a lista de shells de reserva depende dela.
+  const platform = await api.getPlatform();
+  if (platform.ok) useUi.getState().setPlatform(platform.value);
   const [appearance, settings] = await Promise.all([
     api.getAppearance(),
     api.getUiSettings(),
-    useShells.getState().load(),
+    useShells.getState().load(useUi.getState().platform),
   ]);
   if (settings.ok) useUi.getState().setSettings(settings.value);
   if (appearance.ok) useUi.getState().setAppearance(appearance.value);

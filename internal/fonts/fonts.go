@@ -3,6 +3,7 @@ package fonts
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -38,27 +39,12 @@ var listCache struct {
 	err   error
 }
 
-// List scans Windows font directories once per app process and returns a copy.
+// List scans the system font directories once per app process and returns a copy.
 func List() ([]Font, error) {
 	listCache.Do(func() {
 		listCache.items, listCache.err = scan(defaultDirectories())
 	})
 	return append([]Font(nil), listCache.items...), listCache.err
-}
-
-func defaultDirectories() []string {
-	windowsDir := os.Getenv("WINDIR")
-	if windowsDir == "" {
-		windowsDir = os.Getenv("SystemRoot")
-	}
-	dirs := make([]string, 0, 2)
-	if windowsDir != "" {
-		dirs = append(dirs, filepath.Join(windowsDir, "Fonts"))
-	}
-	if local := os.Getenv("LOCALAPPDATA"); local != "" {
-		dirs = append(dirs, filepath.Join(local, "Microsoft", "Windows", "Fonts"))
-	}
-	return dirs
 }
 
 func scan(dirs []string) ([]Font, error) {
@@ -67,25 +53,32 @@ func scan(dirs []string) ([]Font, error) {
 		byFamily[strings.ToLower(item.Family)] = item
 	}
 	for _, dir := range dirs {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				continue
+		// Recursivo: no Linux e no macOS as fontes ficam em subpastas por família/fornecedor.
+		err := filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+			if err != nil {
+				if path == dir {
+					return err
+				}
+				// Subpasta sem permissão de leitura não derruba a lista.
+				if entry != nil && entry.IsDir() {
+					return fs.SkipDir
+				}
+				return nil
 			}
-			return nil, err
-		}
-		for _, entry := range entries {
 			if entry.IsDir() || !fontExtension(entry.Name()) {
-				continue
+				return nil
 			}
-			families := familiesInFile(filepath.Join(dir, entry.Name()))
-			for _, family := range families {
+			for _, family := range familiesInFile(path) {
 				key := strings.ToLower(family)
 				if _, exists := byFamily[key]; exists {
 					continue
 				}
 				byFamily[key] = Font{Family: family, Source: SourceSystem, Ligatures: hasKnownLigatures(family)}
 			}
+			return nil
+		})
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
+			return nil, err
 		}
 	}
 	items := make([]Font, 0, len(byFamily))

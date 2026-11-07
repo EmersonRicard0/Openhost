@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import type { HostView } from '@shared/model/types';
 import { t } from '../../i18n/pt-BR';
 import { useHosts } from '../../stores/hosts';
+import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
-import { FolderIcon, KeyIcon, PlusIcon } from '../../ui/icons';
+import { FolderIcon, ImportExportIcon, KeyIcon, PlusIcon } from '../../ui/icons';
 import { CredentialsDialog } from './CredentialsDialog';
 import { GroupNameDialog } from './GroupDialogs';
 import { HostForm } from './HostForm';
@@ -18,12 +19,20 @@ export function HostSidebar() {
   const { reload, clear } = useHosts();
   const [open, setOpen] = useState<Open>(null);
   const [query, setQuery] = useState('');
+  const openSettings = useWorkspace((w) => w.openSettings);
   const listRef = useRef<HTMLUListElement>(null);
+  const hostDraft = useWorkspace((w) => w.hostDraft);
+
 
   // Montado só com o cofre desbloqueado; ao bloquear, os dados saem da interface.
   useEffect(() => {
     void reload();
-    return clear;
+    // Sistema detectado numa conexão (FR-178): o avatar troca as iniciais pelo logo.
+    const off = window.shellvault.hosts.onChanged(() => void reload());
+    return () => {
+      off();
+      clear();
+    };
   }, [reload, clear]);
 
   return (
@@ -40,6 +49,17 @@ export function HostSidebar() {
           }}
         >
           <KeyIcon />
+        </Button>
+        <Button
+          variant="ghost"
+          iconOnly
+          aria-label={t.importExport.open}
+          title={t.importExport.open}
+          onClick={() => {
+            openSettings('importExport');
+          }}
+        >
+          <ImportExportIcon />
         </Button>
         <Button
           variant="ghost"
@@ -81,6 +101,21 @@ export function HostSidebar() {
           setOpen({ kind: 'form', host: null });
         }}
       />
+      {hostDraft && (
+        // "Salvar como host" na aba de uma sessão rápida (specs/010, FR-1006).
+        <HostForm
+          key={`${hostDraft.username}@${hostDraft.address}:${String(hostDraft.port)}`}
+          host={null}
+          draft={hostDraft}
+          onClose={() => {
+            useWorkspace.getState().setHostDraft(null);
+          }}
+          onManageCredentials={() => {
+            useWorkspace.getState().setHostDraft(null);
+            setOpen({ kind: 'credentials' });
+          }}
+        />
+      )}
       {open?.kind === 'form' && (
         <HostForm
           host={open.host}

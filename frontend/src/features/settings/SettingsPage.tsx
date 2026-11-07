@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type {
   BellMode,
+  HostDensity,
   LocalShell,
   Settings,
   TermType,
@@ -13,6 +14,7 @@ import { t } from '../../i18n/pt-BR';
 import { useSessions } from '../../stores/sessions';
 import { shellInfo, useShells } from '../../stores/shells';
 import { useUi } from '../../stores/ui';
+import { checkNow, savePrefs, useUpdates } from '../../stores/updates';
 import { useVault } from '../../stores/vault';
 import { useWorkspace } from '../../stores/workspace';
 import { DEFAULT_ACCENT, resolveAccent } from '../../theme/accent';
@@ -21,7 +23,9 @@ import { Button } from '../../ui/Button';
 import { Checkbox } from '../../ui/Checkbox';
 import {
   BackIcon,
+  CloudIcon,
   GeneralIcon,
+  ImportExportIcon,
   InfoIcon,
   KeyboardIcon,
   NetworkIcon,
@@ -31,13 +35,18 @@ import {
 } from '../../ui/icons';
 import { useSlidingIndicator } from '../../ui/motion';
 import { NumberField } from '../../ui/NumberField';
+import { Segmented } from '../../ui/Segmented';
 import { Select } from '../../ui/Select';
 import { ShellIcon } from '../../ui/ShellIcon';
 import { toastError } from '../../ui/Toast';
 import { focusTerminal } from '../terminal/terminalRegistry';
 import { ChangePasswordDialog } from '../vault/ChangePasswordDialog';
 import { EraseVaultDialog } from '../vault/EraseVaultDialog';
+import { ImportExportPage } from '../importexport/ImportExportPage';
+import { SyncSection } from '../sync/SyncSettings';
 import { ShortcutsEditor } from './ShortcutsEditor';
+import { EnvironmentsEditor } from './EnvironmentsEditor';
+import { Group } from './Group';
 import { GlobalTerminalSettings } from './TerminalSettings';
 import s from './settings.module.css';
 
@@ -50,6 +59,8 @@ const SECTIONS: { id: Section; icon: ReactNode }[] = [
   { id: 'connection', icon: <NetworkIcon /> },
   { id: 'vault', icon: <ShieldIcon /> },
   { id: 'shortcuts', icon: <KeyboardIcon /> },
+  { id: 'importExport', icon: <ImportExportIcon /> },
+  { id: 'sync', icon: <CloudIcon /> },
   { id: 'about', icon: <InfoIcon /> },
 ];
 
@@ -113,15 +124,6 @@ async function saveUi(patch: Partial<Omit<Settings, 'window'>>): Promise<void> {
   }
 }
 
-function Group({ title, children }: { title?: string; children: ReactNode }) {
-  return (
-    <div className={s.group}>
-      {title && <h3 className={s.groupTitle}>{title}</h3>}
-      {children}
-    </div>
-  );
-}
-
 function GeneralSection({ settings }: { settings: Settings }) {
   const shells = useShells((s) => s.shells);
   const options: { value: LocalShell; label: string; icon: ReactNode }[] = shells.map((shell) => ({
@@ -149,6 +151,10 @@ function GeneralSection({ settings }: { settings: Settings }) {
     </Group>
   );
 }
+
+const DENSITIES: { value: HostDensity; label: string }[] = (['comfortable', 'compact'] as const).map(
+  (value) => ({ value, label: t.settings.hostDensityOptions[value] }),
+);
 
 const BELLS: { value: BellMode; label: string }[] = (['visual', 'sound', 'off'] as const).map(
   (value) => ({ value, label: t.settings.bellOptions[value] }),
@@ -180,6 +186,12 @@ function TerminalBehavior({ settings }: { settings: Settings }) {
         hint={t.settings.autoReconnectHint}
         checked={settings.autoReconnect}
         onChange={(e) => void saveUi({ autoReconnect: e.target.checked })}
+      />
+      <Checkbox
+        label={t.settings.promptTitle}
+        hint={t.settings.promptTitleHint}
+        checked={settings.promptTitle !== false}
+        onChange={(e) => void saveUi({ promptTitle: e.target.checked })}
       />
       <Select
         label={t.settings.bell}
@@ -221,6 +233,8 @@ function AccentSelect({ value }: { value: string }) {
 }
 
 function AppearanceSection({ settings }: { settings: Settings }) {
+  // Linux: janela com fundo sólido, sem transparência do sistema (specs/004, FR-412).
+  const glassAvailable = useUi((u) => u.platform) !== 'linux';
   return (
     <Group>
       <Select
@@ -230,12 +244,32 @@ function AppearanceSection({ settings }: { settings: Settings }) {
         onChange={(theme) => void saveUi({ theme })}
       />
       <AccentSelect value={settings.accent} />
-      <Checkbox
-        label={t.settings.glass}
-        hint={t.settings.glassHint}
-        checked={settings.glassEnabled}
-        onChange={(e) => void saveUi({ glassEnabled: e.target.checked })}
+      <Segmented
+        label={t.settings.hostDensity}
+        value={settings.hostDensity ?? 'comfortable'}
+        options={DENSITIES}
+        hint={t.settings.hostDensityHint}
+        onChange={(hostDensity) => void saveUi({ hostDensity })}
       />
+      {glassAvailable && (
+        <Checkbox
+          label={t.settings.glass}
+          hint={t.settings.glassHint}
+          checked={settings.glassEnabled}
+          onChange={(e) => void saveUi({ glassEnabled: e.target.checked })}
+        />
+      )}
+    </Group>
+  );
+}
+
+/** Ambientes ficam no cofre: só aparecem desbloqueado. */
+function EnvironmentsGroup() {
+  const { unlocked } = useVaultSettings();
+  if (!unlocked) return null;
+  return (
+    <Group title={t.environments.title}>
+      <EnvironmentsEditor />
     </Group>
   );
 }
@@ -437,26 +471,120 @@ function ShortcutsSection() {
   );
 }
 
+function ImportExportSection() {
+  const unlocked = useVault((v) => v.status?.state === 'unlocked');
+  if (!unlocked) return <p className={s.notice}>{t.settings.vaultLocked}</p>;
+  return <ImportExportPage />;
+}
+
 function AboutSection() {
   return (
-    <Group>
-      <p className={s.appName}>{t.common.appName}</p>
-      <p className={s.hint}>{t.settings.version(__APP_VERSION__)}</p>
-      <p>{t.settings.aboutDescription}</p>
-      <p className={s.hint}>{t.settings.aboutOffline}</p>
+    <>
+      <Group>
+        <p className={s.appName}>{t.common.appName}</p>
+        <p className={s.hint}>{t.settings.version(__APP_VERSION__)}</p>
+        <p>{t.settings.aboutDescription}</p>
+        <p className={s.hint}>{t.settings.aboutOffline}</p>
+      </Group>
+      <UpdatesGroup />
+    </>
+  );
+}
+
+/** Atualizações (specs/007, FR-716): versão, última verificação, procurar e opções. */
+function UpdatesGroup() {
+  const info = useUpdates((u) => u.info);
+  const prefs = useUpdates((u) => u.prefs);
+  const [checking, setChecking] = useState(false);
+  const [result, setResult] = useState<string | null>(null);
+  const tu = t.updates.settings;
+  const dev = info?.install === 'dev';
+  const lastCheck = info?.checkedAt
+    ? tu.lastCheck(new Date(info.checkedAt).toLocaleString('pt-BR'))
+    : tu.never;
+
+  return (
+    <Group title={tu.title}>
+      <p className={s.hint}>{tu.installed(info?.current ?? __APP_VERSION__)}</p>
+      {dev ? (
+        <p className={s.hint}>{tu.devBuild}</p>
+      ) : (
+        <>
+          <p className={s.hint}>{lastCheck}</p>
+          <div>
+            <Button
+              disabled={checking}
+              onClick={() => {
+                setChecking(true);
+                setResult(null);
+                void checkNow().then((err) => {
+                  setChecking(false);
+                  const now = useUpdates.getState().info;
+                  if (err) toastError(err);
+                  else if (now && !now.latest) setResult(tu.upToDate(now.current));
+                });
+              }}
+            >
+              {checking ? tu.checking : tu.check}
+            </Button>
+          </div>
+          {result && (
+            <p className={s.hint} role="status">
+              {result}
+            </p>
+          )}
+          <Checkbox
+            label={tu.auto}
+            hint={tu.autoHint}
+            checked={prefs?.auto ?? true}
+            onChange={(e) =>
+              void savePrefs({ auto: e.target.checked }).then((err) => {
+                if (err) toastError(err);
+              })
+            }
+          />
+          <Checkbox
+            label={tu.prerelease}
+            hint={tu.prereleaseHint}
+            checked={prefs?.prerelease ?? false}
+            onChange={(e) =>
+              void savePrefs({ prerelease: e.target.checked }).then((err) => {
+                if (err) toastError(err);
+              })
+            }
+          />
+        </>
+      )}
     </Group>
   );
 }
 
 export function SettingsPage() {
-  const setView = useWorkspace((w) => w.setView);
+  const closeSettings = useWorkspace((w) => w.closeSettings);
   const settings = useUi((u) => u.settings);
-  const [section, setSection] = useState<Section>('general');
+  const [section, setSection] = useState<Section>(() => {
+    const wanted = useWorkspace.getState().settingsSection;
+    useWorkspace.setState({ settingsSection: null });
+    return SECTIONS.find((x) => x.id === wanted)?.id ?? 'general';
+  });
   const navRef = useRef<HTMLElement>(null);
   const indicator = useSlidingIndicator(navRef, section, 'y', '[aria-current="page"]');
 
+  // Trocar para uma sessão desmonta a página; com a aba ainda aberta, volta na mesma seção.
+  const sectionRef = useRef(section);
+  useEffect(() => {
+    sectionRef.current = section;
+  }, [section]);
+  useEffect(
+    () => () => {
+      if (useWorkspace.getState().settingsTab)
+        useWorkspace.setState({ settingsSection: sectionRef.current });
+    },
+    [],
+  );
+
   function close() {
-    setView('terminal');
+    closeSettings();
     const active = useSessions.getState().activeId;
     if (active) {
       requestAnimationFrame(() => {
@@ -551,12 +679,17 @@ export function SettingsPage() {
           ))}
         </nav>
         <div
-          className={`${s.content} ${section === 'terminal' ? s.wide : section === 'shortcuts' ? s.medium : ''}`}
+          className={`${s.content} ${section === 'terminal' ? s.wide : section === 'importExport' ? s.full : section === 'shortcuts' ? s.medium : ''}`}
           key={section}
         >
           <h2 className={s.sectionTitle}>{t.settings.sections[section]}</h2>
           {settings && section === 'general' && <GeneralSection settings={settings} />}
-          {settings && section === 'appearance' && <AppearanceSection settings={settings} />}
+          {settings && section === 'appearance' && (
+            <>
+              <AppearanceSection settings={settings} />
+              <EnvironmentsGroup />
+            </>
+          )}
           {section === 'terminal' && (
             <>
               {settings && <TerminalBehavior settings={settings} />}
@@ -566,6 +699,8 @@ export function SettingsPage() {
           {section === 'connection' && <ConnectionSection />}
           {section === 'vault' && <VaultSection />}
           {section === 'shortcuts' && <ShortcutsSection />}
+          {section === 'importExport' && <ImportExportSection />}
+          {section === 'sync' && <SyncSection />}
           {section === 'about' && <AboutSection />}
         </div>
       </div>

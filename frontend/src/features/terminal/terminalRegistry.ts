@@ -7,6 +7,8 @@ export interface TerminalHandle {
   search: SearchAddon;
   /** Foca o terminal se a aba estiver visível. */
   focus: () => void;
+  /** Recalcula linhas e colunas pelo tamanho atual (divisória arrastada; specs/006). */
+  fit: () => void;
 }
 
 const handles = new Map<string, TerminalHandle>();
@@ -24,4 +26,8 @@ export function terminalOf(sessionId: string): TerminalHandle | undefined {
 
 export function focusTerminal(sessionId: string): void {
   handles.get(sessionId)?.focus();
+}
+
+export function fitTerminal(sessionId: string): void {
+  handles.get(sessionId)?.fit();
 }

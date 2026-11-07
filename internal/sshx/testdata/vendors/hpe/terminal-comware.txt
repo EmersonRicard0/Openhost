@@ -1,0 +1,8 @@
+# fonte: terminal
+# versao: SSH-2.0-OpenSSH_8.0
+******************************************************************************
+* Copyright (c) 2010-2017 Hewlett Packard Enterprise Development LP          *
+* Without the owner's prior written consent,                                *
+* no decompiling or reverse-engineering shall be allowed.                    *
+******************************************************************************
+<HPE-5130-LAB>

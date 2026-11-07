@@ -50,47 +50,8 @@
   cursor: default;
 }
 
-.text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--text-primary);
-}
-
-.muted {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.pad {
-  padding: 0 8px;
-}
-
 .spacer {
   flex: 1;
-}
-
-.dot {
-  flex: none;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-secondary);
-}
-
-.dot[data-state='connected'] {
-  background: var(--success);
-}
-
-.dot[data-state='connecting'],
-.dot[data-state='authenticating'],
-.dot[data-state='awaitingHostKey'],
-.dot[data-state='awaitingPrompt'] {
-  background: var(--warning);
-}
-
-.dot[data-state='disconnected'],
-.dot[data-state='error'] {
-  background: var(--danger);
 }
 
 .latency {
