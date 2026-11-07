@@ -160,7 +160,13 @@ export function HostList({ query, listRef, onEdit, onAdd }: HostListProps) {
   );
   const win = useVirtualWindow(rows, listRef, compact ? HOST_ROW_COMPACT : HOST_ROW);
   // Linhas acima mudam de altura ao recolher grupos: a lista entra na chave.
-  const indicator = useSlidingIndicator(listRef, `${selected ?? ''}|${rows.length}|${query}`, 'y');
+  // A densidade entra na chave: trocar Confortável ↔ Compacta muda a altura da linha sem mudar a
+  // seleção, e o indicador ficava com a medida da densidade anterior.
+  const indicator = useSlidingIndicator(
+    listRef,
+    `${selected ?? ''}|${rows.length}|${query}|${density}`,
+    'y',
+  );
 
   const toggle = (groupId: string, expand?: boolean) => {
     const open = expand ?? collapsed.has(groupId);
