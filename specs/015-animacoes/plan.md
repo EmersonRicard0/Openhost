@@ -7,7 +7,7 @@
 ## Summary
 
 Dar movimento ao OpenHost sem custo de tempo: tela de abertura com o chevron laranja sobre preto
-piano pintada pelo `index.html` antes de qualquer JS (e fundo nativo da janela em `#050505`);
+piano pintada pelo `index.html` antes de qualquer JS (opaca; a janela segue em Mica para o vidro);
 retorno de clique por CSS `:active`/`[data-pressed]` e trava `data-busy` contra clique duplo;
 entrada/saída de abas, crescimento do painel ao dividir com um único `fit()` no fim, indicador de
 "conectando" no painel; coerência em diálogos, Configurações, paleta, toasts, SFTP e cartões da
@@ -17,7 +17,7 @@ Home. Uma preferência local `motion` (Sistema/Completas/Reduzidas/Desligadas) v
 
 ## Technical Context
 
-**Language/Version**: Go 1.26 (preferência e cor de fundo da janela); TypeScript 5 `strict` + React 19
+**Language/Version**: Go 1.26 (preferência `motion`); TypeScript 5 `strict` + React 19
 
 **Primary Dependencies**: Wails v2.17 (WebView2/WebKit), Zustand, xterm.js 6 — **nenhuma dependência nova**
 
@@ -39,7 +39,7 @@ parado (SC-1506); transições ≤ 250 ms (FR-170); só tokens de cor/movimento 
 script inline
 
 **Scale/Scope**: ~15 módulos CSS, `index.html`, `main.tsx`, `TabBar`, `TerminalView`/registry,
-`ui/` (Button, Menu, motion), Configurações › Aparência; Go: `appwin/preferences.go`, `main.go`
+`ui/` (Button, Menu, motion), Configurações › Aparência; Go: `appwin/preferences.go`
 
 ## Constitution Check
 
@@ -73,7 +73,6 @@ specs/015-animacoes/
 ### Source Code (repository root)
 
 ```text
-main.go                                  # BackgroundColour #050505 (Codex)
 internal/appwin/preferences.go(+_test)   # campo Motion, normalização (Codex)
 frontend/
 ├── index.html                           # #boot: SVG do chevron + CSS inline
@@ -90,7 +89,7 @@ frontend/
 ```
 
 **Structure Decision**: estrutura atual (Go na raiz/`internal`, React em `frontend/src`). A parte Go
-(campo `motion`, cor de fundo) vai como cartão para o Codex; o resto é frontend.
+(campo `motion`) vai como cartão para o Codex; o resto é frontend.
 
 ## Complexity Tracking
 

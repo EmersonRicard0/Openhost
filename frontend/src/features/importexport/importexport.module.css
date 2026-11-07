@@ -516,18 +516,17 @@
 @keyframes summary-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(calc(6px * var(--motion-shift)));
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .summary,
-  .card,
-  .row,
-  .cell {
-    animation: none;
-    transition: none;
-  }
+/* Animações reduzidas ou desligadas (specs/015). */
+:global(:root:not([data-motion='full'])) .summary,
+:global(:root:not([data-motion='full'])) .card,
+:global(:root:not([data-motion='full'])) .row,
+:global(:root:not([data-motion='full'])) .cell {
+  animation: none;
+  transition: none;
 }
 
 /* --- Força da senha do arquivo ------------------------------------------------ */

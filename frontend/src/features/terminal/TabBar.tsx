@@ -24,7 +24,7 @@ import { environmentColor } from '../../theme/environments';
 import { useHostEnvironment } from '../hosts/environment';
 import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
-import { useSlidingIndicator } from '../../ui/motion';
+import { currentMotion, useSlidingIndicator } from '../../ui/motion';
 import {
   BroadcastIcon,
   ChevronDownIcon,
@@ -479,8 +479,8 @@ function startPan(bar: HTMLDivElement, e: ReactPointerEvent) {
 }
 
 function scrollByPage(bar: HTMLDivElement | null, dir: -1 | 1) {
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  bar?.scrollBy({ left: dir * bar.clientWidth * 0.8, behavior: reduce ? 'auto' : 'smooth' });
+  const smooth = currentMotion() === 'full';
+  bar?.scrollBy({ left: dir * bar.clientWidth * 0.8, behavior: smooth ? 'smooth' : 'auto' });
 }
 
 export function TabBar({ newTabItems, trailing }: TabBarProps) {

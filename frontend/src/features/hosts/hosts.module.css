@@ -309,10 +309,9 @@
   background: var(--hover);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .chevron {
-    transition: none;
-  }
+/* Animações reduzidas ou desligadas (specs/015). */
+:global(:root:not([data-motion='full'])) .chevron {
+  transition: none;
 }
 
 .itemLabelRow {

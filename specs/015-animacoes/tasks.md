@@ -12,19 +12,19 @@ description: "Tarefas da feature 015 — animações"
 
 ## Phase 1: Setup
 
-- [ ] T001 Criar `frontend/tests/e2e/motion.spec.ts` vazio com o `describe('015 animações')` e o helper que força `motion` via preferência do app de teste (reaproveitar `frontend/tests/e2e/helpers`)
-- [ ] T002 [P] Adicionar `motion: 'system' | 'full' | 'reduced' | 'off'` ao tipo de preferências em `frontend/src/shared/model/types.ts` e o padrão `'system'` onde o store monta as preferências em `frontend/src/stores/ui.ts`
+- [x] T001 Criar `frontend/tests/e2e/motion.spec.ts` vazio com o `describe('015 animações')` e o helper que força `motion` via preferência do app de teste (reaproveitar `frontend/tests/e2e/helpers`)
+- [x] T002 [P] (Padrão resolvido em `resolveMotion`: ausente = `system`.) Adicionar `motion: 'system' | 'full' | 'reduced' | 'off'` ao tipo de preferências em `frontend/src/shared/model/types.ts` e o padrão `'system'` onde o store monta as preferências em `frontend/src/stores/ui.ts`
 
 ## Phase 2: Foundational (bloqueia todas as histórias)
 
 - [ ] T003 (Codex) Teste em `internal/appwin/preferences_test.go`: `motion` ausente, vazio ou desconhecido → `"system"`; aceita só `system`, `full`, `reduced`, `off`; `SyncPreferencesFrom`/`SyncPreferences` em `internal/cloudsync/items.go` NÃO levam `motion`
 - [ ] T004 (Codex) Campo `Motion string \`json:"motion"\`` em `Preferences` e `UpdatePrefs` de `internal/appwin/preferences.go`, padrão `"system"` em `DefaultPreferences`, normalização em `normalizedPreferences`/`normalizedUpdatePrefs`; regenerar bindings Wails (`frontend/wailsjs`)
-- [ ] T005 [P] Teste Vitest de `resolveMotion(pref, systemReduced)` em `frontend/src/ui/motion.test.ts` cobrindo a tabela do data-model (`system`+não→`full`, `system`+sim→`reduced`, `full`/`reduced`/`off` fixos)
-- [ ] T006 Implementar `resolveMotion` e `applyMotion(level)` (define `document.documentElement.dataset.motion`) e `watchMotion(getPref)` (escuta `matchMedia('(prefers-reduced-motion: reduce)')`) em `frontend/src/ui/motion.ts`
-- [ ] T007 Em `frontend/src/main.tsx`, chamar `applyMotion` com as preferências carregadas antes do `render`, e reaplicar quando `stores/ui.ts` mudar `motion`
-- [ ] T008 Em `frontend/src/styles/global.css`: `--motion-shift: 1` em `:root`; `[data-motion="reduced"] { --motion-shift: 0 }`; `[data-motion="off"] { --motion-fast/base/slow: 0ms; --motion-shift: 0 }`; manter o `@media (prefers-reduced-motion)` só como fallback quando não houver `data-motion`; keyframes de deslocamento/escala existentes (`pop-in`, `slide-in`, `page-in`, `section-in`, `card-in`, `palette-in`…) passam a multiplicar distância/escala por `var(--motion-shift)`
-- [ ] T009 Trocar os `@media (prefers-reduced-motion: reduce)` dos módulos por seletores `:root[data-motion="off"]`/`[data-motion="reduced"]` em `frontend/src/features/hosts/*.module.css`, `features/importexport`, `features/palette/palette.module.css`, `features/settings/settings.module.css`, `features/sftp/sftp.module.css`, `features/terminal/terminal.module.css`, `features/updates`; e o `matchMedia` de `frontend/src/features/terminal/TabBar.tsx:482` por leitura de `document.documentElement.dataset.motion`
-- [ ] T010 Rodar `node scripts/check-tokens.mjs`, `npm run lint`, `npm run typecheck`, `npx vitest run` em `frontend/`
+- [x] T005 [P] Teste Vitest de `resolveMotion(pref, systemReduced)` em `frontend/src/ui/motion.test.ts` cobrindo a tabela do data-model (`system`+não→`full`, `system`+sim→`reduced`, `full`/`reduced`/`off` fixos)
+- [x] T006 Implementar `resolveMotion` e `applyMotion(level)` (define `document.documentElement.dataset.motion`) e `watchMotion(getPref)` (escuta `matchMedia('(prefers-reduced-motion: reduce)')`) em `frontend/src/ui/motion.ts`
+- [x] T007 Em `frontend/src/main.tsx`, chamar `applyMotion` com as preferências carregadas antes do `render`, e reaplicar quando `stores/ui.ts` mudar `motion`
+- [x] T008 Em `frontend/src/styles/global.css`: `--motion-shift: 1` em `:root`; `[data-motion="reduced"] { --motion-shift: 0 }`; `[data-motion="off"] { --motion-fast/base/slow: 0ms; --motion-shift: 0 }`; manter o `@media (prefers-reduced-motion)` só como fallback quando não houver `data-motion`; keyframes de deslocamento/escala existentes (`pop-in`, `slide-in`, `page-in`, `section-in`, `card-in`, `palette-in`…) passam a multiplicar distância/escala por `var(--motion-shift)`
+- [x] T009 Trocar os `@media (prefers-reduced-motion: reduce)` dos módulos por seletores `:root[data-motion="off"]`/`[data-motion="reduced"]` em `frontend/src/features/hosts/*.module.css`, `features/importexport`, `features/palette/palette.module.css`, `features/settings/settings.module.css`, `features/sftp/sftp.module.css`, `features/terminal/terminal.module.css`, `features/updates`; e o `matchMedia` de `frontend/src/features/terminal/TabBar.tsx:482` por leitura de `document.documentElement.dataset.motion`
+- [x] T010 Rodar `node scripts/check-tokens.mjs`, `npm run lint`, `npm run typecheck`, `npx vitest run` em `frontend/`
 
 **Checkpoint**: `data-motion` funciona e nada mudou visualmente com `full`.
 
@@ -34,11 +34,11 @@ description: "Tarefas da feature 015 — animações"
 **Independent Test**: abrir o app: fundo preto piano + chevron no primeiro quadro; senha com foco assim que pronta (quickstart 1–2).
 
 - [ ] T011 [P] [US1] e2e em `frontend/tests/e2e/motion.spec.ts`: `#boot` existe no documento inicial; some (removido do DOM) depois que `#unlock-password` aparece; `#unlock-password` tem foco; nenhuma ação espera o `#boot`
-- [ ] T012 [P] [US1] Teste Vitest de `dismissBoot()` em `frontend/src/ui/motion.test.ts`: marca `data-leaving`, remove no `transitionend` ou após teto de 300 ms, idempotente, não falha sem `#boot`
-- [ ] T013 [US1] Em `frontend/index.html`: `<div id="boot" aria-hidden="true">` com SVG inline do chevron (de `brand/kit/openhost-mark.svg`, cor `#FD7B17`) centralizado sobre `#050505`, `<style>` inline com entrada ≤ 600 ms (opacidade + escala leve), depois pulso discreto de opacidade (FR-1507), `@media (prefers-reduced-motion: reduce)` só opacidade; `#boot[data-leaving]` esmaece em 200 ms com `pointer-events: none`; `html, body { background: #050505 }`. Sem script inline (CSP)
-- [ ] T014 [US1] Implementar `dismissBoot()` em `frontend/src/ui/motion.ts` e chamá-lo no `useEffect` de montagem da primeira tela (desbloqueio, criação do cofre, lista de hosts) em `frontend/src/App.tsx` (ou componente raiz equivalente), depois do foco no primeiro campo
-- [ ] T015 [US1] (Codex) `BackgroundColour: &options.RGBA{R: 5, G: 5, B: 5, A: 255}` em `main.go:96` (fundo nativo preto piano, SC-1502)
-- [ ] T016 [US1] Adicionar exceção do `#boot` em `scripts/check-tokens.mjs` se o `index.html` for verificado (cores literais só ali, por estar fora dos tokens)
+- [x] T012 [P] [US1] Teste Vitest de `dismissBoot()` em `frontend/src/ui/motion.test.ts`: marca `data-leaving`, remove no `transitionend` ou após teto de 300 ms, idempotente, não falha sem `#boot`
+- [x] T013 [US1] Em `frontend/index.html`: `<div id="boot" aria-hidden="true">` com SVG inline do chevron (de `brand/kit/openhost-mark.svg`, cor `#FD7B17`) centralizado sobre `#050505`, `<style>` inline com entrada ≤ 600 ms (opacidade + escala leve), depois pulso discreto de opacidade (FR-1507), `@media (prefers-reduced-motion: reduce)` só opacidade; `#boot[data-leaving]` esmaece em 200 ms com `pointer-events: none`; `html, body { background: #050505 }`. Sem script inline (CSP)
+- [x] T014 [US1] Implementar `dismissBoot()` em `frontend/src/ui/motion.ts` e chamá-lo no `useEffect` de montagem da primeira tela (desbloqueio, criação do cofre, lista de hosts) em `frontend/src/App.tsx` (ou componente raiz equivalente), depois do foco no primeiro campo
+- [ ] T015 [US1] ~~Fundo nativo opaco~~ descartado: a janela usa Mica translúcido (`main.go`, `WindowIsTranslucent`) e um `BackgroundColour` opaco quebraria o modo vidro. O `#boot` opaco cobre a janela a partir do primeiro quadro do WebView; antes disso aparece o Mica do sistema (escuro no tema escuro). Conferir na gravação de SC-1502
+- [x] T016 [US1] (Não precisou: `check-tokens.mjs` não lê `.html`.) Adicionar exceção do `#boot` em `scripts/check-tokens.mjs` se o `index.html` for verificado (cores literais só ali, por estar fora dos tokens)
 
 **Checkpoint**: US1 entregue sozinha.
 
@@ -89,7 +89,7 @@ description: "Tarefas da feature 015 — animações"
 
 ## Phase 8: Polish
 
-- [ ] T038 Parar animações com a janela oculta: `document.visibilitychange` → `data-hidden` em `<html>` com `animation-play-state: paused` em `global.css` (FR-1520)
+- [x] T038 Parar animações com a janela oculta: `document.visibilitychange` → `data-hidden` em `<html>` com `animation-play-state: paused` em `global.css` (FR-1520)
 - [ ] T039 Medição SC-1501/SC-1506 com o método da 014 (10 aberturas `full` × `off`; CPU em repouso minimizado) — pedir ao usuário antes; registrar em `specs/015-animacoes/quickstart.md`
 - [ ] T040 Rodar suíte: `node scripts/check-tokens.mjs`, lint, typecheck, Vitest, `go test ./...`, e2e (`motion`, `noc-ui`, `split`, `ui-polish`, `appearance`) — e2e só com aviso
 - [ ] T041 Notas de versão em `docs/release-notes/0.9.0.md` (animações + preferência)
@@ -98,7 +98,6 @@ description: "Tarefas da feature 015 — animações"
 
 - Phase 1 → Phase 2 (T003–T004 Codex em paralelo com T005–T009) → histórias.
 - US1 e US2 (P1) independentes entre si após a Phase 2. US3 depende só da Phase 2 (usa `leaveGhost` existente). US4 depende de T008. US5 depende de T004 + T007.
-- T015 (Codex) pode ir junto com T003–T004 no mesmo cartão.
 
 ## Parallel Examples
 

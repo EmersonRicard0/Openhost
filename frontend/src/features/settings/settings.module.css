@@ -271,10 +271,9 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .recorder {
-    animation: none;
-  }
+/* Animações reduzidas ou desligadas (specs/015). */
+:global(:root:not([data-motion='full'])) .recorder {
+  animation: none;
 }
 
 .recorderProblem {
@@ -326,14 +325,14 @@
 @keyframes page-in {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(calc(6px * var(--motion-shift)));
   }
 }
 
 @keyframes section-in {
   from {
     opacity: 0;
-    transform: translateX(6px);
+    transform: translateX(calc(6px * var(--motion-shift)));
   }
 }
 

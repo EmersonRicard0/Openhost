@@ -14,6 +14,7 @@ import { subscribeVault, useVault } from '../stores/vault';
 import { useWorkspace } from '../stores/workspace';
 import { Button } from '../ui/Button';
 import { ChevronIcon, ChevronLeftIcon, LockIcon, SettingsIcon } from '../ui/icons';
+import { dismissBoot } from '../ui/motion';
 import { Toasts } from '../ui/Toast';
 import { trackActivity } from './activity';
 import { CloseConfirmDialog } from './CloseConfirmDialog';
@@ -57,6 +58,12 @@ export function App() {
       }),
     [],
   );
+
+  // A primeira tela já montou (e focou o campo): a abertura sai por cima dela (specs/015, FR-1506).
+  const ready = status !== null;
+  useEffect(() => {
+    if (ready) dismissBoot();
+  }, [ready]);
 
   // Cofre apagado: ao criar o novo, começa pelas abas.
   useEffect(() => {

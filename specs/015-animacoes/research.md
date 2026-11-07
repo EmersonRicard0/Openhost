@@ -3,14 +3,14 @@
 ## R1 — Mostrar a marca desde o primeiro quadro
 
 **Decision**: a tela de abertura (fundo preto piano + chevron) fica **no `index.html`**, em HTML e
-CSS inline, fora do React. A janela nativa passa a ter fundo `#050505` (`--brand-preto-piano`) em
-vez de transparente. O React a remove quando a primeira tela monta.
+CSS inline, fora do React, opaca em `#050505` (`--brand-preto-piano`). A janela nativa continua
+transparente (Mica, necessário para o modo vidro). O React remove a abertura quando a primeira tela monta.
 
 **Rationale**: `main.tsx` espera `loadUi()` e os perfis (até 5 s) antes de renderizar; qualquer
 animação feita em React só apareceria depois disso. HTML/CSS inline é pintado pelo WebView antes de
 qualquer JS. A CSP já permite `style-src 'unsafe-inline'`; não precisa de script inline (proibido
-por `script-src 'self'`). O fundo nativo escuro evita o quadro branco/transparente antes do WebView
-pintar (SC-1502).
+por `script-src 'self'`). Um fundo nativo opaco foi descartado: `WindowIsTranslucent` + Mica exigem alfa 0, e antes do WebView
+pintar o que aparece é o Mica do sistema, não branco (SC-1502 conferido em gravação).
 
 **Alternatives considered**: tela de abertura nativa do Wails (não existe na v2); renderizar o
 React antes de `loadUi` (muda a ordem de carga que a 014 mede e arrisca terminal com fonte errada);

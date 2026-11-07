@@ -17,13 +17,30 @@
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-emphasized: cubic-bezier(0.2, 0.8, 0.2, 1);
   --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  /* Quanto do deslocamento/escala animado vale (specs/015): 1 completas, 0 reduzidas/desligadas.
+     Todo translate/scale animado multiplica por ele; cor e opacidade não. */
+  --motion-shift: 1;
+}
+
+/* `data-motion` é posto pelo main.tsx antes da primeira tela (ui/motion.ts). Sem ele (antes do
+   JS), vale o "reduzir movimento" do sistema. */
+:root[data-motion='reduced'] {
+  --motion-shift: 0;
+}
+
+:root[data-motion='off'] {
+  --motion-fast: 0ms;
+  --motion-base: 0ms;
+  --motion-slow: 0ms;
+  --motion-shift: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root {
+  :root:not([data-motion]) {
     --motion-fast: 0ms;
     --motion-base: 0ms;
     --motion-slow: 0ms;
+    --motion-shift: 0;
   }
 }
 
@@ -152,10 +169,25 @@ textarea {
   --wails-draggable: no-drag;
 }
 
+/* Desligadas (FR-1519): nada se move nem esmaece; a troca de cor fica, só que instantânea. */
+:root[data-motion='off'] *,
+:root[data-motion='off'] *::before,
+:root[data-motion='off'] *::after {
+  animation-duration: 0s !important;
+  transition-duration: 0s !important;
+}
+
+/* Janela oculta ou minimizada: nada anima (FR-1520). */
+:root[data-hidden] *,
+:root[data-hidden] *::before,
+:root[data-hidden] *::after {
+  animation-play-state: paused !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  :root:not([data-motion]) *,
+  :root:not([data-motion]) *::before,
+  :root:not([data-motion]) *::after {
     animation-duration: 0s !important;
     transition-duration: 0s !important;
   }

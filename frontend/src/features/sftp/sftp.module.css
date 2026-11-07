@@ -244,8 +244,7 @@
   background: var(--text-secondary);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .progressFill {
-    transition: none;
-  }
+/* Animações reduzidas ou desligadas (specs/015). */
+:global(:root:not([data-motion='full'])) .progressFill {
+  transition: none;
 }

@@ -237,7 +237,11 @@ export interface Settings {
   promptTitle?: boolean;
   /** Recentes desta máquina, mais recente primeiro (specs/010); ausente até o Go gravar. */
   recents?: RecentEntry[];
+  /** Quanto de animação (specs/015), só neste computador; ausente vale `system`. */
+  motion?: MotionPreference;
 }
+
+export type MotionPreference = 'system' | 'full' | 'reduced' | 'off';
 
 export type HostDensity = 'comfortable' | 'compact';
 
