@@ -24,7 +24,7 @@ import { environmentColor } from '../../theme/environments';
 import { useHostEnvironment } from '../hosts/environment';
 import { useWorkspace } from '../../stores/workspace';
 import { Button } from '../../ui/Button';
-import { currentMotion, useSlidingIndicator } from '../../ui/motion';
+import { currentMotion, useExitGhost, useFlip, useSlidingIndicator } from '../../ui/motion';
 import {
   BroadcastIcon,
   ChevronDownIcon,
@@ -197,6 +197,9 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
   const [editing, setEditing] = useState(false);
   const [dropTarget, setDropTarget] = useState(false);
   const [menuAt, setMenuAt] = useState<{ x: number; y: number } | null>(null);
+  // Fechar a aba: ela esmaece no lugar enquanto as vizinhas deslizam (specs/015, FR-1510).
+  const tabRef = useRef<HTMLDivElement>(null);
+  useExitGhost(tabRef);
   // Segurar uma aba arrastada sobre outra abre aquela sessão, para soltar na área dela.
   const springTimer = useRef<number | undefined>(undefined);
   const cancelSpring = () => {
@@ -227,9 +230,11 @@ function TabItem({ item, activeId }: { item: StripItem; activeId: string | null 
 
   return (
     <div
+      ref={tabRef}
       role="tab"
       aria-selected={active}
       tabIndex={active ? 0 : -1}
+      data-flip-id={item.id}
       title={tooltip}
       aria-label={
         environment
@@ -496,6 +501,7 @@ export function TabBar({ newTabItems, trailing }: TabBarProps) {
   // Ordem e títulos mudam a posição da aba ativa sem trocar o id: entram na chave.
   const layoutKey = `${settingsActive ? 'settings' : (activeId ?? '')}|${settingsTab ? 's' : ''}|${items.map((it) => `${it.id}:${it.kind === 'tab' ? it.tab.title : `${it.focus.title}+${String(it.members.length)}`}`).join('|')}`;
   const indicator = useSlidingIndicator(barRef, layoutKey, 'x');
+  useFlip(barRef, items.map((it) => it.id).join('|'));
   const overflow = useTabScroll(barRef, settingsActive ? 'settings' : activeId);
   const overflowing = overflow.start || overflow.end;
 

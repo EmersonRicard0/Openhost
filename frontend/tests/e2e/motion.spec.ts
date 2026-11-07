@@ -1,7 +1,14 @@
 // Animações (specs/015): abertura com a marca, sem atrasar o primeiro campo.
 import { expect, test } from '@playwright/test';
 import { launchApp } from './helpers/launch';
-import { addHost, createVault, hostItem, unlockForm } from './helpers/ui';
+import {
+  addHost,
+  createVault,
+  expectTerminalLine,
+  hostItem,
+  terminalPanel,
+  unlockForm,
+} from './helpers/ui';
 
 test.describe('015 animações', () => {
   test('abertura: marca até a primeira tela, que já chega com foco (US1)', async () => {
@@ -41,6 +48,59 @@ test('duplo Enter num host abre uma sessão só (US2, FR-1509)', async () => {
     await app.page.keyboard.press('Enter');
     await app.page.keyboard.press('Enter');
     await expect(app.page.getByRole('tab', { name: 'duplo' })).toHaveCount(1);
+  } finally {
+    await app.close();
+  }
+});
+
+test('aba nova aceita digitação na hora, com a entrada animando (US3, SC-1504)', async () => {
+  const app = await launchApp({ motion: true });
+  const { page } = app;
+  try {
+    await createVault(page);
+    const ids = () =>
+      page
+        .locator('[data-session-id]')
+        .evaluateAll((els) => els.map((el) => el.getAttribute('data-session-id') ?? ''));
+    for (let i = 0; i < 20; i++) {
+      const before = await ids();
+      await page.getByRole('button', { name: 'Novo terminal local' }).click();
+      await page.getByRole('menuitem', { name: 'Prompt de Comando', exact: true }).click();
+      // Sem esperar o prompt nem o fim da animação da aba.
+      await page.keyboard.type(`echo ok${String(i)}\r`);
+      let id = '';
+      await expect
+        .poll(async () => {
+          id = (await ids()).find((x) => !before.includes(x)) ?? '';
+          return id;
+        })
+        .not.toBe('');
+      await expectTerminalLine(page, id, `ok${String(i)}`);
+    }
+  } finally {
+    await app.close();
+  }
+});
+
+test('indicador de conexão até o erro (US3, FR-1512)', async () => {
+  test.setTimeout(120_000);
+  const app = await launchApp({ motion: true });
+  const { page } = app;
+  try {
+    await createVault(page);
+    // Endereço que não responde: fica conectando até o tempo limite, sem pedido de chave nem senha.
+    await addHost(page, {
+      label: 'fechado',
+      address: '10.255.255.1',
+      port: 22,
+      username: 'x',
+      method: 'Perguntar ao conectar',
+    });
+    await hostItem(page, 'fechado').dblclick();
+    const panel = terminalPanel(page, 'fechado');
+    await expect(panel.getByTestId('connecting')).toHaveCount(1);
+    await expect(panel.getByTestId('connecting')).toHaveCount(0, { timeout: 60_000 });
+    await expect(panel.getByRole('status')).toContainText('Desconectado');
   } finally {
     await app.close();
   }

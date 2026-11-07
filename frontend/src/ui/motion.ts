@@ -7,6 +7,7 @@ import {
   useEffect,
   useLayoutEffect,
   useReducer,
+  useRef,
   useState,
   type RefObject,
 } from 'react';
@@ -250,4 +251,41 @@ export function useExitGhost(ref: RefObject<HTMLElement | null>): void {
     },
     [ref],
   );
+}
+
+/** Duração de um token `--motion-*` em ms (0 se ausente ou zerado). */
+function motionMs(token: '--motion-fast' | '--motion-base' | '--motion-slow'): number {
+  const raw = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+  const value = Number.parseFloat(raw);
+  if (!Number.isFinite(value)) return 0;
+  return raw.endsWith('ms') ? value : value * 1000;
+}
+
+/**
+ * Itens que mudam de lugar (aba fechada, reordenada) deslizam até a posição nova em vez de pular
+ * (specs/015, FR-1510). Cada item marca `data-flip-id`; `key` muda quando a lista muda. Usa a Web
+ * Animations API só com `transform`, e só com animações completas.
+ */
+export function useFlip(containerRef: RefObject<HTMLElement | null>, key: string): void {
+  const previous = useRef(new Map<string, number>());
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const items = container.querySelectorAll<HTMLElement>('[data-flip-id]');
+    const next = new Map<string, number>();
+    const duration = currentMotion() === 'full' ? motionMs('--motion-base') : 0;
+    for (const el of items) {
+      const id = el.dataset.flipId ?? '';
+      const left = el.offsetLeft;
+      next.set(id, left);
+      const before = previous.current.get(id);
+      if (duration > 0 && before !== undefined && before !== left) {
+        el.animate(
+          [{ transform: `translateX(${String(before - left)}px)` }, { transform: 'none' }],
+          { duration, easing: 'cubic-bezier(0.2, 0, 0, 1)' },
+        );
+      }
+    }
+    previous.current = next;
+  }, [containerRef, key]);
 }
