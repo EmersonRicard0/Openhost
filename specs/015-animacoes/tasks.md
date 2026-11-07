@@ -33,11 +33,11 @@ description: "Tarefas da feature 015 — animações"
 **Goal**: marca desde o primeiro quadro, sem atrasar o campo de senha.
 **Independent Test**: abrir o app: fundo preto piano + chevron no primeiro quadro; senha com foco assim que pronta (quickstart 1–2).
 
-- [ ] T011 [P] [US1] e2e em `frontend/tests/e2e/motion.spec.ts`: `#boot` existe no documento inicial; some (removido do DOM) depois que `#unlock-password` aparece; `#unlock-password` tem foco; nenhuma ação espera o `#boot`
+- [x] T011 [P] [US1] e2e em `frontend/tests/e2e/motion.spec.ts`: `#boot` existe no documento inicial; some (removido do DOM) depois que `#unlock-password` aparece; `#unlock-password` tem foco; nenhuma ação espera o `#boot`
 - [x] T012 [P] [US1] Teste Vitest de `dismissBoot()` em `frontend/src/ui/motion.test.ts`: marca `data-leaving`, remove no `transitionend` ou após teto de 300 ms, idempotente, não falha sem `#boot`
 - [x] T013 [US1] Em `frontend/index.html`: `<div id="boot" aria-hidden="true">` com SVG inline do chevron (de `brand/kit/openhost-mark.svg`, cor `#FD7B17`) centralizado sobre `#050505`, `<style>` inline com entrada ≤ 600 ms (opacidade + escala leve), depois pulso discreto de opacidade (FR-1507), `@media (prefers-reduced-motion: reduce)` só opacidade; `#boot[data-leaving]` esmaece em 200 ms com `pointer-events: none`; `html, body { background: #050505 }`. Sem script inline (CSP)
 - [x] T014 [US1] Implementar `dismissBoot()` em `frontend/src/ui/motion.ts` e chamá-lo no `useEffect` de montagem da primeira tela (desbloqueio, criação do cofre, lista de hosts) em `frontend/src/App.tsx` (ou componente raiz equivalente), depois do foco no primeiro campo
-- [ ] T015 [US1] ~~Fundo nativo opaco~~ descartado: a janela usa Mica translúcido (`main.go`, `WindowIsTranslucent`) e um `BackgroundColour` opaco quebraria o modo vidro. O `#boot` opaco cobre a janela a partir do primeiro quadro do WebView; antes disso aparece o Mica do sistema (escuro no tema escuro). Conferir na gravação de SC-1502
+- [x] T015 [US1] ~~Fundo nativo opaco~~ descartado: a janela usa Mica translúcido (`main.go`, `WindowIsTranslucent`) e um `BackgroundColour` opaco quebraria o modo vidro. O `#boot` opaco cobre a janela a partir do primeiro quadro do WebView; antes disso aparece o Mica do sistema (escuro no tema escuro). Conferir na gravação de SC-1502
 - [x] T016 [US1] (Não precisou: `check-tokens.mjs` não lê `.html`.) Adicionar exceção do `#boot` em `scripts/check-tokens.mjs` se o `index.html` for verificado (cores literais só ali, por estar fora dos tokens)
 
 **Checkpoint**: US1 entregue sozinha.
