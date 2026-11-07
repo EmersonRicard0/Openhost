@@ -186,6 +186,15 @@ export const t = {
     hostDensity: 'Densidade da lista de hosts',
     hostDensityOptions: { comfortable: 'Confortável', compact: 'Compacta' },
     hostDensityHint: 'Compacta mostra uma linha por host, com nome e endereço lado a lado.',
+    motion: 'Animações',
+    motionOptions: {
+      system: 'Sistema',
+      full: 'Completas',
+      reduced: 'Reduzidas',
+      off: 'Desligadas',
+    },
+    motionHint:
+      'Reduzidas só esmaecem e trocam cor, sem deslizar. Sistema segue o "reduzir movimento" do computador. Vale só neste computador.',
     promptTitle: 'Nome da aba pelo prompt',
     promptTitleHint:
       'Em sessões SSH, a aba mostra o nome do equipamento lido do prompt (por exemplo <BNG.CENTRO>). Abas renomeadas à mão não mudam.',

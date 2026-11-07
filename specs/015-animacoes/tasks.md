@@ -83,9 +83,9 @@ description: "Tarefas da feature 015 — animações"
 **Goal**: Completas / Reduzidas / Desligadas (padrão do sistema), local.
 **Independent Test**: quickstart 8.
 
-- [ ] T035 [P] [US5] e2e em `frontend/tests/e2e/motion.spec.ts`: com `Desligadas`, nenhum elemento visível com `animation-duration`/`transition-duration` ≠ `0s`; com `Reduzidas`, nenhum `transform` animado; escolha persiste após reiniciar
-- [ ] T036 [US5] Em `frontend/src/features/settings/SettingsPage.tsx` › Aparência: `Segmented` "Animações" com Sistema / Completas / Reduzidas / Desligadas, salvando via `UpdatePreferences({ motion })` e aplicando na hora; textos em `frontend/src/i18n/pt-BR.ts`
-- [ ] T037 [US5] `Desligadas`: conferir que o pressionado vira só troca de cor (T020) e que `#boot` some sem transição quando `data-motion="off"` (FR-1519)
+- [x] T035 [P] [US5] e2e em `frontend/tests/e2e/motion.spec.ts`: com `Desligadas`, nenhum elemento visível com `animation-duration`/`transition-duration` ≠ `0s`; com `Reduzidas`, nenhum `transform` animado; escolha persiste após reiniciar
+- [x] T036 [US5] (Salva por `updateUiSettings`; persiste quando o Go tiver o campo — cartão 83.) Em `frontend/src/features/settings/SettingsPage.tsx` › Aparência: `Segmented` "Animações" com Sistema / Completas / Reduzidas / Desligadas, salvando via `UpdatePreferences({ motion })` e aplicando na hora; textos em `frontend/src/i18n/pt-BR.ts`
+- [x] T037 [US5] `Desligadas`: conferir que o pressionado vira só troca de cor (T020) e que `#boot` some sem transição quando `data-motion="off"` (FR-1519)
 
 ## Phase 8: Polish
 

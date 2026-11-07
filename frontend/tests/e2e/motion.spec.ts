@@ -7,6 +7,7 @@ import {
   expectTerminalLine,
   hostItem,
   terminalPanel,
+  unlock,
   unlockForm,
 } from './helpers/ui';
 
@@ -101,6 +102,49 @@ test('indicador de conexão até o erro (US3, FR-1512)', async () => {
     await expect(panel.getByTestId('connecting')).toHaveCount(1);
     await expect(panel.getByTestId('connecting')).toHaveCount(0, { timeout: 60_000 });
     await expect(panel.getByRole('status')).toContainText('Desconectado');
+  } finally {
+    await app.close();
+  }
+});
+
+test('preferência: Desligadas zera tudo, Reduzidas sem deslocamento, e fica salva (US5)', async () => {
+  let app = await launchApp({ motion: true });
+  const { dataDir } = app;
+  const choose = async (label: string) => {
+    await app.page.getByRole('button', { name: 'Configurações', exact: true }).click();
+    const region = app.page.getByRole('region', { name: 'Configurações' });
+    await region.getByRole('button', { name: 'Aparência', exact: true }).click();
+    await region.getByRole('radio', { name: label, exact: true }).click();
+  };
+  try {
+    await createVault(app.page);
+    await choose('Desligadas');
+    await expect(app.page.locator('html')).toHaveAttribute('data-motion', 'off');
+    // Nenhum elemento com duração de animação ou transição (SC-1507).
+    const moving = await app.page.evaluate(() =>
+      [...document.querySelectorAll('*')].filter((el) => {
+        const cs = getComputedStyle(el);
+        const nonZero = (v: string) => v.split(',').some((d) => Number.parseFloat(d) > 0);
+        return nonZero(cs.animationDuration) || nonZero(cs.transitionDuration);
+      }).length,
+    );
+    expect(moving).toBe(0);
+
+    await choose('Reduzidas');
+    await expect(app.page.locator('html')).toHaveAttribute('data-motion', 'reduced');
+    const shift = await app.page.evaluate(() =>
+      getComputedStyle(document.documentElement).getPropertyValue('--motion-shift').trim(),
+    );
+    expect(shift).toBe('0');
+  } finally {
+    await app.close();
+  }
+
+  // Continua depois de reiniciar (só neste computador, FR-1518).
+  app = await launchApp({ dataDir, motion: true });
+  try {
+    await unlock(app.page);
+    await expect(app.page.locator('html')).toHaveAttribute('data-motion', 'reduced');
   } finally {
     await app.close();
   }
